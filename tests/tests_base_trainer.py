@@ -10,6 +10,13 @@ class DummyModel(nn.Module):
     def __init__(self):
         super(DummyModel, self).__init__()
         self.train(mode=True)
+        self.is_cuda = False
+
+    def cuda(self):
+        self.is_cuda = True
+
+    def cpu(self):
+        self.is_cuda = False
 
     def forward(self, x):
         return x
@@ -57,6 +64,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.assertFalse(call)
         self.assertIs(trainer.model, self.model)
+        self.assertFalse(self.model.is_cuda)
         self.assertEqual(trainer.epochs_trained, 0)
         self.assertEqual(self.model.training, False)
 
@@ -67,8 +75,10 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertTrue(trainer.model.training, True)
             self.assertIsInstance(x, Variable)
             self.assertTensorsEqual(x.data, torch.Tensor([[1]]))
+            self.assertFalse(x.is_cuda)
             self.assertIsInstance(y, Variable)
             self.assertTensorsEqual(y.data, torch.Tensor([[1]]))
+            self.assertFalse(y.is_cuda)
             batchs.append((x, y))
 
         trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
@@ -76,6 +86,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer.train(self.dataloader, epochs=1)
 
         self.assertEqual(len(batchs), 1)
+        self.assertFalse(self.model.is_cuda)
         self.assertEqual(trainer.epochs_trained, 1)
         self.assertEqual(self.model.training, False)
 
@@ -106,8 +117,10 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertTrue(trainer.model.training, True)
             self.assertIsInstance(x, Variable)
             self.assertTensorsEqual(x.data, torch.Tensor([[1]]))
+            self.assertFalse(x.is_cuda)
             self.assertIsInstance(y, Variable)
             self.assertTensorsEqual(y.data, torch.Tensor([[1]]))
+            self.assertFalse(y.is_cuda)
             self.assertEqual(trainer.total_epochs, 2)
             self.assertEqual(trainer.total_steps, 1)
             self.assertEqual(trainer.step, 0)
@@ -132,7 +145,9 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x, y):
             self.assertTrue(trainer.model.training, True)
             self.assertIsInstance(x, Variable)
+            self.assertFalse(x.is_cuda)
             self.assertIsInstance(y, Variable)
+            self.assertFalse(y.is_cuda)
             self.assertEqual(trainer.total_epochs, 1)
             self.assertEqual(trainer.total_steps, 2)
             steps.append(trainer.step)
@@ -165,7 +180,30 @@ class TorchBasetrainerTest(unittest.TestCase):
     def test_can_train_with_no_targets_too(self):
         def update_batch_fn(trainer, x):
             self.assertIsInstance(x, Variable)
+            self.assertFalse(x.is_cuda)
+
         trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         tensors = [torch.Tensor([1]), torch.Tensor([2])]
         dataloader = DataLoader(tensors, shuffle=False)
         trainer.train(dataloader, epochs=1)
+
+    def test_turn_trainer_to_cuda_turns_models_and_batchs_to_cuda(self):
+        def update_batch_fn(trainer, x, y):
+            self.assertTrue(x.is_cuda)
+            self.assertTrue(y.is_cuda)
+        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer.cuda()
+        self.assertTrue(self.model.is_cuda)
+        self.load_one_vector_dataset()
+        trainer.train(self.dataloader, epochs=1)
+
+    def test_turn_trainer_to_cpu_turns_models_and_batchs_to_cpu(self):
+        def update_batch_fn(trainer, x, y):
+            self.assertFalse(x.is_cuda)
+            self.assertFalse(y.is_cuda)
+        self.model.cuda()
+        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer.cpu()
+        self.assertFalse(self.model.is_cuda)
+        self.load_one_vector_dataset()
+        trainer.train(self.dataloader, epochs=1)
