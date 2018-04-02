@@ -17,6 +17,24 @@ class BaseTrainer(object):
         """
         self.model = model
         self._epochs_trained = 0
+        self._use_cuda = False
+
+    def cuda(self):
+        """ Turn model to cuda
+        """
+        self._use_cuda = True
+        self.model.cuda()
+
+    def cpu(self):
+        """ Turn model to cpu
+        """
+        self._use_cuda = False
+        self.model.cpu()
+
+    def _to_variable(self, x):
+        if self._use_cuda:
+            x = x.cuda()
+        return Variable(x)
 
     @property
     def epochs_trained(self):
@@ -43,7 +61,7 @@ class BaseTrainer(object):
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
                 batch = (batch, )
-            batch = list(map(Variable, batch))
+            batch = list(map(self._to_variable, batch))
             self.update_batch(*batch)
 
         self._epochs_trained += 1
