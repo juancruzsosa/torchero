@@ -8,13 +8,19 @@ class BaseTrainer(object):
     """
 
     INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
+    INVALID_LOGGING_FRECUENCY_MESSAGE='Expected loggin frecuency to be a non-negative integer, got: {logging_frecuency}'
 
-    def __init__(self, model):
+    def __init__(self, model, logging_frecuency=1):
         """ Constructor
 
         Args:
             model (:class:`torch.nn.Module`): Module to train
+            logging_frecuency (int): Frecuency of log to monitor train/validation
         """
+        if logging_frecuency < 0:
+            raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=logging_frecuency))
+        self.logging_frecuency = logging_frecuency
+
         self.model = model
         self._epochs_trained = 0
         self._use_cuda = False
@@ -56,7 +62,7 @@ class BaseTrainer(object):
 
         pass
 
-    def _train_epoch(self, train_dataloader):
+    def _train_epoch(self, train_dataloader, valid_dataloader=None):
         for self.step, batch in enumerate(train_dataloader):
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
@@ -64,13 +70,19 @@ class BaseTrainer(object):
             batch = list(map(self._to_variable, batch))
             self.update_batch(*batch)
 
+            if self._is_time_to_log():
+                if valid_dataloader:
+                    self._validate(valid_dataloader)
+                    self.model.train(mode=True)
+
         self._epochs_trained += 1
 
-    def train(self, dataloader, epochs=1):
+    def train(self, dataloader, valid_dataloader=None, epochs=1):
         """ Train the model
 
         Args:
             dataloader (:class:`torch.utils.DataLoader`): Train data loader
+            valid_dataloader (:class:`torch.utils.DataLoader`): Validation data loader
             epochs (int): Number of epochs to train
         """
         if epochs < 0:
@@ -83,7 +95,29 @@ class BaseTrainer(object):
         self.model.train(mode=True)
 
         for self.epoch in range(self.total_epochs):
-            self._train_epoch(dataloader)
+            self._train_epoch(dataloader, valid_dataloader)
 
         # Turn model to evaluation mode
         self.model.train(mode=False)
+
+    def _is_time_to_log(self):
+        return (self.logging_frecuency > 0 and
+                self.step % self.logging_frecuency == self.logging_frecuency - 1)
+
+    @abstractmethod
+    def validate_batch(self, *arg, **kwargs):
+        """ Abstract method for validate model per batch
+
+        Args:
+            *args (variable length arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Unamed batch parameters
+            **kwargs (variable length keyword arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Named batch parameters
+        """
+        pass
+
+    def _validate(self, valid_dataloader):
+        self.model.train(mode=False)
+        for valid_batch in valid_dataloader:
+            if isinstance(valid_batch, torch.Tensor):
+                valid_batch = (valid_batch, )
+            valid_batch = list(map(self._to_variable, valid_batch))
+            self.validate_batch(*valid_batch)
