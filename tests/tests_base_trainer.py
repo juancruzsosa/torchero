@@ -26,12 +26,19 @@ class TorchBasetrainerTest(unittest.TestCase):
         return self.assertTrue(torch.eq(a,b).all())
 
     class TestTrainer(BaseTrainer):
-        def __init__(self, update_batch_fn, model):
-            super(TorchBasetrainerTest.TestTrainer, self).__init__(model)
+        def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1):
+            super(TorchBasetrainerTest.TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency)
             self.update_batch_fn = update_batch_fn
+            self.valid_batch_fn = valid_batch_fn
 
         def update_batch(self, *args, **kwargs):
-            self.update_batch_fn(self, *args, **kwargs)
+            if self.update_batch_fn:
+                self.update_batch_fn(self, *args, **kwargs)
+
+        def validate_batch(self, *args, **kwargs):
+            if self.valid_batch_fn:
+                self.valid_batch_fn(self, *args, **kwargs)
+
 
     def load_one_vector_dataset(self):
         self.dataset = TensorDataset(torch.Tensor([[1.0]]), torch.Tensor([[1.0]]))
@@ -207,3 +214,99 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.assertFalse(self.model.is_cuda)
         self.load_one_vector_dataset()
         trainer.train(self.dataloader, epochs=1)
+
+    def test_validate_batch_iterate_over_every_valid_batch_after_each_train_batch(self):
+        batchs = []
+
+        train_dataset = [torch.Tensor([i]) for i in range(4)]
+        valid_dataset = [torch.Tensor([-i]) for i in range(5)]
+
+        def update_batch_fn(trainer, x):
+            self.assertTrue(self.model.training)
+            batchs.append(x)
+
+        def validate_batch_fn(trainer, x):
+            self.assertFalse(self.model.training)
+            batchs.append(x)
+
+        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
+        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
+
+        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn)
+        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+
+        it = iter(batchs)
+        for true_train_batch in train_dl:
+            train_batch = next(it)
+            self.assertIsInstance(train_batch, Variable)
+            self.assertTensorsEqual(train_batch.data, true_train_batch)
+            for true_valid_batch in valid_dl:
+                valid_batch = next(it)
+                self.assertIsInstance(valid_batch, Variable)
+                self.assertTensorsEqual(valid_batch.data, true_valid_batch)
+
+    def test_cannot_construct_with_negative_logging_frecuency(self):
+        try:
+            trainer = self.__class__.TestTrainer(model=self.model, logging_frecuency=-1)
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), BaseTrainer.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=-1))
+
+    def test_zero_logging_frecuency_not_do_validations(self):
+        valid_batchs = []
+        train_batchs = []
+
+        train_dataset = [torch.Tensor([i]) for i in range(4)]
+        valid_dataset = [torch.Tensor([-i]) for i in range(5)]
+
+        def update_batch_fn(trainer, x):
+            train_batchs.append(x)
+
+        def validate_batch_fn(trainer, x):
+            valid_batchs.append(x)
+
+        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
+        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=3)
+
+        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=0)
+        trainer.train(dataloader=train_dl, valid_dataloader=valid_dl, epochs=1)
+        self.assertEqual(len(train_batchs), len(train_dl))
+        self.assertEqual(len(valid_batchs), 0)
+
+        for true_batch, batch in zip(train_dl, train_batchs):
+            self.assertIsInstance(batch, Variable)
+            self.assertTensorsEqual(batch.data, true_batch)
+
+    def test_validate_batch_iterate_over_every_valid_batch_after_each_logging_frecuency_batchs(self):
+        batchs = []
+
+        train_dataset = [torch.Tensor([i]) for i in range(10)]
+        valid_dataset = [torch.Tensor([-i]) for i in range(4)]
+
+        def update_batch_fn(trainer, x):
+            self.assertTrue(self.model.training)
+            batchs.append(x)
+
+        def validate_batch_fn(trainer, x):
+            self.assertFalse(self.model.training)
+            batchs.append(x)
+
+        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
+        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=2)
+
+        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=2)
+        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+
+        it = iter(batchs)
+
+        i = 0
+        for true_train_batch in train_dl:
+            train_batch = next(it)
+            self.assertIsInstance(train_batch, Variable)
+            self.assertTensorsEqual(train_batch.data, true_train_batch)
+            if i % 2 == 1:
+                for true_valid_batch in valid_dl:
+                    valid_batch = next(it)
+                    self.assertIsInstance(valid_batch, Variable)
+                    self.assertTensorsEqual(valid_batch.data, true_valid_batch)
+            i += 1
