@@ -1,3 +1,4 @@
+import sys
 import unittest
 import torch
 from torch import nn
@@ -20,6 +21,15 @@ class DummyModel(nn.Module):
 
     def forward(self, x):
         return x
+
+def requires_cuda(f):
+    def closure(*args, **kwargs):
+        if not torch.cuda.is_available():
+            print("Skipping `{}´ test cause use CUDA but CUDA isn't available !!".format(f.__name__), file=sys.stderr)
+            return
+        return f(*args, **kwargs)
+    return closure
+
 
 class TorchBasetrainerTest(unittest.TestCase):
     def assertTensorsEqual(self, a, b):
@@ -194,6 +204,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         dataloader = DataLoader(tensors, shuffle=False)
         trainer.train(dataloader, epochs=1)
 
+    @requires_cuda
     def test_turn_trainer_to_cuda_turns_models_and_batchs_to_cuda(self):
         def update_batch_fn(trainer, x, y):
             self.assertTrue(x.is_cuda)
@@ -204,6 +215,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.load_one_vector_dataset()
         trainer.train(self.dataloader, epochs=1)
 
+    @requires_cuda
     def test_turn_trainer_to_cpu_turns_models_and_batchs_to_cpu(self):
         def update_batch_fn(trainer, x, y):
             self.assertFalse(x.is_cuda)
