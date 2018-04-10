@@ -1,6 +1,29 @@
 import torch
 from torch.autograd import Variable
 from abc import abstractmethod
+from collections import deque
+from .hooks import Hook
+
+class HookContainer(Hook):
+    def __init__(self, trainer):
+        super(HookContainer, self).__init__()
+        self.accept(trainer)
+        self.hooks = deque()
+
+    def attach(self, hook):
+        hook.accept(self.trainer)
+        self.hooks.append(hook)
+
+    def signal(self, selector_name):
+        for hook in self.hooks:
+            hook_method = getattr(hook, selector_name)
+            hook_method()
+
+    def pre_epoch(self):
+        self.signal('pre_epoch')
+
+    def post_epoch(self):
+        self.signal('post_epoch')
 
 class BaseTrainer(object):
     """ Base Trainer for all Trainer classes.
@@ -10,11 +33,12 @@ class BaseTrainer(object):
     INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
     INVALID_LOGGING_FRECUENCY_MESSAGE='Expected loggin frecuency to be a non-negative integer, got: {logging_frecuency}'
 
-    def __init__(self, model, logging_frecuency=1):
+    def __init__(self, model, hooks=[], logging_frecuency=1):
         """ Constructor
 
         Args:
             model (:class:`torch.nn.Module`): Module to train
+            hooks (:class:`torchtrainer.hooks.Hook`): Pluggable hooks for epoch/batch events.
             logging_frecuency (int): Frecuency of log to monitor train/validation
         """
         if logging_frecuency < 0:
@@ -24,6 +48,10 @@ class BaseTrainer(object):
         self.model = model
         self._epochs_trained = 0
         self._use_cuda = False
+
+        self._hooks = HookContainer(self)
+        for hook in hooks:
+            self._hooks.attach(hook)
 
     def cuda(self):
         """ Turn model to cuda
@@ -95,7 +123,9 @@ class BaseTrainer(object):
         self.model.train(mode=True)
 
         for self.epoch in range(self.total_epochs):
+            self._hooks.pre_epoch()
             self._train_epoch(dataloader, valid_dataloader)
+            self._hooks.post_epoch()
 
         # Turn model to evaluation mode
         self.model.train(mode=False)
