@@ -30,6 +30,16 @@ class ZeroMeasurementsError(Exception):
     def __str__(self):
         return "No measurements has been made"
 
+class NullMeter(BaseMeter):
+    def measure(self, *batchs):
+        pass
+
+    def reset(self):
+        pass
+
+    def value(self):
+        raise ZeroMeasurementsError()
+
 class ResultMode(Enum):
     SUM = 1
     NORMALIZED = 2
