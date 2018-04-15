@@ -6,7 +6,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.autograd import Variable
 import torchtrainer
 from torchtrainer.base import BaseTrainer
-from torchtrainer.hooks import Hook
+from torchtrainer.hooks import Hook, History
+from torchtrainer.meters import Averager
 
 class DummyModel(nn.Module):
     def __init__(self):
@@ -385,3 +386,36 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer = TestTrainer(model=self.model, hooks=[hook_0, hook_1])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])
+
+class HooksTests(unittest.TestCase):
+    def test_history_hook_register_every_training_stat(self):
+        self.model = DummyModel()
+        train_dataset = torch.arange(10).view(-1, 1)
+        valid_dataset = torch.arange(10).view(-1, 1)
+
+        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
+        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
+        hook = History()
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t_c'].measure(x.data[0][0])
+
+        def validate_batch(trainer, x):
+            trainer.stats_meters['v_c'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch,
+                              valid_batch_fn=validate_batch)
+        trainer.stats_meters['t_c'] = Averager()
+        trainer.stats_meters['v_c'] = Averager()
+        self.assertEqual(trainer.last_stats, {})
+
+        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+
+        expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
+                             {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
+
+        self.assertEqual(hook.registry, expected_registry)
+        self.assertEqual(trainer.last_stats, {'t_c': 7.0, 'v_c': 4.5})
