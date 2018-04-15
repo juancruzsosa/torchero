@@ -31,25 +31,23 @@ def requires_cuda(f):
         return f(*args, **kwargs)
     return closure
 
+class TestTrainer(BaseTrainer):
+    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, hooks=[]):
+        super(TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, hooks=hooks)
+        self.update_batch_fn = update_batch_fn
+        self.valid_batch_fn = valid_batch_fn
+
+    def update_batch(self, *args, **kwargs):
+        if self.update_batch_fn:
+            self.update_batch_fn(self, *args, **kwargs)
+
+    def validate_batch(self, *args, **kwargs):
+        if self.valid_batch_fn:
+            self.valid_batch_fn(self, *args, **kwargs)
 
 class TorchBasetrainerTest(unittest.TestCase):
     def assertTensorsEqual(self, a, b):
         return self.assertTrue(torch.eq(a,b).all())
-
-    class TestTrainer(BaseTrainer):
-        def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, hooks=[]):
-            super(TorchBasetrainerTest.TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, hooks=hooks)
-            self.update_batch_fn = update_batch_fn
-            self.valid_batch_fn = valid_batch_fn
-
-        def update_batch(self, *args, **kwargs):
-            if self.update_batch_fn:
-                self.update_batch_fn(self, *args, **kwargs)
-
-        def validate_batch(self, *args, **kwargs):
-            if self.valid_batch_fn:
-                self.valid_batch_fn(self, *args, **kwargs)
-
 
     def load_one_vector_dataset(self):
         self.dataset = TensorDataset(torch.Tensor([[1.0]]), torch.Tensor([[1.0]]))
@@ -65,7 +63,7 @@ class TorchBasetrainerTest(unittest.TestCase):
 
     def test_cant_train_negative_epochs(self):
         def update_batch_fn(trainer, x, y): pass
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.load_one_vector_dataset()
         try:
             trainer.train(dataloader=self.dataloader, epochs=-1)
@@ -79,7 +77,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             call = True
         self.model.eval()
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.assertFalse(call)
         self.assertIs(trainer.model, self.model)
         self.assertFalse(self.model.is_cuda)
@@ -99,7 +97,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertFalse(y.is_cuda)
             batchs.append((x, y))
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.load_one_vector_dataset()
         trainer.train(self.dataloader, epochs=1)
 
@@ -118,7 +116,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertEqual(trainer.step, 0)
             batchs.append((x, y))
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.load_one_vector_dataset()
         trainer.train(self.dataloader, epochs=1)
         trainer.train(self.dataloader, epochs=1)
@@ -145,7 +143,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             epochs.append(trainer.epoch)
             batchs.append((x, y))
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.load_one_vector_dataset()
         trainer.train(self.dataloader, epochs=2)
 
@@ -171,7 +169,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             steps.append(trainer.step)
             batchs.append((x, y))
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         self.load_multiple_vector_dataset()
         trainer.train(self.dataloader, epochs=1)
 
@@ -188,7 +186,7 @@ class TorchBasetrainerTest(unittest.TestCase):
 
     def test_epochs_trained_is_not_writeable(self):
         def update_batch_fn(trainer, x, y): pass
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         try:
             trainer.epochs_trained = 0
             self.fail()
@@ -200,7 +198,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertIsInstance(x, Variable)
             self.assertFalse(x.is_cuda)
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         tensors = [torch.Tensor([1]), torch.Tensor([2])]
         dataloader = DataLoader(tensors, shuffle=False)
         trainer.train(dataloader, epochs=1)
@@ -210,7 +208,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x, y):
             self.assertTrue(x.is_cuda)
             self.assertTrue(y.is_cuda)
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         trainer.cuda()
         self.assertTrue(self.model.is_cuda)
         self.load_one_vector_dataset()
@@ -222,7 +220,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertFalse(x.is_cuda)
             self.assertFalse(y.is_cuda)
         self.model.cuda()
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         trainer.cpu()
         self.assertFalse(self.model.is_cuda)
         self.load_one_vector_dataset()
@@ -245,7 +243,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
         valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn)
         trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
 
         it = iter(batchs)
@@ -260,7 +258,7 @@ class TorchBasetrainerTest(unittest.TestCase):
 
     def test_cannot_construct_with_negative_logging_frecuency(self):
         try:
-            trainer = self.__class__.TestTrainer(model=self.model, logging_frecuency=-1)
+            trainer = TestTrainer(model=self.model, logging_frecuency=-1)
             self.fail()
         except Exception as e:
             self.assertEqual(str(e), BaseTrainer.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=-1))
@@ -281,7 +279,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
         valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=3)
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=0)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=0)
         trainer.train(dataloader=train_dl, valid_dataloader=valid_dl, epochs=1)
         self.assertEqual(len(train_batchs), len(train_dl))
         self.assertEqual(len(valid_batchs), 0)
@@ -307,7 +305,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
         valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=2)
 
-        trainer = self.__class__.TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=2)
+        trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=2)
         trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
 
         it = iter(batchs)
@@ -338,7 +336,7 @@ class TorchBasetrainerTest(unittest.TestCase):
                 self.epoch += 1
 
         hook = CustomHook()
-        trainer = self.__class__.TestTrainer(model=self.model, hooks=[hook])
+        trainer = TestTrainer(model=self.model, hooks=[hook])
         self.assertIs(hook.trainer, trainer)
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epoch, 2)
@@ -362,7 +360,7 @@ class TorchBasetrainerTest(unittest.TestCase):
                 self.assertTensorsEqual(torch.stack(x), Variable(dataset.unsqueeze(0)))
                 self.epoch += 1
 
-        trainer = self.__class__.TestTrainer(model=self.model, update_batch_fn=update_batch_fn, hooks=[CustomHook()])
+        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, hooks=[CustomHook()])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epoch, 2)
 
@@ -384,6 +382,6 @@ class TorchBasetrainerTest(unittest.TestCase):
         hook_0 = CustomHook(0)
         hook_1 = CustomHook(1)
 
-        trainer = self.__class__.TestTrainer(model=self.model, hooks=[hook_0, hook_1])
+        trainer = TestTrainer(model=self.model, hooks=[hook_0, hook_1])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])
