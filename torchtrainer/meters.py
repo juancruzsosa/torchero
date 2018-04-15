@@ -1,6 +1,7 @@
 import torch
 from abc import abstractmethod
 from enum import Enum
+import copy
 
 class BaseMeter(object):
     """ Interface for all meters.
@@ -17,6 +18,9 @@ class BaseMeter(object):
     @abstractmethod
     def value(self):
         pass
+
+    def clone(self):
+        return copy.deepcopy(self)
 
 class ZeroMeasurementsError(Exception):
     def __init__(self):
