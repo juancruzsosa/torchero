@@ -26,6 +26,11 @@ class Hook(object):
         """
         pass
 
+    def log(self):
+        """ Trigger called after every log update
+        """
+        pass
+
 class HookContainer(Hook):
     def __init__(self, trainer):
         super(HookContainer, self).__init__()
@@ -46,3 +51,7 @@ class HookContainer(Hook):
 
     def post_epoch(self):
         self.signal('post_epoch')
+
+    def log(self):
+        self.signal('log')
+

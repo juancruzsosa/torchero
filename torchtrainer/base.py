@@ -69,6 +69,9 @@ class BaseTrainer(object):
 
         pass
 
+    def log(self):
+        self._hooks.log()
+
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
         for self.step, batch in enumerate(train_dataloader):
             # convert to 1-d tuple if batch was a tensor instead of a tuple
@@ -78,9 +81,11 @@ class BaseTrainer(object):
             self.update_batch(*batch)
 
             if self._is_time_to_log():
+                self.model.train(mode=False)
                 if valid_dataloader:
                     self._validate(valid_dataloader)
-                    self.model.train(mode=True)
+                self.log()
+                self.model.train(mode=True)
 
         self._epochs_trained += 1
 
@@ -124,7 +129,6 @@ class BaseTrainer(object):
         pass
 
     def _validate(self, valid_dataloader):
-        self.model.train(mode=False)
         for valid_batch in valid_dataloader:
             if isinstance(valid_batch, torch.Tensor):
                 valid_batch = (valid_batch, )
