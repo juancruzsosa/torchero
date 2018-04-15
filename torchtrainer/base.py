@@ -2,6 +2,7 @@ import torch
 from torch.autograd import Variable
 from abc import abstractmethod
 from .hooks import HookContainer
+from .meters import ZeroMeasurementsError
 
 
 class BaseTrainer(object):
@@ -27,6 +28,8 @@ class BaseTrainer(object):
         self.model = model
         self._epochs_trained = 0
         self._use_cuda = False
+        self._last_stats = {}
+        self.stats_meters = {}
 
         self._hooks = HookContainer(self)
         for hook in hooks:
@@ -50,6 +53,24 @@ class BaseTrainer(object):
         return Variable(x)
 
     @property
+    def last_stats(self):
+        """ Last statistic recopiled from stats_meters
+
+        Returns
+            dict: Dictionary of metric name and value, one for each
+            `stats_meters` that made at least one measure
+        """
+        return self._last_stats
+
+    def _compile_last_stats(self):
+        self._last_stats = {}
+        for metric_name, meter in self.stats_meters.items():
+            try:
+                self._last_stats[metric_name]  = meter.value()
+            except ZeroMeasurementsError:
+                continue
+
+    @property
     def epochs_trained(self):
         """ Total number of epochs epochs_trained
 
@@ -70,7 +91,10 @@ class BaseTrainer(object):
         pass
 
     def log(self):
+        self._compile_last_stats()
         self._hooks.log()
+        for meter in self.stats_meters.values():
+            meter.reset()
 
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
         for self.step, batch in enumerate(train_dataloader):
