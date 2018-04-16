@@ -1,11 +1,11 @@
 from .base import BaseTrainer
-from .meters import Averager
+from .meters import Averager, NullMeter
 
 class SupervisedTrainer(BaseTrainer):
     """ SupervisedTrainer
     """
 
-    def __init__(self, model, criterion, optimizer, hooks=[], logging_frecuency=1):
+    def __init__(self, model, criterion, optimizer, acc_meter=NullMeter(), val_acc_meter=None, hooks=[], logging_frecuency=1):
         """ Constructor
 
         Args:
@@ -18,8 +18,13 @@ class SupervisedTrainer(BaseTrainer):
         self.criterion = criterion
         self.optimizer = optimizer
 
+        if val_acc_meter is None:
+            val_acc_meter = acc_meter.clone()
+
         self.stats_meters['train_loss'] = Averager()
         self.stats_meters['val_loss'] = Averager()
+        self.stats_meters['train_acc'] = acc_meter
+        self.stats_meters['val_acc'] = val_acc_meter
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()
@@ -29,6 +34,7 @@ class SupervisedTrainer(BaseTrainer):
         self.optimizer.step()
 
         self.stats_meters['train_loss'].measure(loss.data[0])
+        self.stats_meters['train_acc'].measure(output.data, y.data)
 
     def validate_batch(self, x, y):
         self.optimizer.zero_grad()
@@ -36,3 +42,4 @@ class SupervisedTrainer(BaseTrainer):
         loss = self.criterion(output, y)
 
         self.stats_meters['val_loss'].measure(loss.data[0])
+        self.stats_meters['val_acc'].measure(output.data, y.data)
