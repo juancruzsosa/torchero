@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import math
 from abc import abstractmethod
 from enum import Enum
@@ -144,6 +145,39 @@ class MSE(BaseMeter):
         if self.take_sqrt:
             result = math.sqrt(result)
         return result
+
+class BinaryAccuracy(_CategoricalAccuracy):
+    """ Meter of categorical accuracy with binary targets (for normalized outputs)
+    """
+    def __init__(self, threshold=0.5, result_mode=ResultMode.NORMALIZED):
+        """ Constructor
+
+        Args:
+            threshold (float): Positive/Negative class separation threshold
+        """
+        super(BinaryAccuracy, self).__init__(result_mode=result_mode)
+        self.threshold = threshold
+
+    def _get_result(self, output, target):
+        predictions = output.squeeze(1) >= self.threshold
+        if predictions.is_cuda:
+            predictions = predictions.type(torch.cuda.LongTensor)
+        else:
+            predictions = predictions.type(torch.LongTensor)
+        return (predictions == target)
+
+class BinaryWithLogitsAccuracy(BinaryAccuracy):
+    """ Meter of categorical accuracy with binary targets with logistic
+        function (for non-normalized outputs)
+    """
+    def __init__(self, result_mode=ResultMode.NORMALIZED, threshold=0.5, activation=None):
+        super(BinaryWithLogitsAccuracy, self).__init__(threshold=threshold, result_mode=result_mode)
+        self.activation = activation
+        if self.activation is None:
+            self.activation = nn.Sigmoid()
+
+    def _get_result(self, output, target):
+        return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output), target)
 
 class Averager(BaseMeter):
     """ Meter that returns the average over all measured values
