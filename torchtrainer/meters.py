@@ -45,7 +45,7 @@ class ResultMode(Enum):
     NORMALIZED = 2
     PERCENTAGE = 3
 
-class CategoricalAccuracy(BaseMeter):
+class _CategoricalAccuracy(BaseMeter):
     """ Meter of Categorical accuracy (for more than two classes)
     """
 
@@ -70,6 +70,10 @@ class CategoricalAccuracy(BaseMeter):
         self.result = 0.0
         self.num_samples = 0
 
+    @abstractmethod
+    def _get_result(self, a, b):
+        pass
+
     def measure(self, a, b):
         if not torch.is_tensor(a):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
@@ -80,9 +84,7 @@ class CategoricalAccuracy(BaseMeter):
         if len(a.size()) != 2 or len(b.size()) != 1 or len(b) != a.size()[0]:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
 
-        predictions = a.topk(k=1, dim=1)[1].squeeze(1)
-        self.result += torch.sum(predictions == b)
-
+        self.result += torch.sum(self._get_result(a, b))
         self.num_samples += len(b)
 
     def value(self):
@@ -95,6 +97,11 @@ class CategoricalAccuracy(BaseMeter):
             return self.result / self.num_samples
         else:
             return self.result * 100.0 / self.num_samples
+
+class CategoricalAccuracy(_CategoricalAccuracy):
+    def _get_result(self, a, b):
+        predictions = a.topk(k=1, dim=1)[1].squeeze(1)
+        return (predictions == b)
 
 class MSE(BaseMeter):
     """ Meter for mean squared error metric
