@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 import unittest
 import torchtrainer
 import math
@@ -148,6 +149,95 @@ class AccuracyMetricsTests(BaseMetricsTests):
             self.fail()
         except meters.ZeroMeasurementsError as e:
             pass
+
+    def test_binary_meters_with_incresing_threholds(self):
+        a1 = torch.Tensor([[0.3]])
+        a2 = torch.Tensor([[0.5]])
+        a3 = torch.Tensor([[0.7]])
+
+        t1 = torch.LongTensor([1])
+        t2 = torch.LongTensor([0])
+
+        meter_th_p2 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
+        meter_th_p5 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
+        meter_th_p8 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+
+        self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a1, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p8, [(a2, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p5, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
+
+    def test_binary_accuracy_with_multiples_batches(self):
+        a = torch.Tensor([[0.3],
+                          [0.5],
+                          [0.7]])
+
+        t = torch.LongTensor([1, 0, 0])
+
+        meter_th_p2 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
+        meter_th_p5 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
+        meter_th_p8 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+
+        self.assertMeasureAlmostEqual(meter_th_p2, [(a, t)], 1/3)
+        self.assertMeasureAlmostEqual(meter_th_p5, [(a, t)], 0.0)
+        self.assertMeasureAlmostEqual(meter_th_p8, [(a, t)], 2/3)
+
+
+    def test_binary_accyracy_with_logits(self):
+        a1 = torch.Tensor([[-1]])
+        a2 = torch.Tensor([[0]])
+        a3 = torch.Tensor([[1]])
+
+        t1 = torch.LongTensor([1])
+        t2 = torch.LongTensor([0])
+
+        meter_th_p2 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
+        meter_th_p5 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
+        meter_th_p8 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+
+        self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a1, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p8, [(a2, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p5, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
+
+    def test_binary_accyracy_with_custom_activation(self):
+        a1 = torch.Tensor([[-1]])
+        a2 = torch.Tensor([[0]])
+        a3 = torch.Tensor([[1]])
+
+        t1 = torch.LongTensor([1])
+        t2 = torch.LongTensor([0])
+
+        meter_th_p2 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=-0.8, activation=nn.Tanh())
+        meter_th_p5 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0, activation=nn.Tanh())
+        meter_th_p8 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8, activation=nn.Tanh())
+
+        self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a1, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p5, [(a2, t1)], 1.0)
+        self.assertMeasureEqual(meter_th_p8, [(a2, t1)], 0.0)
+
+        self.assertMeasureEqual(meter_th_p2, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p5, [(a3, t2)], 0.0)
+        self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
+
 
 class MSETests(BaseMetricsTests):
     def test_meter_measure_is_always_positive(self):
