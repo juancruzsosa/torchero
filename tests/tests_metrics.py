@@ -4,7 +4,7 @@ import torchtrainer
 from torchtrainer import meters
 from torchtrainer.meters import ResultMode
 
-class AccuracyMetricsTests(unittest.TestCase):
+class BaseMetricsTests(unittest.TestCase):
     def measure_once(self, meter, batchs):
         meter.reset()
         for x_batch, y_batch in batchs:
@@ -17,6 +17,7 @@ class AccuracyMetricsTests(unittest.TestCase):
     def assertMeasureAlmostEqual(self, meter, batchs, measure):
         self.assertAlmostEqual(self.measure_once(meter, batchs), measure)
 
+class AccuracyMetricsTests(BaseMetricsTests):
     def test_classification_metter_only_checks_indices_of_maximum_value(self):
         a = torch.Tensor([[1]])
         t = torch.LongTensor([0])
@@ -147,18 +148,12 @@ class AccuracyMetricsTests(unittest.TestCase):
         except meters.ZeroMeasurementsError as e:
             pass
 
-class AveragerTests(unittest.TestCase):
+class AveragerTests(BaseMetricsTests):
     def measure_once(self, meter, xs):
         meter.reset()
         for x in xs:
             meter.measure(x)
         return meter.value()
-
-    def assertMeasureEqual(self, meter, xs, measure):
-        self.assertEqual(self.measure_once(meter, xs), measure)
-
-    def assertMeasureAlmostEqual(self, meter, xs, measure):
-        self.assertAlmostEqual(self.measure_once(meter, xs), measure)
 
     def test_averager_cannot_return_results_with_no_measures(self):
         meter = meters.Averager()
