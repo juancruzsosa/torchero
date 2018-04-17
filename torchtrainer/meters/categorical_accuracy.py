@@ -1,45 +1,8 @@
 import torch
-from torch import nn
-import math
 from abc import abstractmethod
 from enum import Enum
-import copy
-
-class BaseMeter(object):
-    """ Interface for all meters.
-    All meters should subclass this class
-    """
-    @abstractmethod
-    def measure(self, *batchs):
-        pass
-
-    @abstractmethod
-    def reset(self):
-        pass
-
-    @abstractmethod
-    def value(self):
-        pass
-
-    def clone(self):
-        return copy.deepcopy(self)
-
-class ZeroMeasurementsError(Exception):
-    def __init__(self):
-        pass
-
-    def __str__(self):
-        return "No measurements has been made"
-
-class NullMeter(BaseMeter):
-    def measure(self, *batchs):
-        pass
-
-    def reset(self):
-        pass
-
-    def value(self):
-        raise ZeroMeasurementsError()
+from torch import nn
+from .base import BaseMeter, ZeroMeasurementsError
 
 class ResultMode(Enum):
     SUM = 1
@@ -104,48 +67,6 @@ class CategoricalAccuracy(_CategoricalAccuracy):
         predictions = a.topk(k=1, dim=1)[1].squeeze(1)
         return (predictions == b)
 
-class MSE(BaseMeter):
-    """ Meter for mean squared error metric
-    """
-
-    INVALID_BATCH_DIMENSION_MESSAGE = 'Expected both tensors have at less two dimension and same shape'
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected types (FloatTensor, FloatTensor) as inputs'
-
-    def __init__(self, take_sqrt=False):
-        """ Constructor
-
-        Arguments:
-            take_sqrt (bool): Take square root in final results
-        """
-        self.take_sqrt = take_sqrt
-        self.reset()
-
-    def reset(self):
-        self.result = 0.0
-        self.num_samples = 0
-
-    def _get_result(self, a, b):
-        return torch.pow(a-b, 2)
-
-    def measure(self, a, b):
-        if not torch.is_tensor(a) or not torch.is_tensor(b):
-            raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
-
-        if len(a.size()) != 2 or b.shape != a.shape:
-            raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
-
-        self.result += torch.sum(self._get_result(a, b))
-        self.num_samples += len(b)
-
-    def value(self):
-        if self.num_samples == 0:
-            raise ZeroMeasurementsError()
-
-        result = self.result / self.num_samples
-        if self.take_sqrt:
-            result = math.sqrt(result)
-        return result
-
 class BinaryAccuracy(_CategoricalAccuracy):
     """ Meter of categorical accuracy with binary targets (for normalized outputs)
     """
@@ -178,28 +99,3 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
 
     def _get_result(self, output, target):
         return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output), target)
-
-class Averager(BaseMeter):
-    """ Meter that returns the average over all measured values
-    """
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.result = None
-        self.num_samples = 0
-
-    def measure(self, value):
-        if self.result is None:
-            self.result = value
-        else:
-            self.result += value
-
-        self.num_samples += 1
-
-    def value(self):
-        if self.num_samples == 0:
-            raise ZeroMeasurementsError()
-
-        return self.result / self.num_samples
