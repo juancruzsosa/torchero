@@ -1,6 +1,7 @@
 import torch
 import unittest
 import torchtrainer
+import math
 from torchtrainer import meters
 from torchtrainer.meters import ResultMode
 
@@ -142,6 +143,97 @@ class AccuracyMetricsTests(BaseMetricsTests):
 
     def test_cannot_get_value_with_no_measures(self):
         meter = meters.CategoricalAccuracy()
+        try:
+            meter.value()
+            self.fail()
+        except meters.ZeroMeasurementsError as e:
+            pass
+
+class MSETests(BaseMetricsTests):
+    def test_meter_measure_is_always_positive(self):
+        meter = meters.MSE()
+        sqrt_meter = meters.MSE(take_sqrt=True)
+        self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.ones(1,1))], 0)
+        self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.zeros(1,1))], 1)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,1), torch.ones(1,1))], 1)
+        self.assertMeasureEqual(meter, [(-torch.ones(1,2), torch.zeros(1,2))], 2*1)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -torch.ones(1,2))], 2*1)
+        self.assertMeasureEqual(meter, [(2*torch.ones(1,2), torch.zeros(1,2))], 4*2)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), 2*torch.ones(1,2))], 4*2)
+        self.assertMeasureEqual(meter, [(-2*torch.ones(1,2), torch.zeros(1,2))], 4*2)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], 4*2)
+        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], math.sqrt(4*2))
+
+    def test_cannot_measure_with_1d_tensors(self):
+        a = torch.Tensor([0.2])
+        t = torch.Tensor([0.1])
+        meter = meters.MSE()
+
+        try:
+            meter.measure(a,t)
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), meter.INVALID_BATCH_DIMENSION_MESSAGE)
+
+    def test_cannot_measure_with_different_shape_tensors(self):
+        a = torch.Tensor([[0.2, 0.1]])
+        t = torch.Tensor([[0.1]])
+        meter = meters.MSE()
+
+        try:
+            meter.measure(a,t)
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), meter.INVALID_BATCH_DIMENSION_MESSAGE)
+
+    def test_meter_value_average_over_batch_dimention(self):
+        meter = meters.MSE()
+        sqrt_meter = meters.MSE(take_sqrt=True)
+        self.assertMeasureEqual(meter, [(torch.ones(2,1), torch.zeros(2,1))], 1)
+        self.assertMeasureEqual(meter, [(torch.zeros(2,1), torch.ones(2,1))], 1)
+        self.assertMeasureEqual(meter, [(2*torch.ones(2,1), torch.zeros(2,1))], 4)
+        self.assertMeasureEqual(meter, [(torch.zeros(2,1), 2*torch.ones(2,1))], 4)
+        self.assertMeasureEqual(meter, [(torch.zeros(2,1), 2*torch.ones(2,1))], 4)
+        self.assertMeasureAlmostEqual(meter, [(torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], 3**2)
+        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], 3)
+
+    def test_meter_value_average_over_sum_of_measured_batch_dimentions(self):
+        meter = meters.MSE()
+        sqrt_meter = meters.MSE(take_sqrt=True)
+        self.assertMeasureAlmostEqual(meter, [(torch.ones(2,1), torch.zeros(2,1)),
+                                              (2*torch.ones(2,1), torch.zeros(2,1)),
+                                              (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], (2*1**2 + 2*2**2 + 3*3**2)/7)
+        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.ones(2,1), torch.zeros(2,1)),
+                                              (2*torch.ones(2,1), torch.zeros(2,1)),
+                                              (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], math.sqrt((2*1**2 + 2*2**2 + 3*3**2)/7))
+
+    def test_cannot_measure_with_different_type_of_tensors(self):
+        from torch.autograd import Variable
+        import numpy as np
+
+        a = [[0.2]]
+        meter = meters.MSE()
+
+        try:
+            meter.measure(np.array(a), np.array(a))
+            self.fail()
+        except TypeError as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
+
+        try:
+            meter.measure(a, a)
+            self.fail()
+        except TypeError as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
+
+        try:
+            meter.measure(Variable(torch.Tensor(a)), Variable(torch.Tensor(a)))
+            self.fail()
+        except TypeError as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
+
+    def test_cannot_get_value_with_no_measures(self):
+        meter = meters.MSE()
         try:
             meter.value()
             self.fail()
