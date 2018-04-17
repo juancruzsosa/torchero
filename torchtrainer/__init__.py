@@ -1,1 +1,1 @@
-from .trainers import SupervisedTrainer
+from .supervised_trainer import SupervisedTrainer
