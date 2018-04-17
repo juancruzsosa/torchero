@@ -24,3 +24,9 @@ class HookContainer(Hook):
 
     def log(self):
         self.signal('log')
+
+    def pre_training(self):
+        self.signal('pre_training')
+
+    def post_training(self):
+        self.signal('post_training')

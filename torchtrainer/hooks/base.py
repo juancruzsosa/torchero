@@ -28,3 +28,13 @@ class Hook(object):
         """ Trigger called after every log update
         """
         pass
+
+    def pre_training(self):
+        """ Trigger called one time before training
+        """
+        pass
+
+    def post_training(self):
+        """ Trigger called one time after training
+        """
+        pass

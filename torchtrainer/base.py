@@ -127,6 +127,8 @@ class BaseTrainer(object):
         self.total_epochs = epochs
         self.total_steps = len(dataloader)
 
+        self._hooks.pre_training()
+
         # Turn model to training mode
         self.model.train(mode=True)
 
@@ -134,6 +136,8 @@ class BaseTrainer(object):
             self._hooks.pre_epoch()
             self._train_epoch(dataloader, valid_dataloader)
             self._hooks.post_epoch()
+
+        self._hooks.post_training()
 
         # Turn model to evaluation mode
         self.model.train(mode=False)
