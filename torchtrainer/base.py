@@ -31,9 +31,10 @@ class BaseTrainer(object):
         self._last_stats = {}
         self.stats_meters = {}
 
-        self._hooks = HookContainer(self)
+        self._hooks = HookContainer()
+        self._hooks.accept(self)
         for hook in hooks:
-            self._hooks.attach(hook)
+            self._hooks.add(hook)
 
     def cuda(self):
         """ Turn model to cuda

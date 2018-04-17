@@ -2,12 +2,11 @@ from collections import deque
 from .base import Hook
 
 class HookContainer(Hook):
-    def __init__(self, trainer):
+    def __init__(self):
         super(HookContainer, self).__init__()
-        self.accept(trainer)
         self.hooks = deque()
 
-    def attach(self, hook):
+    def add(self, hook):
         hook.accept(self.trainer)
         self.hooks.append(hook)
 
