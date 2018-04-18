@@ -2,7 +2,7 @@ from .base import Hook
 from .container import HookContainer
 
 try:
-    from tqdm import tqdm
+    import tqdm
 except ImportError:
     print("tqdm not installed!")
     print("install tqdm for progress bars support.")
@@ -10,16 +10,21 @@ except ImportError:
 
 
 class ProgressBars(Hook):
-    def __init__(self):
+    def __init__(self, ascii=False, notebook=False):
+        if notebook:
+            self.tqdm = tqdm.tqdm_notebook
+        else:
+            self.tqdm = tqdm.tqdm
+
         self.step_tqdms = []
         self.step_bars = []
 
     def pre_training(self):
-        self.epoch_tqdm = tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True)
+        self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True)
         self.epoch_bar = self.epoch_tqdm.__enter__()
 
     def pre_epoch(self):
-        step_tqdm = tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True)
+        step_tqdm = self.tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
 
