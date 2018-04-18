@@ -1,8 +1,8 @@
-from .base import BaseTrainer
+from .base import BatchTrainer
 from .meters import Averager, NullMeter
 
-class SupervisedTrainer(BaseTrainer):
-    """ SupervisedTrainer
+class SupervisedTrainer(BatchTrainer):
+    """ Supervised trainer
     """
 
     def __init__(self, model, criterion, optimizer, acc_meter=NullMeter(), val_acc_meter=None, hooks=[], logging_frecuency=1):

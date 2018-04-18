@@ -5,7 +5,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from torch.autograd import Variable
 import torchtrainer
-from torchtrainer.base import BaseTrainer
+from torchtrainer.base import BatchTrainer
 from torchtrainer.hooks import Hook, History
 from torchtrainer.meters import Averager
 
@@ -32,7 +32,7 @@ def requires_cuda(f):
         return f(*args, **kwargs)
     return closure
 
-class TestTrainer(BaseTrainer):
+class TestTrainer(BatchTrainer):
     def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, hooks=[]):
         super(TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, hooks=hooks)
         self.update_batch_fn = update_batch_fn
@@ -70,7 +70,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             trainer.train(dataloader=self.dataloader, epochs=-1)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), BaseTrainer.INVALID_EPOCH_MESSAGE.format(epochs=-1))
+            self.assertEqual(str(e), BatchTrainer.INVALID_EPOCH_MESSAGE.format(epochs=-1))
 
     def test_not_appling_train_does_not_change_weights(self):
         call = False
@@ -262,7 +262,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             trainer = TestTrainer(model=self.model, logging_frecuency=-1)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), BaseTrainer.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=-1))
+            self.assertEqual(str(e), BatchTrainer.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=-1))
 
     def test_zero_logging_frecuency_not_do_validations(self):
         valid_batchs = []

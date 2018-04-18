@@ -5,9 +5,9 @@ from .hooks import HookContainer
 from .meters import ZeroMeasurementsError
 
 
-class BaseTrainer(object):
-    """ Base Trainer for all Trainer classes.
-        All trainers should subclass this class
+class BatchTrainer(object):
+    """ Abstract trainer for all trainer classes that works with batchs.
+        All those trainers should subclass this class
     """
 
     INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
