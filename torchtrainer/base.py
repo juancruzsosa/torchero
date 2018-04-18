@@ -6,7 +6,7 @@ from .meters import ZeroMeasurementsError
 
 
 class BatchTrainer(object):
-    """ Abstract trainer for all trainer classes that works with batchs.
+    """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
     """
 

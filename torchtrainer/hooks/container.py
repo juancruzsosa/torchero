@@ -2,6 +2,8 @@ from collections import deque
 from .base import Hook
 
 class HookContainer(Hook):
+    """ Hook to group multiple hook
+    """
     def __init__(self):
         super(HookContainer, self).__init__()
         self.hooks = deque()

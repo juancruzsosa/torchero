@@ -10,7 +10,17 @@ except ImportError:
 
 
 class ProgressBars(Hook):
+    """ Hook that displays progress bars to monitor training/validation metrics
+    """
+
     def __init__(self, ascii=False, notebook=False):
+        """ Constructor
+
+        Arguments:
+
+            ascii (`bool`): if true display progress bar in ASCII mode.
+            notebook (`bool`): Make outputs compatible for python notebooks
+        """
         self.ascii = ascii
         if notebook:
             self.tqdm = tqdm.tqdm_notebook

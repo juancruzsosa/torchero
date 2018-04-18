@@ -1,6 +1,8 @@
 from .base import Hook
 
 class History(Hook):
+    """ Hook that record history of all training/validation metrics
+    """
     def __init__(self):
         super(History, self).__init__()
         self.registry = []

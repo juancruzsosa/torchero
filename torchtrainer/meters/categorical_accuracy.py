@@ -10,9 +10,6 @@ class ResultMode(Enum):
     PERCENTAGE = 3
 
 class _CategoricalAccuracy(BaseMeter):
-    """ Meter of Categorical accuracy (for more than two classes)
-    """
-
     INVALID_BATCH_DIMENSION_MESSAGE = 'Expected both tensors have at less two dimension and same shape'
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
     RESULT_MODE_ERROR_MESSAGE = ('Mode {} not recognized. Options are '
@@ -63,17 +60,19 @@ class _CategoricalAccuracy(BaseMeter):
             return self.result * 100.0 / self.num_samples
 
 class CategoricalAccuracy(_CategoricalAccuracy):
+    """ Meter for accuracy categorical on categorical targets
+    """
     def _get_result(self, a, b):
         predictions = a.topk(k=1, dim=1)[1].squeeze(1)
         return (predictions == b)
 
 class BinaryAccuracy(_CategoricalAccuracy):
-    """ Meter of categorical accuracy with binary targets (for normalized outputs)
+    """ Meter for accuracy on binary targets (assuming normalized inputs)
     """
     def __init__(self, threshold=0.5, result_mode=ResultMode.NORMALIZED):
         """ Constructor
 
-        Args:
+        Arguments:
             threshold (float): Positive/Negative class separation threshold
         """
         super(BinaryAccuracy, self).__init__(result_mode=result_mode)
@@ -88,8 +87,7 @@ class BinaryAccuracy(_CategoricalAccuracy):
         return (predictions == target)
 
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
-    """ Meter of categorical accuracy with binary targets with logistic
-        function (for non-normalized outputs)
+    """ Binary accuracy meter with an integrated activation function
     """
     def __init__(self, result_mode=ResultMode.NORMALIZED, threshold=0.5, activation=None):
         super(BinaryWithLogitsAccuracy, self).__init__(threshold=threshold, result_mode=result_mode)
