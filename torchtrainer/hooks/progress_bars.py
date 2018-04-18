@@ -11,6 +11,7 @@ except ImportError:
 
 class ProgressBars(Hook):
     def __init__(self, ascii=False, notebook=False):
+        self.ascii = ascii
         if notebook:
             self.tqdm = tqdm.tqdm_notebook
         else:
@@ -20,11 +21,11 @@ class ProgressBars(Hook):
         self.step_bars = []
 
     def pre_training(self):
-        self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True)
+        self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True, ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
 
     def pre_epoch(self):
-        step_tqdm = self.tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True)
+        step_tqdm = self.tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True, ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
 
