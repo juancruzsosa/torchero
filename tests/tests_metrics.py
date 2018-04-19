@@ -4,7 +4,7 @@ import unittest
 import torchtrainer
 import math
 from torchtrainer import meters
-from torchtrainer.meters import ResultMode
+from torchtrainer.meters.aggregators import batch, scale
 
 class BaseMetricsTests(unittest.TestCase):
     def measure_once(self, meter, batchs):
@@ -56,9 +56,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t3 = torch.LongTensor([1, 0])
         t4 = torch.LongTensor([1, 1])
 
-        meter_normalized = meters.CategoricalAccuracy(result_mode=ResultMode.NORMALIZED)
-        meter_sum = meters.CategoricalAccuracy(result_mode=ResultMode.SUM)
-        meter_percentage = meters.CategoricalAccuracy(result_mode=ResultMode.PERCENTAGE)
+        meter_normalized = meters.CategoricalAccuracy(aggregator=batch.Average())
+        meter_sum = meters.CategoricalAccuracy(aggregator=batch.Sum())
+        meter_percentage = meters.CategoricalAccuracy(aggregator=scale.percentage(batch.Average()))
 
         self.assertMeasureAlmostEqual(meter_normalized, [(a, t1)], 1/2)
         self.assertMeasureAlmostEqual(meter_normalized, [(a, t2)], 1)
@@ -132,9 +132,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t1 = torch.LongTensor([0, 0])
         t2 = torch.LongTensor([2])
 
-        meter_normalized = meters.CategoricalAccuracy(result_mode=ResultMode.NORMALIZED)
-        meter_sum = meters.CategoricalAccuracy(result_mode=ResultMode.SUM)
-        meter_percentage = meters.CategoricalAccuracy(result_mode=ResultMode.PERCENTAGE)
+        meter_normalized = meters.CategoricalAccuracy(aggregator=batch.Average())
+        meter_sum = meters.CategoricalAccuracy(aggregator=batch.Sum())
+        meter_percentage = meters.CategoricalAccuracy(aggregator=scale.percentage(batch.Average()))
 
         self.assertMeasureAlmostEqual(meter_normalized, [(a1, t1), (a2, t2)], 2/3)
 
@@ -158,9 +158,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
 
-        meter_th_p2 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
-        meter_th_p5 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
-        meter_th_p8 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+        meter_th_p2 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.2)
+        meter_th_p5 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.5)
+        meter_th_p8 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.8)
 
         self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
         self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)
@@ -181,9 +181,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
 
         t = torch.LongTensor([1, 0, 0])
 
-        meter_th_p2 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
-        meter_th_p5 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
-        meter_th_p8 = meters.BinaryAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+        meter_th_p2 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.2)
+        meter_th_p5 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.5)
+        meter_th_p8 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.8)
 
         self.assertMeasureAlmostEqual(meter_th_p2, [(a, t)], 1/3)
         self.assertMeasureAlmostEqual(meter_th_p5, [(a, t)], 0.0)
@@ -198,9 +198,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
 
-        meter_th_p2 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.2)
-        meter_th_p5 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.5)
-        meter_th_p8 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8)
+        meter_th_p2 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=0.2)
+        meter_th_p5 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=0.5)
+        meter_th_p8 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=0.8)
 
         self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
         self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)
@@ -222,9 +222,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
 
-        meter_th_p2 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=-0.8, activation=nn.Tanh())
-        meter_th_p5 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0, activation=nn.Tanh())
-        meter_th_p8 = meters.BinaryWithLogitsAccuracy(result_mode=ResultMode.NORMALIZED, threshold=0.8, activation=nn.Tanh())
+        meter_th_p2 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=-0.8, activation=nn.Tanh())
+        meter_th_p5 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=0, activation=nn.Tanh())
+        meter_th_p8 = meters.BinaryWithLogitsAccuracy(aggregator=batch.Average(), threshold=0.8, activation=nn.Tanh())
 
         self.assertMeasureEqual(meter_th_p2, [(a1, t1)], 1.0)
         self.assertMeasureEqual(meter_th_p5, [(a1, t1)], 0.0)

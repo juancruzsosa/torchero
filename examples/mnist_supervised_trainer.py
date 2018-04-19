@@ -11,7 +11,9 @@ from torchvision.datasets import MNIST
 from torchvision import transforms
 import torchtrainer
 from torchtrainer import SupervisedTrainer
-from torchtrainer.meters import CategoricalAccuracy, ResultMode
+from torchtrainer.meters import CategoricalAccuracy
+from torchtrainer.meters.aggregators.batch import Average
+from torchtrainer.meters.aggregators.scale import percentage
 from torchtrainer.hooks import ProgressBars as Logger
 
 class Network(nn.Module):
@@ -59,7 +61,7 @@ def main():
                                 optimizer=optimizer,
                                 criterion=criterion,
                                 logging_frecuency=args.logging_frecuency,
-                                acc_meter=CategoricalAccuracy(result_mode=ResultMode.PERCENTAGE),
+                                acc_meter=CategoricalAccuracy(aggregator=percentage(Average())),
                                 hooks=[Logger()])
     trainer.train(dataloader=train_dl, valid_dataloader=test_dl, epochs=args.epochs)
 
