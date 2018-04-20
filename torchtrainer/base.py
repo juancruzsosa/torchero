@@ -1,11 +1,11 @@
 import torch
 from torch.autograd import Variable
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from .hooks import HookContainer
 from .meters import ZeroMeasurementsError
 
 
-class BatchTrainer(object):
+class BatchTrainer(object, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
     """

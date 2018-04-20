@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 import copy
 
 class ZeroMeasurementsError(Exception):
@@ -8,7 +8,7 @@ class ZeroMeasurementsError(Exception):
     def __str__(self):
         return "No measurements has been made"
 
-class BaseMeter(object):
+class BaseMeter(object, metaclass=ABCMeta):
     """ Interface for all meters.
     All meters should subclass this class
     """

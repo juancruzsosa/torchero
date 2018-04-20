@@ -5,11 +5,13 @@ class Scale(Aggregator):
         self.aggregator = aggregator
         self.scale = scale
 
-    def init(self):
+    def initial_value(self):
         return self.aggregator.init()
 
     def combine(self, old_result, result):
-        return self.aggregator.combine(old_result, result)
+        result =  self.aggregator.combine(old_result, result)
+        self._num_samples += self.aggregator._num_samples
+        return result
 
     def final_value(self, value):
         return self.aggregator.final_value(value) * self.scale

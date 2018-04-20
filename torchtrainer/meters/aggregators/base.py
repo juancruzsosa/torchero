@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from .. import ZeroMeasurementsError
 
 class Aggregator(object, metaclass=ABCMeta):
