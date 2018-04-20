@@ -59,6 +59,8 @@ class AccuracyMetricsTests(BaseMetricsTests):
         meter_normalized = meters.CategoricalAccuracy(aggregator=batch.Average())
         meter_sum = meters.CategoricalAccuracy(aggregator=batch.Sum())
         meter_percentage = meters.CategoricalAccuracy(aggregator=scale.percentage(batch.Average()))
+        meter_maximum = meters.CategoricalAccuracy(aggregator=batch.Maximum())
+        meter_minimum = meters.CategoricalAccuracy(aggregator=batch.Minimum())
 
         self.assertMeasureAlmostEqual(meter_normalized, [(a, t1)], 1/2)
         self.assertMeasureAlmostEqual(meter_normalized, [(a, t2)], 1)
@@ -74,6 +76,16 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureAlmostEqual(meter_percentage, [(a, t2)], 100.0)
         self.assertMeasureAlmostEqual(meter_percentage, [(a, t3)], 0.0)
         self.assertMeasureAlmostEqual(meter_percentage, [(a, t4)], 50.0)
+
+        self.assertMeasureAlmostEqual(meter_maximum, [(a, t1)], 1)
+        self.assertMeasureAlmostEqual(meter_maximum, [(a, t2)], 1)
+        self.assertMeasureAlmostEqual(meter_maximum, [(a, t3)], 0)
+        self.assertMeasureAlmostEqual(meter_maximum, [(a, t4)], 1)
+
+        self.assertMeasureAlmostEqual(meter_minimum, [(a, t1)], 0)
+        self.assertMeasureAlmostEqual(meter_minimum, [(a, t2)], 1)
+        self.assertMeasureAlmostEqual(meter_minimum, [(a, t3)], 0)
+        self.assertMeasureAlmostEqual(meter_minimum, [(a, t4)], 0)
 
     def test_cannot_measure_with_1d_tensors(self):
         a = torch.Tensor([0.1])
@@ -135,12 +147,14 @@ class AccuracyMetricsTests(BaseMetricsTests):
         meter_normalized = meters.CategoricalAccuracy(aggregator=batch.Average())
         meter_sum = meters.CategoricalAccuracy(aggregator=batch.Sum())
         meter_percentage = meters.CategoricalAccuracy(aggregator=scale.percentage(batch.Average()))
+        meter_maximum = meters.CategoricalAccuracy(aggregator=batch.Maximum())
+        meter_minimum = meters.CategoricalAccuracy(aggregator=batch.Minimum())
 
         self.assertMeasureAlmostEqual(meter_normalized, [(a1, t1), (a2, t2)], 2/3)
-
         self.assertMeasureAlmostEqual(meter_sum, [(a1, t1), (a2, t2)], 2)
-
         self.assertMeasureAlmostEqual(meter_percentage, [(a1, t1), (a2, t2)], 2*100/3)
+        self.assertMeasureAlmostEqual(meter_maximum, [(a1, t1), (a2, t2)], 1)
+        self.assertMeasureAlmostEqual(meter_minimum, [(a1, t1), (a2, t2)], 0)
 
     def test_cannot_get_value_with_no_measures(self):
         meter = meters.CategoricalAccuracy()
