@@ -48,6 +48,29 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureEqual(meter, [(a3, t2)], 0.0)
         self.assertMeasureEqual(meter, [(a3, t3)], 1.0)
 
+    def test_classification_with_k_greater_than_one_search_top_k_indices(self):
+        a1 = torch.Tensor([[0.5, 0.4, 0.1]])
+        a2 = torch.Tensor([[2, 3, 5]])
+        a3 = torch.Tensor([[20, 5, 10]])
+
+        t1 = torch.LongTensor([0])
+        t2 = torch.LongTensor([1])
+        t3 = torch.LongTensor([2])
+
+        meter = meters.CategoricalAccuracy(k=2)
+        self.assertMeasureEqual(meter, [(a1, t1)], 1)
+        self.assertMeasureEqual(meter, [(a1, t2)], 1)
+        self.assertMeasureEqual(meter, [(a1, t3)], 0)
+
+        self.assertMeasureEqual(meter, [(a2, t1)], 0)
+        self.assertMeasureEqual(meter, [(a2, t2)], 1)
+        self.assertMeasureEqual(meter, [(a2, t3)], 1)
+
+        self.assertMeasureEqual(meter, [(a3, t1)], 1)
+        self.assertMeasureEqual(meter, [(a3, t2)], 0)
+        self.assertMeasureEqual(meter, [(a3, t3)], 1)
+
+
     def test_size_average_option_average_results_over_the_batch_dimension(self):
         a = torch.Tensor([[0.55, 0.45],
                           [-1.0, 2.0]])
