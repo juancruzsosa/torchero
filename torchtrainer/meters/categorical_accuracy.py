@@ -49,9 +49,12 @@ class _CategoricalAccuracy(BaseMeter):
 class CategoricalAccuracy(_CategoricalAccuracy):
     """ Meter for accuracy categorical on categorical targets
     """
+    def __init__(self, k=1, aggregator=None):
+        super(CategoricalAccuracy, self).__init__(aggregator=aggregator)
+        self.k = k
+
     def _get_result(self, a, b):
-        predictions = a.topk(k=1, dim=1)[1].squeeze(1)
-        return (predictions == b)
+        return (a.topk(k=self.k, dim=1)[1] == b.unsqueeze(-1))
 
 class BinaryAccuracy(_CategoricalAccuracy):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
