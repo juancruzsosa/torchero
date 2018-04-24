@@ -412,6 +412,8 @@ class HooksTests(unittest.TestCase):
         trainer.stats_meters['v_c'] = Averager()
         self.assertEqual(trainer.last_stats, {})
 
+        self.assertEqual(set(trainer.meters_names()), set(['t_c', 'v_c']))
+
         trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
 
         expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},

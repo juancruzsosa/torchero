@@ -53,6 +53,11 @@ class BatchTrainer(object, metaclass=ABCMeta):
             x = x.cuda()
         return Variable(x)
 
+    def meters_names(self):
+        """ Returns the meters names
+        """
+        return sorted(self.stats_meters.keys())
+
     @property
     def last_stats(self):
         """ Last statistic recopiled from stats_meters
