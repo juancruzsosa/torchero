@@ -1,3 +1,4 @@
+import os
 import sys
 import unittest
 import torch
@@ -6,7 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.autograd import Variable
 import torchtrainer
 from torchtrainer.base import BatchTrainer
-from torchtrainer.hooks import Hook, History
+from torchtrainer.hooks import Hook, History, CSVExporter
 from torchtrainer.meters import Averager
 
 class DummyModel(nn.Module):
@@ -388,6 +389,9 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])
 
 class HooksTests(unittest.TestCase):
+    def setUp(self):
+        self.stats_filename = 'stats.csv'
+
     def test_history_hook_register_every_training_stat(self):
         self.model = DummyModel()
         train_dataset = torch.arange(10).view(-1, 1)
@@ -421,3 +425,159 @@ class HooksTests(unittest.TestCase):
 
         self.assertEqual(hook.registry, expected_registry)
         self.assertEqual(trainer.last_stats, {'t_c': 7.0, 'v_c': 4.5})
+
+    def test_csv_exporter_print_header_at_begining_of_training(self):
+        self.model = DummyModel()
+        dataset = torch.Tensor([])
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=False)
+        self.assertFalse(os.path.exists(self.stats_filename))
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dl, epochs=1)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 1)
+            self.assertEqual(lines[0], 'epoch,step,c')
+
+    def test_csv_exporter_stats_write_stats_to_csv_after_every_log(self):
+        self.model = DummyModel()
+        dataset = torch.arange(10).view(-1, 1)
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=False)
+        self.assertFalse(os.path.exists(self.stats_filename))
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dl, epochs=1)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[0], 'epoch,step,c\n')
+            self.assertEqual(lines[1], '0,4,2.0\n')
+            self.assertEqual(lines[2], '0,9,7.0')
+
+    def test_export_stats_can_append_stats_with_matching_cols_to_previous_training(self):
+        self.model = DummyModel()
+        dataset = torch.arange(10).view(-1, 1)
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=True)
+        self.assertFalse(os.path.exists(self.stats_filename))
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dl, epochs=1)
+        trainer.train(dl, epochs=1)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 5)
+            self.assertEqual(lines[0], 'epoch,step,c\n')
+            self.assertEqual(lines[1], '0,4,2.0\n')
+            self.assertEqual(lines[2], '0,9,7.0\n')
+            self.assertEqual(lines[3], '1,4,2.0\n')
+            self.assertEqual(lines[4], '1,9,7.0')
+
+    def test_csv_exporter_exports_only_selected_columns(self):
+        self.model = DummyModel()
+        dataset = torch.arange(10).view(-1, 1)
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'step'])
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dl, epochs=1)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[0], 'epoch,step\n')
+            self.assertEqual(lines[1], '0,4\n')
+            self.assertEqual(lines[2], '0,9')
+
+    def test_csv_exporter_exports_empty_value_in_column_cell_if_associated_metric_does_not_exist(self):
+        self.model = DummyModel()
+        dataset = torch.arange(10).view(-1, 1)
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'v', 't'])
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(x.data[0][0])
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+
+        trainer.train(dl, epochs=1)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[0], 'epoch,v,t\n')
+            self.assertEqual(lines[1], '0,,2.0\n')
+            self.assertEqual(lines[2], '0,,7.0')
+
+    def test_csv_exporter_overwrite_entire_file_if_append_is_false(self):
+        self.model = DummyModel()
+        dataset = torch.arange(10).view(-1, 1)
+
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        hook = CSVExporter(output=self.stats_filename, append=False)
+
+        trainer = TestTrainer(model=self.model,
+                              hooks=[hook],
+                              logging_frecuency=5)
+
+        trainer.train(dl, epochs=1)
+        trainer.train(dl, epochs=2)
+
+        with open(self.stats_filename, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 5)
+            self.assertEqual(lines[0], 'epoch,step\n')
+            self.assertEqual(lines[1], '1,4\n')
+            self.assertEqual(lines[2], '1,9\n')
+            self.assertEqual(lines[3], '2,4\n')
+            self.assertEqual(lines[4], '2,9')
+
+    def tearDown(self):
+        if os.path.exists(self.stats_filename):
+            os.remove(self.stats_filename)
