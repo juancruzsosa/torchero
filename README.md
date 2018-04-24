@@ -19,6 +19,7 @@
 * `hooks.History`: Hook that record history of all training/validation metrics
 * `hooks.ProgressBars`: Hook that displays progress bars to monitor training/validation metrics
 * `hooks.Container`: Hook to group multiple hooks
+* `hooks.CSVExporter`: Hook that export training/validation stadistics to a csv file
 
 ### Metrics ###
 
