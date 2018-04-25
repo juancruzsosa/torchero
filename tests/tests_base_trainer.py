@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 import unittest
 import torch
 from torch import nn
@@ -7,7 +8,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.autograd import Variable
 import torchtrainer
 from torchtrainer.base import BatchTrainer
-from torchtrainer.hooks import Hook, History, CSVExporter
+from torchtrainer.hooks import Hook, History, CSVExporter, ModelCheckpoint, MeterNotFound
 from torchtrainer.meters import Averager
 
 class DummyModel(nn.Module):
@@ -582,6 +583,240 @@ class HooksTests(unittest.TestCase):
             self.assertEqual(lines[3], '2,4\n')
             self.assertEqual(lines[4], '2,9')
 
+    def test_checkpoint_hook_doesnt_create_file_if_no_training(self):
+        model = DummyModel()
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
+        dataset = torch.Tensor([])
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dataloader, epochs=0)
+        self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
+        self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_doesnt_create_files_if_load_raises(self):
+        model = DummyModel()
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
+        dataset = torch.Tensor([])
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1)
+        trainer.stats_meters['c'] = Averager()
+
+        try:
+            checkpoint.load_best()
+        except Exception:
+            self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
+            self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_raises_if_meter_not_found_in_meters_names(self):
+        model = DummyModel()
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 2)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1)
+        try:
+            trainer.train(dataloader, epochs=1)
+            self.fail()
+        except MeterNotFound as e:
+            self.assertEqual(trainer.epochs_trained, 0)
+        self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_raises_if_meter_not_found(self):
+        model = DummyModel()
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 2)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1)
+        trainer.stats_meters['t'] = Averager()
+
+        try:
+            trainer.train(dataloader, epochs=1)
+            self.fail()
+        except MeterNotFound as e:
+            self.assertEqual(trainer.epochs_trained, 1)
+        self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_persist_model_on_first_trained_epoch(self):
+        model = nn.Linear(1, 1, bias=False)
+        w = model.weight.data[0][0]
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
+        dataset = torch.ones(2, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(0)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dataloader, epochs=1)
+
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        model.weight.data.random_()
+        data_best = checkpoint.load_best()
+        self.assertEqual(data_best, {'epoch':1, 'c':0})
+        self.assertEqual(model.weight.data[0][0], w)
+        self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_load_best_raises_if_metric_not_found(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.ones(1,1)
+        w = model.weight.data[0][0]
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
+        dataset = torch.ones(2, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['c'].measure(0)
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['c'] = Averager()
+
+        trainer.train(dataloader, epochs=1)
+
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+
+        model.weight.data = torch.zeros(1,1)
+
+        try:
+            checkpoint.load_best()
+            self.fail()
+        except MeterNotFound:
+            self.assertEqual(model.weight.data[0][0], 0)
+
+        self.assertEqual(os.listdir(self.temp_dir), [])
+
+    def test_checkpoint_hook_not_persist_model_if_model_not_gets_better(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.zeros(1,1)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        measures = [1, 2]
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(measures[trainer.epoch])
+            trainer.model.weight.data.add_(torch.ones(1,1))
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        trainer.train(dataloader, epochs=2)
+        data_best = checkpoint.load_best()
+
+        self.assertEqual(data_best, {'epoch':1, 't':1})
+        self.assertEqual(model.weight.data[0][0], 1)
+
+    def test_checkpoint_hook_repersist_model_if_model_gets_better(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.zeros(1,1)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        measures = [2, 1]
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(measures[trainer.epoch])
+            trainer.model.weight.data.add_(torch.ones(1,1))
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        trainer.train(dataloader, epochs=2)
+        data_best = checkpoint.load_best()
+
+        self.assertEqual(data_best, {'epoch':2, 't':1})
+        self.assertEqual(model.weight.data[0][0], 2)
+
+    def test_checkpoint_hook_best_epoch_is_on_total_trained_epochs(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.zeros(1,1)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        measures = [2, 3, 1]
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.model.weight.data.add_(torch.ones(1,1))
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        trainer.train(dataloader, epochs=2)
+        trainer.train(dataloader, epochs=1)
+        data_best = checkpoint.load_best()
+
+        self.assertEqual(data_best, {'epoch':3, 't':1})
+        self.assertEqual(model.weight.data[0][0], 3)
+
+    def test_checkpoint_hook_load_best_epoch_reload_best_training_accuracy(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.zeros(1,1)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        measures = [2, 1, 3, 4]
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.model.weight.data.add_(torch.ones(1,1))
+
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        trainer.train(dataloader, epochs=3)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        trainer = TestTrainer(model=model,
+                              hooks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        best = checkpoint.load_best()
+        trainer.train(dataloader, epochs=1)
+        data_best = checkpoint.load_best()
+
+        self.assertEqual(data_best, {'epoch':2, 't':1})
+        self.assertEqual(model.weight.data[0][0], 2)
+
     def tearDown(self):
+        shutil.rmtree(self.temp_dir)
         if os.path.exists(self.stats_filename):
             os.remove(self.stats_filename)
+        if os.path.exists(self.checkpoint_file + '.zip'):
+            os.remove(self.checkpoint_file + '.zip')
