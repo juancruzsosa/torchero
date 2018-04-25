@@ -1,52 +1,5 @@
-import os
-import sys
-import shutil
-import unittest
-import torch
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
+from .common import *
 from torch.autograd import Variable
-import torchtrainer
-from torchtrainer.base import BatchTrainer
-from torchtrainer.hooks import Hook, History, CSVExporter, ModelCheckpoint, MeterNotFound
-from torchtrainer.meters import Averager
-
-class DummyModel(nn.Module):
-    def __init__(self):
-        super(DummyModel, self).__init__()
-        self.train(mode=True)
-        self.is_cuda = False
-
-    def cuda(self):
-        self.is_cuda = True
-
-    def cpu(self):
-        self.is_cuda = False
-
-    def forward(self, x):
-        return x
-
-def requires_cuda(f):
-    def closure(*args, **kwargs):
-        if not torch.cuda.is_available():
-            print("Skipping `{}´ test cause use CUDA but CUDA isn't available !!".format(f.__name__), file=sys.stderr)
-            return
-        return f(*args, **kwargs)
-    return closure
-
-class TestTrainer(BatchTrainer):
-    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, hooks=[]):
-        super(TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, hooks=hooks)
-        self.update_batch_fn = update_batch_fn
-        self.valid_batch_fn = valid_batch_fn
-
-    def update_batch(self, *args, **kwargs):
-        if self.update_batch_fn:
-            self.update_batch_fn(self, *args, **kwargs)
-
-    def validate_batch(self, *args, **kwargs):
-        if self.valid_batch_fn:
-            self.valid_batch_fn(self, *args, **kwargs)
 
 class TorchBasetrainerTest(unittest.TestCase):
     def assertTensorsEqual(self, a, b):
@@ -60,6 +13,14 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.dataset = TensorDataset(torch.Tensor([[0.0], [1.0], [-1.0], [-2.0]]),
                                      torch.Tensor([[1.0], [0.0], [1.0], [0.0]]))
         self.dataloader = DataLoader(self.dataset, batch_size=2, shuffle=False)
+
+    def load_arange_training_dataset(self, limit, batch_size):
+        self.training_dataset = torch.arange(limit).view(limit, 1)
+        self.training_dataloader = DataLoader(self.training_dataset, batch_size=batch_size, shuffle=False)
+
+    def load_arange_validation_dataset(self, limit, batch_size):
+        self.validation_dataset = torch.arange(limit).view(limit, 1)
+        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size, shuffle=False)
 
     def setUp(self):
         self.model = DummyModel()
@@ -232,8 +193,8 @@ class TorchBasetrainerTest(unittest.TestCase):
     def test_validate_batch_iterate_over_every_valid_batch_after_each_train_batch(self):
         batchs = []
 
-        train_dataset = [torch.Tensor([i]) for i in range(4)]
-        valid_dataset = [torch.Tensor([-i]) for i in range(5)]
+        self.load_arange_training_dataset(4, 1)
+        self.load_arange_validation_dataset(5, 1)
 
         def update_batch_fn(trainer, x):
             self.assertTrue(self.model.training)
@@ -243,18 +204,15 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertFalse(self.model.training)
             batchs.append(x)
 
-        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
-        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
-
         trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn)
-        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         it = iter(batchs)
-        for true_train_batch in train_dl:
+        for true_train_batch in self.training_dataloader:
             train_batch = next(it)
             self.assertIsInstance(train_batch, Variable)
             self.assertTensorsEqual(train_batch.data, true_train_batch)
-            for true_valid_batch in valid_dl:
+            for true_valid_batch in self.validation_dataloader:
                 valid_batch = next(it)
                 self.assertIsInstance(valid_batch, Variable)
                 self.assertTensorsEqual(valid_batch.data, true_valid_batch)
@@ -270,8 +228,8 @@ class TorchBasetrainerTest(unittest.TestCase):
         valid_batchs = []
         train_batchs = []
 
-        train_dataset = [torch.Tensor([i]) for i in range(4)]
-        valid_dataset = [torch.Tensor([-i]) for i in range(5)]
+        self.load_arange_training_dataset(4, 2)
+        self.load_arange_validation_dataset(5, 3)
 
         def update_batch_fn(trainer, x):
             train_batchs.append(x)
@@ -279,23 +237,20 @@ class TorchBasetrainerTest(unittest.TestCase):
         def validate_batch_fn(trainer, x):
             valid_batchs.append(x)
 
-        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
-        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=3)
-
         trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=0)
-        trainer.train(dataloader=train_dl, valid_dataloader=valid_dl, epochs=1)
-        self.assertEqual(len(train_batchs), len(train_dl))
+        trainer.train(dataloader=self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
+        self.assertEqual(len(train_batchs), len(self.training_dataloader))
         self.assertEqual(len(valid_batchs), 0)
 
-        for true_batch, batch in zip(train_dl, train_batchs):
+        for true_batch, batch in zip(self.training_dataloader, train_batchs):
             self.assertIsInstance(batch, Variable)
             self.assertTensorsEqual(batch.data, true_batch)
 
     def test_validate_batch_iterate_over_every_valid_batch_after_each_logging_frecuency_batchs(self):
         batchs = []
 
-        train_dataset = [torch.Tensor([i]) for i in range(10)]
-        valid_dataset = [torch.Tensor([-i]) for i in range(4)]
+        self.load_arange_training_dataset(10, 2)
+        self.load_arange_validation_dataset(4, 2)
 
         def update_batch_fn(trainer, x):
             self.assertTrue(self.model.training)
@@ -305,30 +260,25 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertFalse(self.model.training)
             batchs.append(x)
 
-        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=2)
-        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=2)
-
         trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=2)
-        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         it = iter(batchs)
 
         i = 0
-        for true_train_batch in train_dl:
+        for true_train_batch in self.training_dataloader:
             train_batch = next(it)
             self.assertIsInstance(train_batch, Variable)
             self.assertTensorsEqual(train_batch.data, true_train_batch)
             if i % 2 == 1:
-                for true_valid_batch in valid_dl:
+                for true_valid_batch in self.validation_dataloader:
                     valid_batch = next(it)
                     self.assertIsInstance(valid_batch, Variable)
                     self.assertTensorsEqual(valid_batch.data, true_valid_batch)
             i += 1
 
     def test_pre_epoch_hooks_are_triggered_before_every_epoch(self):
-        dataset = torch.arange(4).view(-1,1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=2)
+        self.load_arange_training_dataset(4, 2)
 
         class CustomHook(Hook):
             def __init__(hook):
@@ -341,7 +291,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         hook = CustomHook()
         trainer = TestTrainer(model=self.model, hooks=[hook])
         self.assertIs(hook.trainer, trainer)
-        trainer.train(dl, epochs=2)
+        trainer.train(self.training_dataloader, epochs=2)
         self.assertEqual(self.epoch, 2)
 
     def test_post_epoch_hooks_are_triggered_before_every_epoch(self):
@@ -388,435 +338,3 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer = TestTrainer(model=self.model, hooks=[hook_0, hook_1])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])
-
-class HooksTests(unittest.TestCase):
-    def setUp(self):
-        self.temp_dir = os.path.join('/', 'tmp', 'torchtrainer')
-        if not os.path.exists(self.temp_dir):
-            os.makedirs(self.temp_dir)
-        self.stats_filename = 'stats.csv'
-        self.checkpoint_file = 'checkpoint'
-
-    def test_history_hook_register_every_training_stat(self):
-        self.model = DummyModel()
-        train_dataset = torch.arange(10).view(-1, 1)
-        valid_dataset = torch.arange(10).view(-1, 1)
-
-        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
-        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
-        hook = History()
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t_c'].measure(x.data[0][0])
-
-        def validate_batch(trainer, x):
-            trainer.stats_meters['v_c'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch,
-                              valid_batch_fn=validate_batch)
-        trainer.stats_meters['t_c'] = Averager()
-        trainer.stats_meters['v_c'] = Averager()
-        self.assertEqual(trainer.last_stats, {})
-
-        self.assertEqual(set(trainer.meters_names()), set(['t_c', 'v_c']))
-
-        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
-
-        expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
-                             {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
-
-        self.assertEqual(hook.registry, expected_registry)
-        self.assertEqual(trainer.last_stats, {'t_c': 7.0, 'v_c': 4.5})
-
-    def test_csv_exporter_print_header_at_begining_of_training(self):
-        self.model = DummyModel()
-        dataset = torch.Tensor([])
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
-        self.assertFalse(os.path.exists(self.stats_filename))
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dl, epochs=1)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 1)
-            self.assertEqual(lines[0], 'epoch,step,c')
-
-    def test_csv_exporter_stats_write_stats_to_csv_after_every_log(self):
-        self.model = DummyModel()
-        dataset = torch.arange(10).view(-1, 1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
-        self.assertFalse(os.path.exists(self.stats_filename))
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dl, epochs=1)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 3)
-            self.assertEqual(lines[0], 'epoch,step,c\n')
-            self.assertEqual(lines[1], '0,4,2.0\n')
-            self.assertEqual(lines[2], '0,9,7.0')
-
-    def test_export_stats_can_append_stats_with_matching_cols_to_previous_training(self):
-        self.model = DummyModel()
-        dataset = torch.arange(10).view(-1, 1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=True)
-        self.assertFalse(os.path.exists(self.stats_filename))
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dl, epochs=1)
-        trainer.train(dl, epochs=1)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 5)
-            self.assertEqual(lines[0], 'epoch,step,c\n')
-            self.assertEqual(lines[1], '0,4,2.0\n')
-            self.assertEqual(lines[2], '0,9,7.0\n')
-            self.assertEqual(lines[3], '1,4,2.0\n')
-            self.assertEqual(lines[4], '1,9,7.0')
-
-    def test_csv_exporter_exports_only_selected_columns(self):
-        self.model = DummyModel()
-        dataset = torch.arange(10).view(-1, 1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'step'])
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dl, epochs=1)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 3)
-            self.assertEqual(lines[0], 'epoch,step\n')
-            self.assertEqual(lines[1], '0,4\n')
-            self.assertEqual(lines[2], '0,9')
-
-    def test_csv_exporter_exports_empty_value_in_column_cell_if_associated_metric_does_not_exist(self):
-        self.model = DummyModel()
-        dataset = torch.arange(10).view(-1, 1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'v', 't'])
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(x.data[0][0])
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-
-        trainer.train(dl, epochs=1)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 3)
-            self.assertEqual(lines[0], 'epoch,v,t\n')
-            self.assertEqual(lines[1], '0,,2.0\n')
-            self.assertEqual(lines[2], '0,,7.0')
-
-    def test_csv_exporter_overwrite_entire_file_if_append_is_false(self):
-        self.model = DummyModel()
-        dataset = torch.arange(10).view(-1, 1)
-
-        dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
-
-        trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
-                              logging_frecuency=5)
-
-        trainer.train(dl, epochs=1)
-        trainer.train(dl, epochs=2)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 5)
-            self.assertEqual(lines[0], 'epoch,step\n')
-            self.assertEqual(lines[1], '1,4\n')
-            self.assertEqual(lines[2], '1,9\n')
-            self.assertEqual(lines[3], '2,4\n')
-            self.assertEqual(lines[4], '2,9')
-
-    def test_checkpoint_hook_doesnt_create_file_if_no_training(self):
-        model = DummyModel()
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
-        dataset = torch.Tensor([])
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dataloader, epochs=0)
-        self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
-        self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_doesnt_create_files_if_load_raises(self):
-        model = DummyModel()
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
-        dataset = torch.Tensor([])
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1)
-        trainer.stats_meters['c'] = Averager()
-
-        try:
-            checkpoint.load_best()
-        except Exception:
-            self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
-            self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_raises_if_meter_not_found_in_meters_names(self):
-        model = DummyModel()
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 2)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1)
-        try:
-            trainer.train(dataloader, epochs=1)
-            self.fail()
-        except MeterNotFound as e:
-            self.assertEqual(trainer.epochs_trained, 0)
-        self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_raises_if_meter_not_found(self):
-        model = DummyModel()
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 2)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1)
-        trainer.stats_meters['t'] = Averager()
-
-        try:
-            trainer.train(dataloader, epochs=1)
-            self.fail()
-        except MeterNotFound as e:
-            self.assertEqual(trainer.epochs_trained, 1)
-        self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_persist_model_on_first_trained_epoch(self):
-        model = nn.Linear(1, 1, bias=False)
-        w = model.weight.data[0][0]
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
-        dataset = torch.ones(2, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(0)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dataloader, epochs=1)
-
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        model.weight.data.random_()
-        data_best = checkpoint.load_best()
-        self.assertEqual(data_best, {'epoch':1, 'c':0})
-        self.assertEqual(model.weight.data[0][0], w)
-        self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_load_best_raises_if_metric_not_found(self):
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.ones(1,1)
-        w = model.weight.data[0][0]
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
-        dataset = torch.ones(2, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(0)
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
-
-        trainer.train(dataloader, epochs=1)
-
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-
-        model.weight.data = torch.zeros(1,1)
-
-        try:
-            checkpoint.load_best()
-            self.fail()
-        except MeterNotFound:
-            self.assertEqual(model.weight.data[0][0], 0)
-
-        self.assertEqual(os.listdir(self.temp_dir), [])
-
-    def test_checkpoint_hook_not_persist_model_if_model_not_gets_better(self):
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-        measures = [1, 2]
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epoch])
-            trainer.model.weight.data.add_(torch.ones(1,1))
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-        trainer.train(dataloader, epochs=2)
-        data_best = checkpoint.load_best()
-
-        self.assertEqual(data_best, {'epoch':1, 't':1})
-        self.assertEqual(model.weight.data[0][0], 1)
-
-    def test_checkpoint_hook_repersist_model_if_model_gets_better(self):
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-        measures = [2, 1]
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epoch])
-            trainer.model.weight.data.add_(torch.ones(1,1))
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-        trainer.train(dataloader, epochs=2)
-        data_best = checkpoint.load_best()
-
-        self.assertEqual(data_best, {'epoch':2, 't':1})
-        self.assertEqual(model.weight.data[0][0], 2)
-
-    def test_checkpoint_hook_best_epoch_is_on_total_trained_epochs(self):
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-        measures = [2, 3, 1]
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
-            trainer.model.weight.data.add_(torch.ones(1,1))
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-        trainer.train(dataloader, epochs=2)
-        trainer.train(dataloader, epochs=1)
-        data_best = checkpoint.load_best()
-
-        self.assertEqual(data_best, {'epoch':3, 't':1})
-        self.assertEqual(model.weight.data[0][0], 3)
-
-    def test_checkpoint_hook_load_best_epoch_reload_best_training_accuracy(self):
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        dataset = torch.ones(1, 1)
-        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-        measures = [2, 1, 3, 4]
-
-        def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
-            trainer.model.weight.data.add_(torch.ones(1,1))
-
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-        trainer.train(dataloader, epochs=3)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
-        trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
-                              logging_frecuency=1,
-                              update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
-        best = checkpoint.load_best()
-        trainer.train(dataloader, epochs=1)
-        data_best = checkpoint.load_best()
-
-        self.assertEqual(data_best, {'epoch':2, 't':1})
-        self.assertEqual(model.weight.data[0][0], 2)
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        if os.path.exists(self.stats_filename):
-            os.remove(self.stats_filename)
-        if os.path.exists(self.checkpoint_file + '.zip'):
-            os.remove(self.checkpoint_file + '.zip')

@@ -1,126 +1,86 @@
 import math
-import torch
-from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
-from torch.optim import SGD
-import unittest
 import torchtrainer
 from torchtrainer import SupervisedTrainer
-from torchtrainer.hooks import History
-from torchtrainer.meters import MSE
+from .common import *
 
 def sign(x):
     return 1 if x > 0 else -1
 
 class TrainerTests(unittest.TestCase):
-    def test_01(self):
-        w = 4
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.Tensor([[w]])
-        criterion = nn.L1Loss()
-        optimizer = SGD(model.parameters(), lr=1, momentum=0, weight_decay=0)
-        dataset = TensorDataset(torch.arange(1, 5).view(4, 1), torch.zeros(4, 1))
-        dataloader = DataLoader(dataset, batch_size=2)
-        trainer = SupervisedTrainer(model=model, optimizer=optimizer, criterion=criterion)
-        trainer.train(dataloader, epochs=2)
+    def setUp(self):
+        self.w = 4
+        self.model = nn.Linear(1, 1, bias=False)
+        self.model.weight.data = torch.Tensor([[self.w]])
+        self.criterion = nn.L1Loss()
+        self.optimizer = SGD(self.model.parameters(), lr=1, momentum=0, weight_decay=0)
+        self.history = History()
 
-        for i in range(2):
-            w -= (sign(w*1-0)*1 + sign(w*2-0)*2)/2.0
-            w -= (sign(w*3-0)*3 + sign(w*4-0)*4)/2.0
-        self.assertAlmostEqual(model.weight.data[0][0], w)
+    def load_training_dataset(self, start=1, end=5, batch_size=2):
+        self.training_dataset = TensorDataset(torch.arange(start, end).view(-1, 1), torch.zeros(end-start, 1))
+        self.training_dataloader = DataLoader(self.training_dataset, batch_size=batch_size)
+
+    def load_validation_dataset(self, start=0, end=10, batch_size=2):
+        self.validation_dataset = TensorDataset(torch.arange(start, end).view(-1, 1), torch.zeros(end-start, 1))
+        self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size)
 
     def test_train_val_loss_are_calculated_after_every_log_event(self):
-        w = 4
-        history = History()
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.Tensor([[w]])
-        criterion = nn.L1Loss()
-        optimizer = SGD(model.parameters(), lr=1, momentum=0, weight_decay=0)
-        train_dataset = TensorDataset(torch.arange(1, 5).view(4, 1), torch.zeros(4, 1))
-        valid_dataset = TensorDataset(torch.arange(0, 10).view(10, 1), torch.zeros(10, 1))
-        train_dataloader = DataLoader(train_dataset, batch_size=2)
-        valid_dataloader = DataLoader(valid_dataset, batch_size=2)
-        trainer = SupervisedTrainer(model=model, optimizer=optimizer, criterion=criterion, hooks=[history], logging_frecuency=1)
-        trainer.train(train_dataloader, valid_dataloader=valid_dataloader, epochs=1)
+        self.load_training_dataset()
+        self.load_validation_dataset()
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, hooks=[self.history], logging_frecuency=1)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
-        self.assertEqual(len(history.registry), 2)
+        self.assertEqual(len(self.history.registry), 2)
 
         for i in range(2):
             keys = ('epoch', 'step', 'train_loss', 'val_loss')
-            self.assertEqual(len(history.registry[i]), len(keys))
+            self.assertEqual(len(self.history.registry[i]), len(keys))
             for name in keys:
-                self.assertIn(name, history.registry[i].keys())
+                self.assertIn(name, self.history.registry[i].keys())
 
-        self.assertEqual(history.registry[0]['epoch'], 0)
-        self.assertEqual(history.registry[0]['step'], 0)
-        self.assertEqual(history.registry[1]['epoch'], 0)
-        self.assertEqual(history.registry[1]['step'], 1)
-
+        self.assertEqual(self.history.registry[0]['epoch'], 0)
+        self.assertEqual(self.history.registry[0]['step'], 0)
         # first train batch loss is calculated before weights update
-        self.assertAlmostEqual(history.registry[0]['train_loss'], sum(abs(w*i) for i in range(1, 3))/2)
+        self.assertAlmostEqual(self.history.registry[0]['train_loss'], sum(abs(self.w*i) for i in range(1, 3))/2)
         # Validation loss is calculated over the entire valid dataset after weights update
-        w -= (sign(w*1-0)*1 + sign(w*2-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[0]['val_loss'], sum(abs(w*i) for i in range(0,10))/10)
+        self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
+        self.assertAlmostEqual(self.history.registry[0]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)
 
-        self.assertAlmostEqual(history.registry[1]['train_loss'], sum(abs(w*i) for i in range(3, 5))/2)
-        w -= (sign(w*3-0)*1 + sign(w*4-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[1]['val_loss'], sum(abs(w*i) for i in range(0,10))/10)
+        self.assertEqual(self.history.registry[1]['epoch'], 0)
+        self.assertEqual(self.history.registry[1]['step'], 1)
+        self.assertAlmostEqual(self.history.registry[1]['train_loss'], sum(abs(self.w*i) for i in range(3, 5))/2)
+        self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
+        self.assertAlmostEqual(self.history.registry[1]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)
+        self.assertAlmostEqual(self.model.weight.data[0][0], self.w)
 
     def test_trainer_with_acc_meter_argument_measure_train_and_valid_accuracy_with_same_metric(self):
-        w = 4
-        history = History()
         acc_meter = MSE()
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.Tensor([[w]])
-        criterion = nn.L1Loss()
-        optimizer = SGD(model.parameters(), lr=1, momentum=0, weight_decay=0)
-        train_dataset = TensorDataset(torch.arange(1, 5).view(4, 1), torch.zeros(4, 1))
-        valid_dataset = TensorDataset(torch.arange(0, 10).view(10, 1), torch.zeros(10, 1))
-        train_dataloader = DataLoader(train_dataset, batch_size=2)
-        valid_dataloader = DataLoader(valid_dataset, batch_size=2)
-        trainer = SupervisedTrainer(model=model, optimizer=optimizer, acc_meter=acc_meter, criterion=criterion, hooks=[history], logging_frecuency=1)
-        trainer.train(train_dataloader, valid_dataloader=valid_dataloader, epochs=1)
-        self.assertEqual(len(history.registry), 2)
+        self.load_training_dataset()
+        self.load_validation_dataset()
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, criterion=self.criterion, hooks=[self.history], logging_frecuency=1)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         for i in range(2):
             keys = ('epoch', 'step', 'train_loss', 'val_loss', 'train_acc', 'val_acc')
-            self.assertEqual(len(history.registry[i]), len(keys))
             for name in keys:
-                self.assertIn(name, history.registry[i].keys())
+                self.assertIn(name, self.history.registry[i].keys())
 
-        self.assertAlmostEqual(history.registry[0]['train_acc'], sum((w*i)**2 for i in range(1, 3))/2)
-        w -= (sign(w*1-0)*1 + sign(w*2-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[0]['val_acc'], sum((w*i)**2 for i in range(0,10))/10)
-        self.assertAlmostEqual(history.registry[1]['train_acc'], sum((w*i)**2 for i in range(3, 5))/2)
-        w -= (sign(w*3-0)*1 + sign(w*4-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[1]['val_acc'], sum((w*i)**2 for i in range(0,10))/10)
+        self.assertAlmostEqual(self.history.registry[0]['train_acc'], sum((self.w*i)**2 for i in range(1, 3))/2)
+        self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
+        self.assertAlmostEqual(self.history.registry[0]['val_acc'], sum((self.w*i)**2 for i in range(0,10))/10)
+        self.assertAlmostEqual(self.history.registry[1]['train_acc'], sum((self.w*i)**2 for i in range(3, 5))/2)
+        self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
+        self.assertAlmostEqual(self.history.registry[1]['val_acc'], sum((self.w*i)**2 for i in range(0,10))/10)
 
-    def test_trainer_with_val_acc_meter_argument_measure_valid_accuracy_with_diferent_metric(self):
-        w = 4
-        history = History()
+    def test_trainer_with_val_acc_meter_argument_cant_differ_from_train_acc_meter(self):
         acc_meter = MSE()
         val_acc_meter = MSE(take_sqrt=True)
-        model = nn.Linear(1, 1, bias=False)
-        model.weight.data = torch.Tensor([[w]])
-        criterion = nn.L1Loss()
-        optimizer = SGD(model.parameters(), lr=1, momentum=0, weight_decay=0)
-        train_dataset = TensorDataset(torch.arange(1, 5).view(4, 1), torch.zeros(4, 1))
-        valid_dataset = TensorDataset(torch.arange(0, 10).view(10, 1), torch.zeros(10, 1))
-        train_dataloader = DataLoader(train_dataset, batch_size=2)
-        valid_dataloader = DataLoader(valid_dataset, batch_size=2)
-        trainer = SupervisedTrainer(model=model, optimizer=optimizer, acc_meter=acc_meter, val_acc_meter=val_acc_meter, criterion=criterion, hooks=[history], logging_frecuency=1)
-        trainer.train(train_dataloader, valid_dataloader=valid_dataloader, epochs=1)
-        self.assertEqual(len(history.registry), 2)
+        self.load_training_dataset()
+        self.load_validation_dataset()
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, val_acc_meter=val_acc_meter, criterion=self.criterion, hooks=[self.history], logging_frecuency=1)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
-        for i in range(2):
-            keys = ('epoch', 'step', 'train_loss', 'val_loss', 'train_acc', 'val_acc')
-            self.assertEqual(len(history.registry[i]), len(keys))
-            for name in keys:
-                self.assertIn(name, history.registry[i].keys())
-
-        self.assertAlmostEqual(history.registry[0]['train_acc'], sum((w*i)**2 for i in range(1, 3))/2)
-        w -= (sign(w*1-0)*1 + sign(w*2-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[0]['val_acc'], math.sqrt(sum((w*i)**2 for i in range(0,10))/10))
-        self.assertAlmostEqual(history.registry[1]['train_acc'], sum((w*i)**2 for i in range(3, 5))/2)
-        w -= (sign(w*3-0)*1 + sign(w*4-0)*2)/2.0
-        self.assertAlmostEqual(history.registry[1]['val_acc'], math.sqrt(sum((w*i)**2 for i in range(0,10))/10))
+        self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
+        self.assertAlmostEqual(self.history.registry[0]['val_acc'], math.sqrt(sum((self.w*i)**2 for i in range(0,10))/10))
+        self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
+        self.assertAlmostEqual(self.history.registry[1]['val_acc'], math.sqrt(sum((self.w*i)**2 for i in range(0,10))/10))

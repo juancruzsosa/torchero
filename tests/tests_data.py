@@ -1,7 +1,7 @@
 import torch
 import torchtrainer
+from .common import *
 from torchtrainer.utils.data import CrossFoldValidation
-import unittest
 
 class TestsDataUtils(unittest.TestCase):
     def assertDatasetEquals(self, a, b):

@@ -1,9 +1,5 @@
-import torch
-from torch import nn
-import unittest
-import torchtrainer
 import math
-from torchtrainer import meters
+from .common import *
 from torchtrainer.meters.aggregators import batch, scale
 
 class BaseMetricsTests(unittest.TestCase):
@@ -36,42 +32,27 @@ class AccuracyMetricsTests(BaseMetricsTests):
         meter = meters.CategoricalAccuracy()
         self.assertMeasureEqual(meter, [(a, t)], 1.0)
 
-        self.assertMeasureEqual(meter, [(a1, t1)], 1.0)
-        self.assertMeasureEqual(meter, [(a1, t2)], 0.0)
-        self.assertMeasureEqual(meter, [(a1, t3)], 0.0)
-
-        self.assertMeasureEqual(meter, [(a2, t1)], 0.0)
-        self.assertMeasureEqual(meter, [(a2, t2)], 1.0)
-        self.assertMeasureEqual(meter, [(a2, t3)], 0.0)
-
-        self.assertMeasureEqual(meter, [(a3, t1)], 0.0)
-        self.assertMeasureEqual(meter, [(a3, t2)], 0.0)
-        self.assertMeasureEqual(meter, [(a3, t3)], 1.0)
+        for i, a in enumerate([a1, a2, a3]):
+            for j, t in enumerate([t1, t2, t3]):
+                self.assertMeasureEqual(meter, [(a, t)], 1.0 if i == j else 0.0)
 
     def test_classification_with_k_greater_than_one_search_top_k_indices(self):
         a1 = torch.Tensor([[0.5, 0.4, 0.1]])
-        a2 = torch.Tensor([[2, 3, 5]])
-        a3 = torch.Tensor([[20, 5, 10]])
+        a2 = torch.Tensor([[20, 5, 10]])
+        a3 = torch.Tensor([[2, 3, 5]])
 
-        t1 = torch.LongTensor([0])
+        t1 = torch.LongTensor([2])
         t2 = torch.LongTensor([1])
-        t3 = torch.LongTensor([2])
+        t3 = torch.LongTensor([0])
 
         meter = meters.CategoricalAccuracy(k=2)
-        self.assertMeasureEqual(meter, [(a1, t1)], 1)
-        self.assertMeasureEqual(meter, [(a1, t2)], 1)
-        self.assertMeasureEqual(meter, [(a1, t3)], 0)
 
-        self.assertMeasureEqual(meter, [(a2, t1)], 0)
-        self.assertMeasureEqual(meter, [(a2, t2)], 1)
-        self.assertMeasureEqual(meter, [(a2, t3)], 1)
-
-        self.assertMeasureEqual(meter, [(a3, t1)], 1)
-        self.assertMeasureEqual(meter, [(a3, t2)], 0)
-        self.assertMeasureEqual(meter, [(a3, t3)], 1)
+        for i, a in enumerate([a1, a2, a3]):
+            for j, t in enumerate([t1, t2, t3]):
+                self.assertMeasureEqual(meter, [(a, t)], 0.0 if j == i else 1.0)
 
 
-    def test_size_average_option_average_results_over_the_batch_dimension(self):
+    def test_aggregators_works_over_the_batch_dimension(self):
         a = torch.Tensor([[0.55, 0.45],
                           [-1.0, 2.0]])
         t1 = torch.LongTensor([0, 0])
@@ -168,16 +149,7 @@ class AccuracyMetricsTests(BaseMetricsTests):
         t2 = torch.LongTensor([2])
 
         meter_normalized = meters.CategoricalAccuracy(aggregator=batch.Average())
-        meter_sum = meters.CategoricalAccuracy(aggregator=batch.Sum())
-        meter_percentage = meters.CategoricalAccuracy(aggregator=scale.percentage(batch.Average()))
-        meter_maximum = meters.CategoricalAccuracy(aggregator=batch.Maximum())
-        meter_minimum = meters.CategoricalAccuracy(aggregator=batch.Minimum())
-
         self.assertMeasureAlmostEqual(meter_normalized, [(a1, t1), (a2, t2)], 2/3)
-        self.assertMeasureAlmostEqual(meter_sum, [(a1, t1), (a2, t2)], 2)
-        self.assertMeasureAlmostEqual(meter_percentage, [(a1, t1), (a2, t2)], 2*100/3)
-        self.assertMeasureAlmostEqual(meter_maximum, [(a1, t1), (a2, t2)], 1)
-        self.assertMeasureAlmostEqual(meter_minimum, [(a1, t1), (a2, t2)], 0)
 
     def test_cannot_get_value_with_no_measures(self):
         meter = meters.CategoricalAccuracy()
@@ -187,7 +159,7 @@ class AccuracyMetricsTests(BaseMetricsTests):
         except meters.ZeroMeasurementsError as e:
             pass
 
-    def test_binary_meters_with_incresing_threholds(self):
+    def test_binary_meters_with_incresing_threholds_change_region_decision(self):
         a1 = torch.Tensor([[0.3]])
         a2 = torch.Tensor([[0.5]])
         a3 = torch.Tensor([[0.7]])
@@ -211,23 +183,8 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureEqual(meter_th_p5, [(a3, t2)], 0.0)
         self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
 
-    def test_binary_accuracy_with_multiples_batches(self):
-        a = torch.Tensor([[0.3],
-                          [0.5],
-                          [0.7]])
 
-        t = torch.LongTensor([1, 0, 0])
-
-        meter_th_p2 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.2)
-        meter_th_p5 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.5)
-        meter_th_p8 = meters.BinaryAccuracy(aggregator=batch.Average(), threshold=0.8)
-
-        self.assertMeasureAlmostEqual(meter_th_p2, [(a, t)], 1/3)
-        self.assertMeasureAlmostEqual(meter_th_p5, [(a, t)], 0.0)
-        self.assertMeasureAlmostEqual(meter_th_p8, [(a, t)], 2/3)
-
-
-    def test_binary_accyracy_with_logits(self):
+    def test_binary_accuracy_with_logits_applies_activation_applies_activation_before_regiion_decision(self):
         a1 = torch.Tensor([[-1]])
         a2 = torch.Tensor([[0]])
         a3 = torch.Tensor([[1]])
@@ -251,7 +208,7 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureEqual(meter_th_p5, [(a3, t2)], 0.0)
         self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
 
-    def test_binary_accyracy_with_custom_activation(self):
+    def test_binary_accuracy_with_custom_activation_applies_that_activation(self):
         a1 = torch.Tensor([[-1]])
         a2 = torch.Tensor([[0]])
         a3 = torch.Tensor([[1]])
@@ -277,7 +234,7 @@ class AccuracyMetricsTests(BaseMetricsTests):
 
 
 class MSETests(BaseMetricsTests):
-    def test_meter_measure_is_always_positive(self):
+    def test_meter_measure_is_the_square_of_the_difference(self):
         meter = meters.MSE()
         sqrt_meter = meters.MSE(take_sqrt=True)
         self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.ones(1,1))], 0)
