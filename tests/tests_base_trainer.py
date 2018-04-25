@@ -191,7 +191,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x, y): pass
         trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model)
         try:
-            trainer.epochs_trained = 0
+            trainer.epochs_trained = -1
             self.fail()
         except AttributeError as e:
             self.assertEqual(trainer.epochs_trained, 0)

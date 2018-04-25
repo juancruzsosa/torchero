@@ -85,6 +85,11 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """
         return self._epochs_trained
 
+    @epochs_trained.setter
+    def epochs_trained(self, value):
+        if value < 0:
+            raise AttributeError('can\'t set epochs_trained to a value less than zero')
+
     @abstractmethod
     def update_batch(self, *args, **kwargs):
         """ Abstract method for update model parameters given a batch
