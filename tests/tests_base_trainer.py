@@ -390,7 +390,11 @@ class TorchBasetrainerTest(unittest.TestCase):
 
 class HooksTests(unittest.TestCase):
     def setUp(self):
+        self.temp_dir = os.path.join('/', 'tmp', 'torchtrainer')
+        if not os.path.exists(self.temp_dir):
+            os.makedirs(self.temp_dir)
         self.stats_filename = 'stats.csv'
+        self.checkpoint_file = 'checkpoint'
 
     def test_history_hook_register_every_training_stat(self):
         self.model = DummyModel()
