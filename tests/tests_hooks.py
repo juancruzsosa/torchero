@@ -226,7 +226,7 @@ class HooksTests(unittest.TestCase):
         trainer.stats_meters['c'] = Averager()
 
         try:
-            checkpoint.load_best()
+            checkpoint.load()
         except Exception:
             self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
             self.assertEqual(os.listdir(self.temp_dir), [])
@@ -289,12 +289,12 @@ class HooksTests(unittest.TestCase):
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         model.weight.data.random_()
-        data_best = checkpoint.load_best()
+        data_best = checkpoint.load()
         self.assertEqual(data_best, {'epoch':1, 'c':0})
         self.assertEqual(model.weight.data[0][0], w)
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_load_best_raises_if_metric_not_found(self):
+    def test_checkpoint_hook_load_raises_if_metric_not_found(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.ones(1,1)
         w = model.weight.data[0][0]
@@ -322,7 +322,7 @@ class HooksTests(unittest.TestCase):
         model.weight.data = torch.zeros(1,1)
 
         try:
-            checkpoint.load_best()
+            checkpoint.load()
             self.fail()
         except MeterNotFound:
             self.assertEqual(model.weight.data[0][0], 0)
@@ -347,7 +347,7 @@ class HooksTests(unittest.TestCase):
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
-        data_best = checkpoint.load_best()
+        data_best = checkpoint.load()
 
         self.assertEqual(data_best, {'epoch':1, 't':1})
         self.assertEqual(model.weight.data[0][0], 1)
@@ -370,7 +370,7 @@ class HooksTests(unittest.TestCase):
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
-        data_best = checkpoint.load_best()
+        data_best = checkpoint.load()
 
         self.assertEqual(data_best, {'epoch':2, 't':1})
         self.assertEqual(model.weight.data[0][0], 2)
@@ -394,12 +394,12 @@ class HooksTests(unittest.TestCase):
         trainer.stats_meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
         trainer.train(dataloader, epochs=1)
-        data_best = checkpoint.load_best()
+        data_best = checkpoint.load()
 
         self.assertEqual(data_best, {'epoch':3, 't':1})
         self.assertEqual(model.weight.data[0][0], 3)
 
-    def test_checkpoint_hook_load_best_epoch_reload_best_training_accuracy(self):
+    def test_checkpoint_hook_load_epoch_reload_training_accuracy(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
@@ -423,9 +423,9 @@ class HooksTests(unittest.TestCase):
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
-        best = checkpoint.load_best()
+        best = checkpoint.load()
         trainer.train(dataloader, epochs=1)
-        data_best = checkpoint.load_best()
+        data_best = checkpoint.load()
 
         self.assertEqual(data_best, {'epoch':2, 't':1})
         self.assertEqual(model.weight.data[0][0], 2)

@@ -30,7 +30,7 @@ class ModelCheckpoint(Hook):
             raise MeterNotFound(self.monitor_name)
         self.temp_dir = tempfile.mkdtemp(dir=self.temp_dirname)
 
-    def load_best(self):
+    def load(self):
         """ Load checkpointed mode
         """
         try:
