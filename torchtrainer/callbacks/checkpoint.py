@@ -9,14 +9,17 @@ from .exceptions import MeterNotFound
 class ModelCheckpoint(Callback):
     """ Callback for checkpoint a model if it get betters in a given metric
     """
+    UNRECOGNIZED_MODE = "Unrecognized mode {mode}. Options are: 'max', 'min'"
 
-    def __init__(self, path, monitor, temp_dir=None):
+    def __init__(self, path, monitor, mode='min', temp_dir=None):
         """ Constructor
 
         Arguments:
             path (str): Path for the checkpoint file
             monitor (str): Metric name to monitor
             temp_dir (str): Temporary folder path.
+            mode (str): One of 'max' or 'min'. Alters the checkpoint criterion
+            to be based on maximum or minimum monitor quantity (respectively).
         """
 
         self.monitor_name = monitor
@@ -24,6 +27,13 @@ class ModelCheckpoint(Callback):
         self.last_value = None
         self.temp_dirname = temp_dir
         self.outperform = False
+
+        if mode.lower() == 'min':
+            self.is_better = lambda value: self.last_value > value
+        elif mode.lower() == 'max':
+            self.is_better = lambda value: self.last_value < value
+        else:
+            raise Exception(self.UNRECOGNIZED_MODE.format(mode))
 
     def on_train_begin(self):
         if self.monitor_name not in self.trainer.meters_names():
@@ -56,7 +66,7 @@ class ModelCheckpoint(Callback):
             raise MeterNotFound(self.monitor_name)
 
         value = self.trainer.last_stats[self.monitor_name]
-        if self.last_value is None or self.last_value > value:
+        if self.last_value is None or self.is_better(value):
             self.last_value = value
             index_content = [{self.monitor_name: self.last_value,
                               'epoch': self.trainer.epochs_trained}]
