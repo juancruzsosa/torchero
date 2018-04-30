@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.optim import SGD
 from torchtrainer.base import BatchTrainer
-from torchtrainer.hooks import Hook, History, CSVExporter, ModelCheckpoint, MeterNotFound
+from torchtrainer.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound
 from torchtrainer import meters
 from torchtrainer.meters import Averager, MSE
 from torch.utils.data import DataLoader, TensorDataset
@@ -26,8 +26,8 @@ class DummyModel(nn.Module):
         return x
 
 class TestTrainer(BatchTrainer):
-    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, hooks=[]):
-        super(TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, hooks=hooks)
+    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, logging_frecuency=1, callbacks=[]):
+        super(TestTrainer, self).__init__(model, logging_frecuency=logging_frecuency, callbacks=callbacks)
         self.update_batch_fn = update_batch_fn
         self.valid_batch_fn = valid_batch_fn
 

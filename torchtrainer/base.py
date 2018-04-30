@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Variable
 from abc import ABCMeta, abstractmethod
-from .hooks import HookContainer
+from .callbacks import CallbackContainer
 from .meters import ZeroMeasurementsError
 
 
@@ -13,12 +13,12 @@ class BatchTrainer(object, metaclass=ABCMeta):
     INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
     INVALID_LOGGING_FRECUENCY_MESSAGE='Expected loggin frecuency to be a non-negative integer, got: {logging_frecuency}'
 
-    def __init__(self, model, hooks=[], logging_frecuency=1):
+    def __init__(self, model, callbacks=[], logging_frecuency=1):
         """ Constructor
 
         Args:
             model (:class:`torch.nn.Module`): Module to train
-            hooks (:class:`torchtrainer.hooks.Hook`): Pluggable hooks for epoch/batch events.
+            callbacks (:class:`torchtrainer.callbacks.Callback`): Pluggable callbacks for epoch/batch events.
             logging_frecuency (int): Frecuency of log to monitor train/validation
         """
         if logging_frecuency < 0:
@@ -31,10 +31,10 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self._last_stats = {}
         self.stats_meters = {}
 
-        self._hooks = HookContainer()
-        self._hooks.accept(self)
-        for hook in hooks:
-            self._hooks.add(hook)
+        self._callbacks = CallbackContainer()
+        self._callbacks.accept(self)
+        for callback in callbacks:
+            self._callbacks.add(callback)
 
     def cuda(self):
         """ Turn model to cuda
@@ -103,7 +103,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
     def log(self):
         self._compile_last_stats()
-        self._hooks.log()
+        self._callbacks.on_log()
         for meter in self.stats_meters.values():
             meter.reset()
 
@@ -138,17 +138,17 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.total_epochs = epochs
         self.total_steps = len(dataloader)
 
-        self._hooks.pre_training()
+        self._callbacks.on_train_begin()
 
         # Turn model to training mode
         self.model.train(mode=True)
 
         for self.epoch in range(self.total_epochs):
-            self._hooks.pre_epoch()
+            self._callbacks.on_epoch_begin()
             self._train_epoch(dataloader, valid_dataloader)
-            self._hooks.post_epoch()
+            self._callbacks.on_epoch_end()
 
-        self._hooks.post_training()
+        self._callbacks.on_train_end()
 
         # Turn model to evaluation mode
         self.model.train(mode=False)

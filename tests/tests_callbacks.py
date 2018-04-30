@@ -2,7 +2,7 @@ import sys
 import shutil
 from .common import *
 
-class HooksTests(unittest.TestCase):
+class CallbacksTests(unittest.TestCase):
     def setUp(self):
         self.base_tree = os.path.join('tests', 'output')
         os.makedirs(self.base_tree)
@@ -13,14 +13,14 @@ class HooksTests(unittest.TestCase):
         self.stats_filename = os.path.join(self.base_tree, 'stats.csv')
         self.checkpoint_file = os.path.join(self.base_tree, 'checkpoint')
 
-    def test_history_hook_register_every_training_stat(self):
+    def test_history_callback_register_every_training_stat(self):
         self.model = DummyModel()
         train_dataset = torch.arange(10).view(-1, 1)
         valid_dataset = torch.arange(10).view(-1, 1)
 
         train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
         valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
-        hook = History()
+        callback = History()
 
         def update_batch(trainer, x):
             trainer.stats_meters['t_c'].measure(x.data[0][0])
@@ -29,7 +29,7 @@ class HooksTests(unittest.TestCase):
             trainer.stats_meters['v_c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch,
                               valid_batch_fn=validate_batch)
@@ -44,7 +44,7 @@ class HooksTests(unittest.TestCase):
         expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
                              {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
 
-        self.assertEqual(hook.registry, expected_registry)
+        self.assertEqual(callback.registry, expected_registry)
         self.assertEqual(trainer.last_stats, {'t_c': 7.0, 'v_c': 4.5})
 
     def test_csv_exporter_print_header_at_begining_of_training(self):
@@ -52,14 +52,14 @@ class HooksTests(unittest.TestCase):
         dataset = torch.Tensor([])
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
+        callback = CSVLogger(output=self.stats_filename, append=False)
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
             trainer.stats_meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -76,14 +76,14 @@ class HooksTests(unittest.TestCase):
         dataset = torch.arange(10).view(-1, 1)
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
+        callback = CSVLogger(output=self.stats_filename, append=False)
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
             trainer.stats_meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -102,14 +102,14 @@ class HooksTests(unittest.TestCase):
         dataset = torch.arange(10).view(-1, 1)
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=True)
+        callback = CSVLogger(output=self.stats_filename, append=True)
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
             trainer.stats_meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -131,13 +131,13 @@ class HooksTests(unittest.TestCase):
         dataset = torch.arange(10).view(-1, 1)
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'step'])
+        callback = CSVLogger(output=self.stats_filename, append=False, columns=['epoch', 'step'])
 
         def update_batch(trainer, x):
             trainer.stats_meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -156,13 +156,13 @@ class HooksTests(unittest.TestCase):
         dataset = torch.arange(10).view(-1, 1)
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False, columns=['epoch', 'v', 't'])
+        callback = CSVLogger(output=self.stats_filename, append=False, columns=['epoch', 'v', 't'])
 
         def update_batch(trainer, x):
             trainer.stats_meters['t'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
@@ -181,10 +181,10 @@ class HooksTests(unittest.TestCase):
         dataset = torch.arange(10).view(-1, 1)
 
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
-        hook = CSVExporter(output=self.stats_filename, append=False)
+        callback = CSVLogger(output=self.stats_filename, append=False)
 
         trainer = TestTrainer(model=self.model,
-                              hooks=[hook],
+                              callbacks=[callback],
                               logging_frecuency=5)
 
         trainer.train(dl, epochs=1)
@@ -199,14 +199,14 @@ class HooksTests(unittest.TestCase):
             self.assertEqual(lines[3], '2,4\n')
             self.assertEqual(lines[4], '2,9')
 
-    def test_checkpoint_hook_doesnt_create_file_if_no_training(self):
+    def test_checkpoint_callback_doesnt_create_file_if_no_training(self):
         model = DummyModel()
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
         dataset = torch.Tensor([])
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1)
         trainer.stats_meters['c'] = Averager()
 
@@ -214,14 +214,14 @@ class HooksTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_doesnt_create_files_if_load_raises(self):
+    def test_checkpoint_callback_doesnt_create_files_if_load_raises(self):
         model = DummyModel()
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c')
         dataset = torch.Tensor([])
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1)
         trainer.stats_meters['c'] = Averager()
 
@@ -231,14 +231,14 @@ class HooksTests(unittest.TestCase):
             self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
             self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_raises_if_meter_not_found_in_meters_names(self):
+    def test_checkpoint_callback_raises_if_meter_not_found_in_meters_names(self):
         model = DummyModel()
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 2)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1)
         try:
             trainer.train(dataloader, epochs=1)
@@ -247,14 +247,14 @@ class HooksTests(unittest.TestCase):
             self.assertEqual(trainer.epochs_trained, 0)
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_raises_if_meter_not_found(self):
+    def test_checkpoint_callback_raises_if_meter_not_found(self):
         model = DummyModel()
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 2)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1)
         trainer.stats_meters['t'] = Averager()
 
@@ -265,7 +265,7 @@ class HooksTests(unittest.TestCase):
             self.assertEqual(trainer.epochs_trained, 1)
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_persist_model_on_first_trained_epoch(self):
+    def test_checkpoint_callback_persist_model_on_first_trained_epoch(self):
         model = nn.Linear(1, 1, bias=False)
         w = model.weight.data[0][0]
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
@@ -276,7 +276,7 @@ class HooksTests(unittest.TestCase):
             trainer.stats_meters['c'].measure(0)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -285,7 +285,7 @@ class HooksTests(unittest.TestCase):
 
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         model.weight.data.random_()
@@ -294,7 +294,7 @@ class HooksTests(unittest.TestCase):
         self.assertEqual(model.weight.data[0][0], w)
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_load_raises_if_metric_not_found(self):
+    def test_checkpoint_callback_load_raises_if_metric_not_found(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.ones(1,1)
         w = model.weight.data[0][0]
@@ -306,7 +306,7 @@ class HooksTests(unittest.TestCase):
             trainer.stats_meters['c'].measure(0)
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['c'] = Averager()
@@ -315,7 +315,7 @@ class HooksTests(unittest.TestCase):
 
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='xyz', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
 
@@ -329,7 +329,7 @@ class HooksTests(unittest.TestCase):
 
         self.assertEqual(os.listdir(self.temp_dir), [])
 
-    def test_checkpoint_hook_not_persist_model_if_model_not_gets_better(self):
+    def test_checkpoint_callback_not_persist_model_if_model_not_gets_better(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
@@ -342,7 +342,7 @@ class HooksTests(unittest.TestCase):
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
@@ -352,7 +352,7 @@ class HooksTests(unittest.TestCase):
         self.assertEqual(data_best, {'epoch':1, 't':1})
         self.assertEqual(model.weight.data[0][0], 1)
 
-    def test_checkpoint_hook_repersist_model_if_model_gets_better(self):
+    def test_checkpoint_callback_repersist_model_if_model_gets_better(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
@@ -365,7 +365,7 @@ class HooksTests(unittest.TestCase):
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
@@ -375,7 +375,7 @@ class HooksTests(unittest.TestCase):
         self.assertEqual(data_best, {'epoch':2, 't':1})
         self.assertEqual(model.weight.data[0][0], 2)
 
-    def test_checkpoint_hook_best_epoch_is_on_total_trained_epochs(self):
+    def test_checkpoint_callback_best_epoch_is_on_total_trained_epochs(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
@@ -388,7 +388,7 @@ class HooksTests(unittest.TestCase):
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
@@ -399,7 +399,7 @@ class HooksTests(unittest.TestCase):
         self.assertEqual(data_best, {'epoch':3, 't':1})
         self.assertEqual(model.weight.data[0][0], 3)
 
-    def test_checkpoint_hook_load_epoch_reload_training_accuracy(self):
+    def test_checkpoint_callback_load_epoch_reload_training_accuracy(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
@@ -412,14 +412,14 @@ class HooksTests(unittest.TestCase):
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
         trainer.train(dataloader, epochs=3)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
-                              hooks=[checkpoint],
+                              callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()

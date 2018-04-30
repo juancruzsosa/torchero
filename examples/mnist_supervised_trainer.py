@@ -14,7 +14,7 @@ from torchtrainer import SupervisedTrainer
 from torchtrainer.meters import CategoricalAccuracy
 from torchtrainer.meters.aggregators.batch import Average
 from torchtrainer.meters.aggregators.scale import percentage
-from torchtrainer.hooks import ProgressBars as Logger, CSVExporter
+from torchtrainer.callbacks import ProgbarLogger as Logger, CSVLogger
 
 class Network(nn.Module):
     def __init__(self):
@@ -62,7 +62,7 @@ def main():
                                 criterion=criterion,
                                 logging_frecuency=args.logging_frecuency,
                                 acc_meter=CategoricalAccuracy(aggregator=percentage(Average())),
-                                hooks=[Logger(), CSVExporter(output='training_stats.csv')])
+                                callbacks=[Logger(), CSVLogger(output='training_stats.csv')])
     trainer.train(dataloader=train_dl, valid_dataloader=test_dl, epochs=args.epochs)
 
 if __name__ == '__main__':

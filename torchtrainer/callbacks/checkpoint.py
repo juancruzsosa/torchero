@@ -3,11 +3,11 @@ import tempfile
 import shutil
 import yaml
 import torch
-from .base import Hook
+from .base import Callback
 from .exceptions import MeterNotFound
 
-class ModelCheckpoint(Hook):
-    """ Hook for checkpoint a model if it get betters in a given metric
+class ModelCheckpoint(Callback):
+    """ Callback for checkpoint a model if it get betters in a given metric
     """
 
     def __init__(self, path, monitor, temp_dir=None):
@@ -25,7 +25,7 @@ class ModelCheckpoint(Hook):
         self.temp_dirname = temp_dir
         self.outperform = False
 
-    def pre_training(self):
+    def on_train_begin(self):
         if self.monitor_name not in self.trainer.meters_names():
             raise MeterNotFound(self.monitor_name)
         self.temp_dir = tempfile.mkdtemp(dir=self.temp_dirname)
@@ -50,7 +50,7 @@ class ModelCheckpoint(Hook):
 
         return data[0]
 
-    def post_epoch(self):
+    def on_epoch_end(self):
         if self.monitor_name not in self.trainer.last_stats:
             shutil.rmtree(self.temp_dir)
             raise MeterNotFound(self.monitor_name)
@@ -67,7 +67,7 @@ class ModelCheckpoint(Hook):
             torch.save(self.trainer.model.state_dict(), os.path.join(self.temp_dir, '0.pth'))
             self.outperform = True
 
-    def post_training(self):
+    def on_train_end(self):
         if self.outperform:
             shutil.make_archive(self.path, 'zip', self.temp_dir)
         shutil.rmtree(self.temp_dir)

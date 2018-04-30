@@ -277,24 +277,24 @@ class TorchBasetrainerTest(unittest.TestCase):
                     self.assertTensorsEqual(valid_batch.data, true_valid_batch)
             i += 1
 
-    def test_pre_epoch_hooks_are_triggered_before_every_epoch(self):
+    def test_on_epoch_begin_callbacks_are_triggered_before_every_epoch(self):
         self.load_arange_training_dataset(4, 2)
 
-        class CustomHook(Hook):
-            def __init__(hook):
+        class CustomCallback(Callback):
+            def __init__(callback):
                 self.epoch = 0
 
-            def pre_epoch(hook):
-                self.assertEqual(hook.trainer.epoch, self.epoch)
+            def on_epoch_begin(callback):
+                self.assertEqual(callback.trainer.epoch, self.epoch)
                 self.epoch += 1
 
-        hook = CustomHook()
-        trainer = TestTrainer(model=self.model, hooks=[hook])
-        self.assertIs(hook.trainer, trainer)
+        callback = CustomCallback()
+        trainer = TestTrainer(model=self.model, callbacks=[callback])
+        self.assertIs(callback.trainer, trainer)
         trainer.train(self.training_dataloader, epochs=2)
         self.assertEqual(self.epoch, 2)
 
-    def test_post_epoch_hooks_are_triggered_before_every_epoch(self):
+    def test_on_epoch_end_callbacks_are_triggered_before_every_epoch(self):
         batchs = []
         dataset = torch.zeros(2).view(-1,1)
 
@@ -303,38 +303,38 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x):
             batchs.append(x)
 
-        class CustomHook(Hook):
-            def __init__(hook):
+        class CustomCallback(Callback):
+            def __init__(callback):
                 self.epoch = 0
 
-            def post_epoch(hook):
-                self.assertEqual(hook.trainer.epoch, self.epoch)
+            def on_epoch_end(callback):
+                self.assertEqual(callback.trainer.epoch, self.epoch)
                 x = batchs[len(dataset) * self.epoch:len(dataset) * (self.epoch + 1)]
                 self.assertTensorsEqual(torch.stack(x), Variable(dataset.unsqueeze(0)))
                 self.epoch += 1
 
-        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, hooks=[CustomHook()])
+        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, callbacks=[CustomCallback()])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epoch, 2)
 
-    def test_attaching_multiple_hooks_triggers_sequentially_every_hook(self):
+    def test_attaching_multiple_callbacks_triggers_sequentially_every_callback(self):
         self.epochs = []
 
         dataset = torch.zeros(2).view(-1,1)
         dl = DataLoader(dataset, shuffle=False, batch_size=1)
 
-        class CustomHook(Hook):
-            def __init__(hook, idx):
-                hook.idx = idx
-                hook.epoch = 0
+        class CustomCallback(Callback):
+            def __init__(callback, idx):
+                callback.idx = idx
+                callback.epoch = 0
 
-            def pre_epoch(hook):
-                self.epochs.append((hook.idx, hook.epoch))
-                hook.epoch += 1
+            def on_epoch_begin(callback):
+                self.epochs.append((callback.idx, callback.epoch))
+                callback.epoch += 1
 
-        hook_0 = CustomHook(0)
-        hook_1 = CustomHook(1)
+        callback_0 = CustomCallback(0)
+        callback_1 = CustomCallback(1)
 
-        trainer = TestTrainer(model=self.model, hooks=[hook_0, hook_1])
+        trainer = TestTrainer(model=self.model, callbacks=[callback_0, callback_1])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])

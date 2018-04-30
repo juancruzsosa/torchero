@@ -13,21 +13,21 @@
 * `BatchTrainer`: Abstract class for all trainers that works with batched inputs
 * `SupervisedTrainer`: Supervised trainer
 
-### Hooks ###
+### Callbacks ###
 
-* `hooks.Hook`: Base hook class for all epoch/training events
-* `hooks.History`: Hook that record history of all training/validation metrics
-* `hooks.ProgressBars`: Hook that displays progress bars to monitor training/validation metrics
-* `hooks.Container`: Hook to group multiple hooks
-* `hooks.CSVExporter`: Hook that export training/validation stadistics to a csv file
+* `callback.Callback`: Base callback class for all epoch/training events
+* `callback.History`: Callback that record history of all training/validation metrics
+* `callback.ProgressBars`: Callback that displays progress bars to monitor training/validation metrics
+* `callback.CallbackContainer`: Callback to group multiple hooks
+* `callback.CSVLogger`: Callback that export training/validation stadistics to a csv file
 
-### Metrics ###
+### Meters ###
 
-* `metrics.Base`: Interface for all meters
-* `metrics.CategoricalAccuracy`: Meter for accuracy on categorical targets
-* `metrics.BinaryAccuracy`: Meter for accuracy on binary targets (assuming normalized inputs)
-* `metrics.BinaryAccuracyWithLogits`: Binary accuracy meter with an integrated activation function (by default logistic function)
-* `metrics.MSE`: Mean Squared Error meter
+* `meter.Base`: Interface for all meters
+* `meter.CategoricalAccuracy`: Meter for accuracy on categorical targets
+* `meter.BinaryAccuracy`: Meter for accuracy on binary targets (assuming normalized inputs)
+* `meter.BinaryAccuracyWithLogits`: Binary accuracy meter with an integrated activation function (by default logistic function)
+* `meter.MSE`: Mean Squared Error meter
 
 ### Cross validation ###
 

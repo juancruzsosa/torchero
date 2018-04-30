@@ -1,7 +1,7 @@
 import os
-from .base import Hook
+from .base import Callback
 
-class CSVExporter(Hook):
+class CSVLogger(Callback):
     """ Export training statistics to csv file
     """
 
@@ -18,7 +18,7 @@ class CSVExporter(Hook):
         self.append = append
         self.columns = columns
 
-    def pre_training(self):
+    def on_train_begin(self):
         if self.columns is None:
             self.columns = ['epoch', 'step'] + self.trainer.meters_names()
 
@@ -34,7 +34,7 @@ class CSVExporter(Hook):
         if not new_file:
             self.file_handle.write(','.join(self.columns))
 
-    def log(self):
+    def on_log(self):
         stats = self.trainer.last_stats
         stats.update({'epoch': self.trainer.epochs_trained,
                       'step': self.trainer.step})
@@ -44,5 +44,5 @@ class CSVExporter(Hook):
         self.file_handle.write(os.linesep + ','.join(map(str, new_row)))
         self.file_handle.flush()
 
-    def post_training(self):
+    def on_train_end(self):
         self.file_handle.close()

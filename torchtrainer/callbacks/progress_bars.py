@@ -1,5 +1,5 @@
-from .base import Hook
-from .container import HookContainer
+from .base import Callback
+from .container import CallbackContainer
 
 try:
     import tqdm
@@ -9,8 +9,8 @@ except ImportError:
     raise
 
 
-class ProgressBars(Hook):
-    """ Hook that displays progress bars to monitor training/validation metrics
+class ProgbarLogger(Callback):
+    """ Callback that displays progress bars to monitor training/validation metrics
     """
 
     def __init__(self, ascii=False, notebook=False):
@@ -30,11 +30,11 @@ class ProgressBars(Hook):
         self.step_tqdms = []
         self.step_bars = []
 
-    def pre_training(self):
+    def on_train_begin(self):
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True, ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
 
-    def pre_epoch(self):
+    def on_epoch_begin(self):
         step_tqdm = self.tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True, ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
@@ -46,16 +46,16 @@ class ProgressBars(Hook):
         else:
             return str(value)
 
-    def log(self):
+    def on_log(self):
         last_stats = {name: self.format(value) for name, value in self.trainer.last_stats.items()}
         step_bar = self.step_bars[-1]
         step_bar.set_postfix(**last_stats),
         step_bar.update(self.trainer.logging_frecuency)
 
-    def post_epoch(self):
+    def on_epoch_end(self):
         self.epoch_bar.update()
 
-    def post_training(self):
+    def on_train_end(self):
         self.epoch_bar.__exit__()
         self.epoch_tqdm.close()
 

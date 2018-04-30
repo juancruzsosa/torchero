@@ -1,5 +1,5 @@
-class Hook(object):
-    """ Hooks for epoch/batch training events
+class Callback(object):
+    """ Callbacks for epoch/batch training events
     """
     def __init__(self):
         """ Constructor
@@ -14,27 +14,27 @@ class Hook(object):
         """
         self.trainer = trainer
 
-    def pre_epoch(self):
+    def on_epoch_begin(self):
         """ Trigger called before every epoch
         """
         pass
 
-    def post_epoch(self):
+    def on_epoch_end(self):
         """ Trigger called after every epoch
         """
         pass
 
-    def log(self):
+    def on_log(self):
         """ Trigger called after every log update
         """
         pass
 
-    def pre_training(self):
+    def on_train_begin(self):
         """ Trigger called one time before training
         """
         pass
 
-    def post_training(self):
+    def on_train_end(self):
         """ Trigger called one time after training
         """
         pass
