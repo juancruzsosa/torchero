@@ -268,7 +268,7 @@ class CallbacksTests(unittest.TestCase):
     def test_checkpoint_callback_persist_model_on_first_trained_epoch(self):
         model = nn.Linear(1, 1, bias=False)
         w = model.weight.data[0][0]
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', mode='min', temp_dir=self.temp_dir)
         dataset = torch.ones(2, 1)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
@@ -283,7 +283,7 @@ class CallbacksTests(unittest.TestCase):
 
         trainer.train(dataloader, epochs=1)
 
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', mode='min', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
@@ -332,7 +332,7 @@ class CallbacksTests(unittest.TestCase):
     def test_checkpoint_callback_not_persist_model_if_model_not_gets_better(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 1)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
         measures = [1, 2]
@@ -355,7 +355,7 @@ class CallbacksTests(unittest.TestCase):
     def test_checkpoint_callback_repersist_model_if_model_gets_better(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 1)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
         measures = [2, 1]
@@ -378,7 +378,7 @@ class CallbacksTests(unittest.TestCase):
     def test_checkpoint_callback_best_epoch_is_on_total_trained_epochs(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 1)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
         measures = [2, 3, 1]
@@ -402,7 +402,7 @@ class CallbacksTests(unittest.TestCase):
     def test_checkpoint_callback_load_epoch_reload_training_accuracy(self):
         model = nn.Linear(1, 1, bias=False)
         model.weight.data = torch.zeros(1,1)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         dataset = torch.ones(1, 1)
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
         measures = [2, 1, 3, 4]
@@ -417,7 +417,7 @@ class CallbacksTests(unittest.TestCase):
                               update_batch_fn=update_batch)
         trainer.stats_meters['t'] = Averager()
         trainer.train(dataloader, epochs=3)
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
@@ -428,6 +428,32 @@ class CallbacksTests(unittest.TestCase):
         data_best = checkpoint.load()
 
         self.assertEqual(data_best, {'epoch':2, 't':1})
+        self.assertEqual(model.weight.data[0][0], 2)
+
+    def test_checkpoint_callback_unrecognized_mode_raise_exception(self):
+        self.assertRaises(Exception, lambda:ModelCheckpoint(path=self.checkpoint_file, monitor='c', mode='xyz'))
+
+    def test_checkpoint_callback_with_max_mode_saves_model_on_maximum_monitor(self):
+        model = nn.Linear(1, 1, bias=False)
+        model.weight.data = torch.zeros(1,1)
+        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='max', temp_dir=self.temp_dir)
+        dataset = torch.ones(1, 1)
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        measures = [2, 3, 1]
+
+        def update_batch(trainer, x):
+            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.model.weight.data.add_(torch.ones(1,1))
+
+        trainer = TestTrainer(model=model,
+                              callbacks=[checkpoint],
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch)
+        trainer.stats_meters['t'] = Averager()
+        trainer.train(dataloader, epochs=3)
+        data_best = checkpoint.load()
+
+        self.assertEqual(data_best, {'epoch':2, 't':3})
         self.assertEqual(model.weight.data[0][0], 2)
 
     def tearDown(self):
