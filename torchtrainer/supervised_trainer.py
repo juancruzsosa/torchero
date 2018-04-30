@@ -21,10 +21,10 @@ class SupervisedTrainer(BatchTrainer):
         if val_acc_meter is None:
             val_acc_meter = acc_meter.clone()
 
-        self.stats_meters['train_loss'] = Averager()
-        self.stats_meters['val_loss'] = Averager()
-        self.stats_meters['train_acc'] = acc_meter
-        self.stats_meters['val_acc'] = val_acc_meter
+        self.meters['train_loss'] = Averager()
+        self.meters['val_loss'] = Averager()
+        self.meters['train_acc'] = acc_meter
+        self.meters['val_acc'] = val_acc_meter
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()
@@ -33,13 +33,13 @@ class SupervisedTrainer(BatchTrainer):
         loss.backward()
         self.optimizer.step()
 
-        self.stats_meters['train_loss'].measure(loss.data[0])
-        self.stats_meters['train_acc'].measure(output.data, y.data)
+        self.meters['train_loss'].measure(loss.data[0])
+        self.meters['train_acc'].measure(output.data, y.data)
 
     def validate_batch(self, x, y):
         self.optimizer.zero_grad()
         output = self.model(x)
         loss = self.criterion(output, y)
 
-        self.stats_meters['val_loss'].measure(loss.data[0])
-        self.stats_meters['val_acc'].measure(output.data, y.data)
+        self.meters['val_loss'].measure(loss.data[0])
+        self.meters['val_acc'].measure(output.data, y.data)

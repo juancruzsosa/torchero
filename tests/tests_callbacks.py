@@ -23,18 +23,18 @@ class CallbacksTests(unittest.TestCase):
         callback = History()
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t_c'].measure(x.data[0][0])
+            trainer.meters['t_c'].measure(x.data[0][0])
 
         def validate_batch(trainer, x):
-            trainer.stats_meters['v_c'].measure(x.data[0][0])
+            trainer.meters['v_c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch,
                               valid_batch_fn=validate_batch)
-        trainer.stats_meters['t_c'] = Averager()
-        trainer.stats_meters['v_c'] = Averager()
+        trainer.meters['t_c'] = Averager()
+        trainer.meters['v_c'] = Averager()
         self.assertEqual(trainer.last_stats, {})
 
         self.assertEqual(set(trainer.meters_names()), set(['t_c', 'v_c']))
@@ -56,13 +56,13 @@ class CallbacksTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
+            trainer.meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dl, epochs=1)
 
@@ -80,13 +80,13 @@ class CallbacksTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
+            trainer.meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dl, epochs=1)
 
@@ -106,13 +106,13 @@ class CallbacksTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.stats_filename))
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
+            trainer.meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dl, epochs=1)
         trainer.train(dl, epochs=1)
@@ -134,13 +134,13 @@ class CallbacksTests(unittest.TestCase):
         callback = CSVLogger(output=self.stats_filename, append=False, columns=['epoch', 'step'])
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(x.data[0][0])
+            trainer.meters['c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dl, epochs=1)
 
@@ -159,13 +159,13 @@ class CallbacksTests(unittest.TestCase):
         callback = CSVLogger(output=self.stats_filename, append=False, columns=['epoch', 'v', 't'])
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(x.data[0][0])
+            trainer.meters['t'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
                               logging_frecuency=5,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
 
         trainer.train(dl, epochs=1)
 
@@ -208,7 +208,7 @@ class CallbacksTests(unittest.TestCase):
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dataloader, epochs=0)
         self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
@@ -223,7 +223,7 @@ class CallbacksTests(unittest.TestCase):
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         try:
             checkpoint.load()
@@ -256,7 +256,7 @@ class CallbacksTests(unittest.TestCase):
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
 
         try:
             trainer.train(dataloader, epochs=1)
@@ -273,13 +273,13 @@ class CallbacksTests(unittest.TestCase):
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(0)
+            trainer.meters['c'].measure(0)
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dataloader, epochs=1)
 
@@ -303,13 +303,13 @@ class CallbacksTests(unittest.TestCase):
         dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
 
         def update_batch(trainer, x):
-            trainer.stats_meters['c'].measure(0)
+            trainer.meters['c'].measure(0)
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['c'] = Averager()
+        trainer.meters['c'] = Averager()
 
         trainer.train(dataloader, epochs=1)
 
@@ -338,14 +338,14 @@ class CallbacksTests(unittest.TestCase):
         measures = [1, 2]
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epoch])
+            trainer.meters['t'].measure(measures[trainer.epoch])
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
         data_best = checkpoint.load()
 
@@ -361,14 +361,14 @@ class CallbacksTests(unittest.TestCase):
         measures = [2, 1]
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epoch])
+            trainer.meters['t'].measure(measures[trainer.epoch])
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
         data_best = checkpoint.load()
 
@@ -384,14 +384,14 @@ class CallbacksTests(unittest.TestCase):
         measures = [2, 3, 1]
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.meters['t'].measure(measures[trainer.epochs_trained])
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         trainer.train(dataloader, epochs=2)
         trainer.train(dataloader, epochs=1)
         data_best = checkpoint.load()
@@ -408,21 +408,21 @@ class CallbacksTests(unittest.TestCase):
         measures = [2, 1, 3, 4]
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.meters['t'].measure(measures[trainer.epochs_trained])
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         trainer.train(dataloader, epochs=3)
         checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='t', mode='min', temp_dir=self.temp_dir)
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         best = checkpoint.load()
         trainer.train(dataloader, epochs=1)
         data_best = checkpoint.load()
@@ -442,14 +442,14 @@ class CallbacksTests(unittest.TestCase):
         measures = [2, 3, 1]
 
         def update_batch(trainer, x):
-            trainer.stats_meters['t'].measure(measures[trainer.epochs_trained])
+            trainer.meters['t'].measure(measures[trainer.epochs_trained])
             trainer.model.weight.data.add_(torch.ones(1,1))
 
         trainer = TestTrainer(model=model,
                               callbacks=[checkpoint],
                               logging_frecuency=1,
                               update_batch_fn=update_batch)
-        trainer.stats_meters['t'] = Averager()
+        trainer.meters['t'] = Averager()
         trainer.train(dataloader, epochs=3)
         data_best = checkpoint.load()
 
