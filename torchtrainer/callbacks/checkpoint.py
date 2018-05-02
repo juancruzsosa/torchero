@@ -41,7 +41,7 @@ class ModelCheckpoint(Callback):
         self.temp_dir = tempfile.mkdtemp(dir=self.temp_dirname)
 
     def load(self):
-        """ Load checkpointed mode
+        """ Load checkpointed model
         """
         try:
             extract_dir = tempfile.mkdtemp(dir=self.temp_dirname)
