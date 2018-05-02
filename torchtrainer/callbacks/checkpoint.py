@@ -61,11 +61,11 @@ class ModelCheckpoint(Callback):
         return data[0]
 
     def on_epoch_end(self):
-        if self.monitor_name not in self.trainer.last_stats:
+        if self.monitor_name not in self.trainer.metrics:
             shutil.rmtree(self.temp_dir)
             raise MeterNotFound(self.monitor_name)
 
-        value = self.trainer.last_stats[self.monitor_name]
+        value = self.trainer.metrics[self.monitor_name]
         if self.last_value is None or self.is_better(value):
             self.last_value = value
             index_content = [{self.monitor_name: self.last_value,

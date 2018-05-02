@@ -10,5 +10,5 @@ class History(Callback):
     def on_log(self):
         line = {'epoch' : self.trainer.epoch,
                 'step' : self.trainer.step}
-        line.update(self.trainer.last_stats)
+        line.update(self.trainer.metrics)
         self.registry.append(line)

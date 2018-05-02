@@ -35,7 +35,7 @@ class CallbacksTests(unittest.TestCase):
                                       'v_c' : Averager()},
                               update_batch_fn=update_batch,
                               valid_batch_fn=validate_batch)
-        self.assertEqual(trainer.last_stats, {})
+        self.assertEqual(trainer.metrics, {})
 
         self.assertEqual(set(trainer.meters_names()), set(['t_c', 'v_c']))
 
@@ -45,7 +45,7 @@ class CallbacksTests(unittest.TestCase):
                              {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
 
         self.assertEqual(callback.registry, expected_registry)
-        self.assertEqual(trainer.last_stats, {'t_c': 7.0, 'v_c': 4.5})
+        self.assertEqual(trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
 
     def test_csv_exporter_print_header_at_begining_of_training(self):
         self.model = DummyModel()

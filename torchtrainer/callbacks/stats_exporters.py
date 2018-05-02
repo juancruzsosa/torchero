@@ -35,7 +35,7 @@ class CSVLogger(Callback):
             self.file_handle.write(','.join(self.columns))
 
     def on_log(self):
-        stats = self.trainer.last_stats
+        stats = self.trainer.metrics
         stats.update({'epoch': self.trainer.epochs_trained,
                       'step': self.trainer.step})
 

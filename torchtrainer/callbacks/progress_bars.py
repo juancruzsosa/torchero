@@ -47,9 +47,9 @@ class ProgbarLogger(Callback):
             return str(value)
 
     def on_log(self):
-        last_stats = {name: self.format(value) for name, value in self.trainer.last_stats.items()}
+        metrics = {name: self.format(value) for name, value in self.trainer.metrics.items()}
         step_bar = self.step_bars[-1]
-        step_bar.set_postfix(**last_stats),
+        step_bar.set_postfix(**metrics),
         step_bar.update(self.trainer.logging_frecuency)
 
     def on_epoch_end(self):

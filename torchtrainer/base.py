@@ -28,7 +28,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.model = model
         self._epochs_trained = 0
         self._use_cuda = False
-        self._last_stats = {}
+        self._metrics = {}
         self.meters = meters
 
         self._callbacks = CallbackContainer()
@@ -59,20 +59,20 @@ class BatchTrainer(object, metaclass=ABCMeta):
         return sorted(self.meters.keys())
 
     @property
-    def last_stats(self):
+    def metrics(self):
         """ Last statistic recopiled from meters
 
         Returns
             dict: Dictionary of metric name and value, one for each
             `meters` that made at least one measure
         """
-        return self._last_stats
+        return self._metrics
 
-    def _compile_last_stats(self):
-        self._last_stats = {}
+    def _compile_metrics(self):
+        self._metrics = {}
         for metric_name, meter in self.meters.items():
             try:
-                self._last_stats[metric_name]  = meter.value()
+                self._metrics[metric_name]  = meter.value()
             except ZeroMeasurementsError:
                 continue
 
@@ -102,7 +102,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         pass
 
     def log(self):
-        self._compile_last_stats()
+        self._compile_metrics()
         self._callbacks.on_log()
         for meter in self.meters.values():
             meter.reset()
