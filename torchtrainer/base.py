@@ -13,7 +13,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
     INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
     INVALID_LOGGING_FRECUENCY_MESSAGE='Expected loggin frecuency to be a non-negative integer, got: {logging_frecuency}'
 
-    def __init__(self, model, callbacks=[], logging_frecuency=1):
+    def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1):
         """ Constructor
 
         Args:
@@ -29,7 +29,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self._epochs_trained = 0
         self._use_cuda = False
         self._last_stats = {}
-        self.meters = {}
+        self.meters = meters
 
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
