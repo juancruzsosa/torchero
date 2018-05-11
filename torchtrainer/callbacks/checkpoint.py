@@ -47,14 +47,17 @@ class ModelCheckpoint(Callback):
             extract_dir = tempfile.mkdtemp(dir=self.temp_dirname)
             shutil.unpack_archive(self.path + '.zip', extract_dir)
 
-            with open(os.path.join(extract_dir, 'index.yaml'), 'r') as f:
+            index_file = os.path.join(extract_dir, 'index.yaml')
+            model_file = os.path.join(extract_dir, '0.pth')
+
+            with open(index_file, 'r') as f:
                 data = yaml.load(f)
 
             if self.monitor_name not in data[0]:
                 raise MeterNotFound(self.monitor_name)
 
             self.last_value = data[0][self.monitor_name]
-            self.trainer.model.load_state_dict(torch.load(os.path.join(extract_dir, '0.pth')))
+            self.trainer.model.load_state_dict(torch.load(model_file))
         finally:
             shutil.rmtree(extract_dir)
 
@@ -71,10 +74,13 @@ class ModelCheckpoint(Callback):
             index_content = [{self.monitor_name: self.last_value,
                               'epoch': self.trainer.epochs_trained}]
 
-            with open(os.path.join(self.temp_dir, 'index.yaml'), 'w') as index_file:
+            index_file = os.path.join(self.temp_dir, 'index.yaml')
+            model_file = os.path.join(self.temp_dir, '0.pth')
+
+            with open(index_file, 'w') as index_file:
                 yaml.dump(index_content, index_file)
 
-            torch.save(self.trainer.model.state_dict(), os.path.join(self.temp_dir, '0.pth'))
+            torch.save(self.trainer.model.state_dict(), model_file)
             self.outperform = True
 
     def on_train_end(self):

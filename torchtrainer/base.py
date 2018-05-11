@@ -169,8 +169,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.model.train(mode=False)
 
     def _is_time_to_log(self):
-        return (self.logging_frecuency > 0 and
-                self.step % self.logging_frecuency == self.logging_frecuency - 1)
+        log_frec = self.logging_frecuency
+        return log_frec > 0 and self.step % log_frec == log_frec - 1
 
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):

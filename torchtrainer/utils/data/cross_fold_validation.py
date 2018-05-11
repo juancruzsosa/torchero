@@ -45,12 +45,13 @@ class CrossFoldValidation(object):
         return math.ceil(len(self.dataset) / self.valid_size)
 
     def __iter__(self):
-        for valid_start in range(0, len(self.dataset), self.valid_size):
-            valid_indices = self.indices[valid_start:
-                                         valid_start + self.valid_size]
+        indices = self.indices
 
-            train_indices = (self.indices[:valid_start]
-                             + self.indices[valid_start + self.valid_size:])
+        for valid_start in range(0, len(self.dataset), self.valid_size):
+            valid_indices = indices[valid_start: valid_start + self.valid_size]
+
+            train_indices = (indices[:valid_start]
+                             + indices[valid_start + self.valid_size:])
 
             train_dataset = SubsetDataset(dataset=self.dataset,
                                           indices=train_indices)
