@@ -9,8 +9,6 @@ class _CategoricalAccuracy(BaseMeter):
     INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
                                        'dimension and same shape')
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
-    RESULT_MODE_ERROR_MESSAGE = ('Mode {} not recognized. Options are '
-                                 'ResultMode.SUM, ResultMode.NORMALIZED, ResultMode.PERCENTAGE')
 
     def __init__(self, aggregator=None):
         """ Constructor
