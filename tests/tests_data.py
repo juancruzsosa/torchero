@@ -124,3 +124,43 @@ class TestsDataUtils(unittest.TestCase):
         self.assertDatasetEquals(train_dl, [1, 5, 3, 4])
 
         self.assertStopIteration(it)
+
+    def test_train_and_validation_dataset_can_be_different(self):
+        train_dataset = [1, 2, 3, 4, 5]
+        valid_dataset = [6, 7, 8, 9, 10]
+
+        splitter = CrossFoldValidation(dataset=train_dataset,
+                                       valid_dataset=valid_dataset,
+                                       valid_size=0.4)
+        it = iter(splitter)
+
+        self.assertEqual(len(splitter), 3)
+
+        train_dl, valid_dl = next(it)
+
+        self.assertDatasetEquals(valid_dl, [6, 10])
+        self.assertDatasetEquals(train_dl, [3, 4, 2])
+
+        train_dl, valid_dl = next(it)
+
+        self.assertDatasetEquals(valid_dl, [8, 9])
+        self.assertDatasetEquals(train_dl, [1, 5, 2])
+
+        train_dl, valid_dl = next(it)
+
+        self.assertDatasetEquals(valid_dl, [7])
+        self.assertDatasetEquals(train_dl, [1, 5, 3, 4])
+
+        self.assertStopIteration(it)
+
+    def test_constructor_should_raise_if_train_and_valid_datasets_have_not_the_same_size(self):
+        train_dataset = [1, 2]
+        valid_dataset = [3]
+
+        try:
+            CrossFoldValidation(dataset=train_dataset,
+                                valid_dataset=valid_dataset,
+                                valid_size=0.5)
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), CrossFoldValidation.TRAIN_AND_VALID_DATASET_SIZE_MESSAGE)
