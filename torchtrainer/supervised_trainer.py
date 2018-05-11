@@ -5,16 +5,30 @@ class SupervisedTrainer(BatchTrainer):
     """ Supervised trainer
     """
 
-    def __init__(self, model, criterion, optimizer, acc_meter=NullMeter(), val_acc_meter=None, callbacks=[], logging_frecuency=1):
+    def __init__(self,
+                 model,
+                 criterion,
+                 optimizer,
+                 acc_meter=NullMeter(),
+                 val_acc_meter=None,
+                 callbacks=[],
+                 logging_frecuency=1):
         """ Constructor
 
         Args:
-            model (instance of :model:`torch.nn.Module`): Model to train
-            criterion (:model:`torch.nn.Module`): Loss criterion (eg: `torch.nn.CrossEntropyLoss`, `torch.nn.L1Loss`)
-            optimizer (instance of :model:`torch.optim.Optimizer`): Model Optimizer
-            logging_frecuency (int): Frecuency of log to monitor train/validation
+            model (instance of :model:`torch.nn.Module`):
+                Model to train
+            criterion (:model:`torch.nn.Module`):
+                Loss criterion (eg: `torch.nn.CrossEntropyLoss`,
+                                    `torch.nn.L1Loss`)
+            optimizer (instance of :model:`torch.optim.Optimizer`):
+                Model optimizer
+            logging_frecuency (int):
+                Frecuency of log to monitor train/validation
         """
-        super(SupervisedTrainer, self).__init__(model=model, callbacks=callbacks, logging_frecuency=logging_frecuency)
+        super(SupervisedTrainer, self).__init__(model=model,
+                                                callbacks=callbacks,
+                                                logging_frecuency=logging_frecuency)
         self.criterion = criterion
         self.optimizer = optimizer
 

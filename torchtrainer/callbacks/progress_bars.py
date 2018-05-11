@@ -10,7 +10,8 @@ except ImportError:
 
 
 class ProgbarLogger(Callback):
-    """ Callback that displays progress bars to monitor training/validation metrics
+    """ Callback that displays progress bars to monitor
+        training/validation metrics
     """
 
     def __init__(self, ascii=False, notebook=False):
@@ -31,11 +32,17 @@ class ProgbarLogger(Callback):
         self.step_bars = []
 
     def on_train_begin(self):
-        self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs, unit='epoch', leave=True, ascii=self.ascii)
+        self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
+                                    unit='epoch',
+                                    leave=True,
+                                    ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
 
     def on_epoch_begin(self):
-        step_tqdm = self.tqdm(total=self.trainer.total_steps, unit=' batchs', leave=True, ascii=self.ascii)
+        step_tqdm = self.tqdm(total=self.trainer.total_steps,
+                              unit=' batchs',
+                              leave=True,
+                              ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
 
@@ -47,7 +54,8 @@ class ProgbarLogger(Callback):
             return str(value)
 
     def on_log(self):
-        metrics = {name: self.format(value) for name, value in self.trainer.metrics.items()}
+        metrics = {name: self.format(value)
+                   for name, value in self.trainer.metrics.items()}
         step_bar = self.step_bars[-1]
         step_bar.set_postfix(**metrics),
         step_bar.update(self.trainer.logging_frecuency)

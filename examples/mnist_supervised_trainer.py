@@ -48,8 +48,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    train_ds = MNIST(root=args.data, download=True, train=True, transform=transforms.Compose([transforms.ToTensor()]))
-    test_ds = MNIST(root=args.data, download=False, train=False, transform=transforms.Compose([transforms.ToTensor()]))
+    train_ds = MNIST(root=args.data,
+                     download=True,
+                     train=True,
+                     transform=transforms.Compose([transforms.ToTensor()]))
+    test_ds = MNIST(root=args.data,
+                    download=False,
+                    train=False,
+                    transform=transforms.Compose([transforms.ToTensor()]))
     train_dl = DataLoader(train_ds, batch_size=args.batch_size)
     test_dl = DataLoader(test_ds, batch_size=args.val_batch_size)
 
@@ -62,8 +68,12 @@ def main():
                                 criterion=criterion,
                                 logging_frecuency=args.logging_frecuency,
                                 acc_meter=CategoricalAccuracy(aggregator=percentage(Average())),
-                                callbacks=[Logger(), CSVLogger(output='training_stats.csv')])
-    trainer.train(dataloader=train_dl, valid_dataloader=test_dl, epochs=args.epochs)
+                                callbacks=[Logger(),
+                                           CSVLogger(output='training_stats.csv')
+                                          ])
+    trainer.train(dataloader=train_dl,
+                  valid_dataloader=test_dl,
+                  epochs=args.epochs)
 
 if __name__ == '__main__':
     main()

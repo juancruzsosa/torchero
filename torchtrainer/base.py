@@ -10,16 +10,22 @@ class BatchTrainer(object, metaclass=ABCMeta):
         All those trainers should subclass this class
     """
 
-    INVALID_EPOCH_MESSAGE='Expected epoch to be a non-negative integer, got: {epochs}'
-    INVALID_LOGGING_FRECUENCY_MESSAGE='Expected loggin frecuency to be a non-negative integer, got: {logging_frecuency}'
+    INVALID_EPOCH_MESSAGE=('Expected epoch to be a non-negative integer, '
+                           'got: {epochs}')
+    INVALID_LOGGING_FRECUENCY_MESSAGE=('Expected loggin frecuency to be a '
+                                       'non-negative integer, '
+                                       'got: {logging_frecuency}')
 
     def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1):
         """ Constructor
 
         Args:
-            model (:class:`torch.nn.Module`): Module to train
-            callbacks (:class:`torchtrainer.callbacks.Callback`): Pluggable callbacks for epoch/batch events.
-            logging_frecuency (int): Frecuency of log to monitor train/validation
+            model (:class:`torch.nn.Module`):
+                Module to train
+            callbacks (:class:`torchtrainer.callbacks.Callback`):
+                Pluggable callbacks for epoch/batch events.
+            logging_frecuency (int):
+                Frecuency of log to monitor train/validation
         """
         if logging_frecuency < 0:
             raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=logging_frecuency))
@@ -88,15 +94,21 @@ class BatchTrainer(object, metaclass=ABCMeta):
     @epochs_trained.setter
     def epochs_trained(self, value):
         if value < 0:
-            raise AttributeError('can\'t set epochs_trained to a value less than zero')
+            raise AttributeError('can\'t set epochs_trained'
+                                 'to a value less than zero')
 
     @abstractmethod
     def update_batch(self, *args, **kwargs):
         """ Abstract method for update model parameters given a batch
 
         Args:
-            *args (variable length arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Unamed batch parameters
-            **kwargs (variable length keyword arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Named batch parameters
+            *args (variable length arguments of :class:`torch.autograd.Variable`
+                   of Tensors or cuda Tensors):
+                Unamed batch parameters
+            **kwargs (variable length keyword arguments of
+                      :class:`torch.autograd.Variable` of
+                      Tensors or cuda Tensors):
+                Named batch parameters
         """
 
         pass
@@ -128,9 +140,12 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """ Train the model
 
         Args:
-            dataloader (:class:`torch.utils.DataLoader`): Train data loader
-            valid_dataloader (:class:`torch.utils.DataLoader`): Validation data loader
-            epochs (int): Number of epochs to train
+            dataloader (:class:`torch.utils.DataLoader`):
+                Train data loader
+            valid_dataloader (:class:`torch.utils.DataLoader`):
+                Validation data loader
+            epochs (int):
+                Number of epochs to train
         """
         if epochs < 0:
             raise Exception(self.INVALID_EPOCH_MESSAGE.format(epochs=epochs))
@@ -162,8 +177,13 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """ Abstract method for validate model per batch
 
         Args:
-            *args (variable length arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Unamed batch parameters
-            **kwargs (variable length keyword arguments of :class:`torch.autograd.Variable` of Tensors or cuda Tensors): Named batch parameters
+            *args (variable length arguments of :class:`torch.autograd.Variable`
+                   of Tensors or cuda Tensors):
+                Unamed batch parameters
+            **kwargs (variable length keyword arguments of
+                      :class:`torch.autograd.Variable` of
+                      Tensors or cuda Tensors):
+                Named batch parameters
         """
         pass
 

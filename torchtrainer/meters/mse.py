@@ -7,8 +7,10 @@ class MSE(BaseMeter):
     """ Meter for mean squared error metric
     """
 
-    INVALID_BATCH_DIMENSION_MESSAGE = 'Expected both tensors have at less two dimension and same shape'
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected types (FloatTensor, FloatTensor) as inputs'
+    INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
+                                       'dimension and same shape')
+    INVALID_INPUT_TYPE_MESSAGE = ('Expected types (FloatTensor, FloatTensor) '
+                                  'as inputs')
 
     def __init__(self, take_sqrt=False):
         """ Constructor

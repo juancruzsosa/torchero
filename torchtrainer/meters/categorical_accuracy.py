@@ -6,7 +6,8 @@ from .base import BaseMeter, ZeroMeasurementsError
 from .aggregators.batch import Average
 
 class _CategoricalAccuracy(BaseMeter):
-    INVALID_BATCH_DIMENSION_MESSAGE = 'Expected both tensors have at less two dimension and same shape'
+    INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
+                                       'dimension and same shape')
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
     RESULT_MODE_ERROR_MESSAGE = ('Mode {} not recognized. Options are '
                                  'ResultMode.SUM, ResultMode.NORMALIZED, ResultMode.PERCENTAGE')
@@ -35,13 +36,15 @@ class _CategoricalAccuracy(BaseMeter):
         if not torch.is_tensor(a):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
 
-        if not isinstance(b, torch.LongTensor) and not isinstance(b, torch.cuda.LongTensor):
+        if (not isinstance(b, torch.LongTensor) and
+            not isinstance(b, torch.cuda.LongTensor)):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
 
         if len(a.size()) != 2 or len(b.size()) != 1 or len(b) != a.size()[0]:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
 
-        self.result = self.aggregator.combine(self.result, self._get_result(a, b))
+        self.result = self.aggregator.combine(self.result,
+                                              self._get_result(a, b))
 
     def value(self):
         return self.aggregator.final_value(self.result)
@@ -80,10 +83,12 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
     """
     def __init__(self, aggregator=None, threshold=0.5, activation=None):
-        super(BinaryWithLogitsAccuracy, self).__init__(threshold=threshold, aggregator=aggregator)
+        super(BinaryWithLogitsAccuracy, self).__init__(threshold=threshold,
+                                                       aggregator=aggregator)
         self.activation = activation
         if self.activation is None:
             self.activation = nn.Sigmoid()
 
     def _get_result(self, output, target):
-        return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output), target)
+        return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output),
+                                                                 target)
