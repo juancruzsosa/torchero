@@ -27,12 +27,14 @@ class ModelCheckpoint(Callback):
         self.last_value = None
         self.temp_dirname = temp_dir
         self.outperform = False
+        self.is_better = self.criterion(mode)
 
-        if mode.lower() == 'min':
-            self.is_better = lambda value: self.last_value > value
-        elif mode.lower() == 'max':
-            self.is_better = lambda value: self.last_value < value
-        else:
+    def criterion(self, mode):
+        criterion_by_name = {'max': lambda b: self.last_value < b,
+                             'min': lambda b: self.last_value > b}
+        try:
+            return criterion_by_name[mode.lower()]
+        except KeyError:
             raise Exception(self.UNRECOGNIZED_MODE.format(mode))
 
     def on_train_begin(self):
