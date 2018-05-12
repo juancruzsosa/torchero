@@ -338,3 +338,17 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer = TestTrainer(model=self.model, callbacks=[callback_0, callback_1])
         trainer.train(dl, epochs=2)
         self.assertEqual(self.epochs, [(0, 0), (1, 0), (0, 1), (1, 1)])
+
+    def test_log_is_performed_at_end_if_logging_frecuency_not_divides_nr_of_batchs(self):
+        self.validations = 0
+        dataset = torch.zeros(7, 1)
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+
+        class CustomCallback(Callback):
+            def on_log(callback):
+                self.validations += 1
+
+        trainer = TestTrainer(model=self.model, logging_frecuency=5, callbacks=[CustomCallback()])
+        trainer.train(dl, epochs=1)
+
+        self.assertEqual(self.validations, 2)
