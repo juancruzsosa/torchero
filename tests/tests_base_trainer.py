@@ -366,3 +366,65 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer.train(dl, epochs=1)
 
         self.assertEqual(trainer.metrics, {'x': 1.0})
+
+    def test_validation_granularity_at_epoch_validate_only_after_epoch(self):
+        train_batchs = []
+        self.validations = 0
+
+        self.load_arange_training_dataset(10, 1)
+        self.load_arange_validation_dataset(1, 1)
+
+        def update_batch_fn(trainer, x):
+            train_batchs.append(x)
+
+        def validate_batch_fn(trainer, x):
+            if trainer.epochs_trained == 0:
+                self.assertEqual(len(train_batchs), 10)
+            elif trainer.epochs_trained == 1:
+                self.assertEqual(len(train_batchs), 20)
+            self.validations += 1
+
+        trainer = TestTrainer(model=self.model,
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch_fn,
+                              valid_batch_fn=validate_batch_fn,
+                              validation_granularity=ValidationGranularity.AT_EPOCH)
+
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=2)
+        self.assertEqual(self.validations, 2)
+
+    def test_validation_granularity_at_epoch_does_not_reset_previous_metrics(self):
+        logs = []
+
+        self.load_arange_training_dataset(2, 1)
+        self.load_arange_validation_dataset(1, 1)
+
+        def update_batch_fn(trainer, x):
+            trainer.meters['t'].measure(x.data[0][0])
+
+        def validate_batch_fn(trainer, x):
+            trainer.meters['v'].measure(x.data[0][0])
+
+        class CustomCallback(Callback):
+            def on_log(callback):
+                logs.append(callback.trainer.metrics)
+
+        trainer = TestTrainer(model=self.model,
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch_fn,
+                              valid_batch_fn=validate_batch_fn,
+                              callbacks=[CustomCallback()],
+                              meters={'t':Averager(),'v':Averager()},
+                              validation_granularity=ValidationGranularity.AT_EPOCH)
+
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
+        self.assertEqual(logs, [{'t': 0.0}, {'t': 1.0, 'v': 0.0}])
+
+    def test_invalid_validation_granularity_argument_raises_exception(self):
+        try:
+            TestTrainer(model=self.model,
+                        logging_frecuency=1,
+                        validation_granularity='xyz')
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), BatchTrainer.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode='xyz'))
