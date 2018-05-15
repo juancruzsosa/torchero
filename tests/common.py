@@ -27,8 +27,8 @@ class DummyModel(nn.Module):
         return x
 
 class TestTrainer(BatchTrainer):
-    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, meters={}, logging_frecuency=1, callbacks=[], validation_granularity=ValidationGranularity.AT_LOG):
-        super(TestTrainer, self).__init__(model, meters=meters, logging_frecuency=logging_frecuency, callbacks=callbacks, validation_granularity=validation_granularity)
+    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, train_meters={}, val_meters={}, logging_frecuency=1, callbacks=[], validation_granularity=ValidationGranularity.AT_LOG):
+        super(TestTrainer, self).__init__(model, train_meters=train_meters, val_meters=val_meters, logging_frecuency=logging_frecuency, callbacks=callbacks, validation_granularity=validation_granularity)
         self.update_batch_fn = update_batch_fn
         self.valid_batch_fn = valid_batch_fn
 

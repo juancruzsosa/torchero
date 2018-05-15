@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 from .callbacks import Callback, CallbackContainer
 from .meters import ZeroMeasurementsError
 from enum import Enum
+from itertools import chain
 
 class ValidationGranularity(Enum):
     AT_LOG='log'
@@ -12,13 +13,11 @@ class ValidationGranularity(Enum):
 class _OnLogValidScheduler(Callback):
     def on_log(self):
         self.trainer._validate()
-        self.trainer._compile_metrics()
 
 class _OnEpochValidScheduler(Callback):
     def on_log(self):
         if self.trainer.step == self.trainer.total_steps-1:
             self.trainer._validate()
-        self.trainer._compile_metrics()
 
 class BatchTrainer(object, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
@@ -42,7 +41,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
     def __init__(self,
                  model,
                  callbacks=[],
-                 meters={},
+                 train_meters={}, val_meters={},
                  logging_frecuency=1,
                  validation_granularity=ValidationGranularity.AT_LOG):
         """ Constructor
@@ -68,8 +67,10 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.model = model
         self._epochs_trained = 0
         self._use_cuda = False
-        self._metrics = {}
-        self.meters = meters
+        self._train_metrics = {}
+        self._val_metrics = {}
+        self.train_meters = train_meters
+        self.val_meters = val_meters
 
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
@@ -97,7 +98,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
     def meters_names(self):
         """ Returns the meters names
         """
-        return sorted(self.meters.keys())
+        return sorted(chain(self.train_meters.keys(),
+                            self.val_meters.keys()))
 
     @property
     def metrics(self):
@@ -107,13 +109,23 @@ class BatchTrainer(object, metaclass=ABCMeta):
             dict: Dictionary of metric name and value, one for each
             `meters` that made at least one measure
         """
-        return self._metrics
+        return {**self._train_metrics, **self._val_metrics}
 
-    def _compile_metrics(self):
-        self._metrics = {}
-        for metric_name, meter in self.meters.items():
+    def _compile_train_metrics(self):
+        self._train_metrics = {}
+
+        for metric_name, meter in self.train_meters.items():
             try:
-                self._metrics[metric_name]  = meter.value()
+                self._train_metrics[metric_name] = meter.value()
+            except ZeroMeasurementsError:
+                continue
+
+    def _compile_val_metrics(self):
+        self._val_metrics = {}
+
+        for metric_name, meter in self.val_meters.items():
+            try:
+                self._val_metrics[metric_name] = meter.value()
             except ZeroMeasurementsError:
                 continue
 
@@ -149,7 +161,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         pass
 
     def reset_meters(self):
-        for meter in self.meters.values():
+        for meter in chain(self.train_meters.values(), self.val_meters.values()):
             meter.reset()
 
     def log(self):
@@ -170,6 +182,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
             self.update_batch(*batch)
 
             if self._is_time_to_log():
+                self._compile_train_metrics()
                 self.log()
 
         self._epochs_trained += 1
@@ -241,3 +254,4 @@ class BatchTrainer(object, metaclass=ABCMeta):
             valid_batch = list(map(self._to_variable, valid_batch))
             self.validate_batch(*valid_batch)
         self.model.train(mode=True)
+        self._compile_val_metrics()

@@ -360,9 +360,9 @@ class TorchBasetrainerTest(unittest.TestCase):
         meter.measure(0)
 
         def update_batch_fn(trainer, x):
-            trainer.meters['x'].measure(1)
+            trainer.train_meters['x'].measure(1)
 
-        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, logging_frecuency=1, meters={'x' : meter})
+        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, logging_frecuency=1, train_meters={'x' : meter})
         trainer.train(dl, epochs=1)
 
         self.assertEqual(trainer.metrics, {'x': 1.0})
@@ -400,10 +400,10 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.load_arange_validation_dataset(1, 1)
 
         def update_batch_fn(trainer, x):
-            trainer.meters['t'].measure(x.data[0][0])
+            trainer.train_meters['t'].measure(x.data[0][0])
 
         def validate_batch_fn(trainer, x):
-            trainer.meters['v'].measure(x.data[0][0])
+            trainer.val_meters['v'].measure(x.data[0][0])
 
         class CustomCallback(Callback):
             def on_log(callback):
@@ -414,7 +414,8 @@ class TorchBasetrainerTest(unittest.TestCase):
                               update_batch_fn=update_batch_fn,
                               valid_batch_fn=validate_batch_fn,
                               callbacks=[CustomCallback()],
-                              meters={'t':Averager(),'v':Averager()},
+                              train_meters={'t': Averager()},
+                              val_meters={'v': Averager()},
                               validation_granularity=ValidationGranularity.AT_EPOCH)
 
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
