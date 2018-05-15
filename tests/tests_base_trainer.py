@@ -3,7 +3,13 @@ from torch.autograd import Variable
 
 class TorchBasetrainerTest(unittest.TestCase):
     def assertTensorsEqual(self, a, b):
-        return self.assertTrue(torch.eq(a,b).all())
+        if isinstance(a, Variable):
+            a = a.data
+
+        if isinstance(b, Variable):
+            b = b.data
+
+        return self.assertEqual(a.tolist(), b.tolist())
 
     def load_one_vector_dataset(self):
         self.dataset = TensorDataset(torch.Tensor([[1.0]]), torch.Tensor([[1.0]]))
@@ -310,7 +316,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             def on_epoch_end(callback):
                 self.assertEqual(callback.trainer.epoch, self.epoch)
                 x = batchs[len(dataset) * self.epoch:len(dataset) * (self.epoch + 1)]
-                self.assertTensorsEqual(torch.stack(x), Variable(dataset.unsqueeze(0)))
+                self.assertTensorsEqual(torch.stack(x), Variable(dataset.unsqueeze(1)))
                 self.epoch += 1
 
         trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, callbacks=[CustomCallback()])

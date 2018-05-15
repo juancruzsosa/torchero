@@ -27,10 +27,25 @@ class DummyModel(nn.Module):
         return x
 
 class TestTrainer(BatchTrainer):
-    def __init__(self, model, update_batch_fn=None, valid_batch_fn=None, train_meters={}, val_meters={}, logging_frecuency=1, callbacks=[], validation_granularity=ValidationGranularity.AT_LOG):
-        super(TestTrainer, self).__init__(model, train_meters=train_meters, val_meters=val_meters, logging_frecuency=logging_frecuency, callbacks=callbacks, validation_granularity=validation_granularity)
-        self.update_batch_fn = update_batch_fn
-        self.valid_batch_fn = valid_batch_fn
+    def __init__(self, *args, **kwargs):
+        self.update_batch_fn = None
+        self.valid_batch_fn = None
+
+        try:
+            self.update_batch_fn = kwargs.pop('update_batch_fn')
+        except KeyError:
+            pass
+
+        try:
+            self.valid_batch_fn = kwargs.pop('valid_batch_fn')
+        except KeyError:
+            pass
+
+        if 'validation_granularity' not in kwargs:
+            kwargs['validation_granularity'] = ValidationGranularity.AT_LOG
+
+
+        super(TestTrainer, self).__init__(*args, **kwargs)
 
     def update_batch(self, *args, **kwargs):
         if self.update_batch_fn:
