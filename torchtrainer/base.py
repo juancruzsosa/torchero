@@ -3,6 +3,11 @@ from torch.autograd import Variable
 from abc import ABCMeta, abstractmethod
 from .callbacks import CallbackContainer
 from .meters import ZeroMeasurementsError
+from enum import Enum
+
+class ValidationGranularity(Enum):
+    AT_LOG='log'
+    AT_EPOCH='epoch'
 
 
 class BatchTrainer(object, metaclass=ABCMeta):
@@ -15,8 +20,13 @@ class BatchTrainer(object, metaclass=ABCMeta):
     INVALID_LOGGING_FRECUENCY_MESSAGE=('Expected loggin frecuency to be a '
                                        'non-negative integer, '
                                        'got: {logging_frecuency}')
+    INVALID_VALIDATION_GRANULARITY_MESSAGE=('Expected logging frecuency to be '
+                                            'one of '
+                                            'ValidationGranularity.AT_LOG\' or '
+                                            'ValidationGranularity.AT_EPOCH\' '
+                                            'got: {mode}')
 
-    def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1):
+    def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG):
         """ Constructor
 
         Args:
@@ -29,6 +39,12 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """
         if logging_frecuency < 0:
             raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=logging_frecuency))
+
+        if validation_granularity not in ValidationGranularity:
+            raise Exception(self.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode=validation_granularity))
+
+        self.validation_granularity = validation_granularity
+
         self.logging_frecuency = logging_frecuency
 
         self.model = model
@@ -137,7 +153,9 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
             if self._is_time_to_log():
                 self.model.train(mode=False)
-                if valid_dataloader:
+                if valid_dataloader and (self.validation_granularity == ValidationGranularity.AT_LOG or
+                                         (self.validation_granularity == ValidationGranularity.AT_EPOCH and
+                                          self.step == self.total_steps - 1)):
                     self._validate(valid_dataloader)
                 self.log()
                 self.model.train(mode=True)
