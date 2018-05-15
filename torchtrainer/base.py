@@ -152,13 +152,11 @@ class BatchTrainer(object, metaclass=ABCMeta):
             self.update_batch(*batch)
 
             if self._is_time_to_log():
-                self.model.train(mode=False)
-                if valid_dataloader and (self.validation_granularity == ValidationGranularity.AT_LOG or
-                                         (self.validation_granularity == ValidationGranularity.AT_EPOCH and
-                                          self.step == self.total_steps - 1)):
-                    self._validate(valid_dataloader)
+                if (self.validation_granularity == ValidationGranularity.AT_LOG or
+                    (self.validation_granularity == ValidationGranularity.AT_EPOCH and
+                     self.step == self.total_steps - 1)):
+                    self._validate()
                 self.log()
-                self.model.train(mode=True)
 
         self._epochs_trained += 1
 
@@ -178,6 +176,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
         self.total_epochs = epochs
         self.total_steps = len(dataloader)
+        self.valid_dataloader = valid_dataloader
 
         self._callbacks.on_train_begin()
 
@@ -190,6 +189,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
             self._callbacks.on_epoch_end()
 
         self._callbacks.on_train_end()
+
+        del self.valid_dataloader
 
         # Turn model to evaluation mode
         self.model.train(mode=False)
@@ -215,9 +216,14 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """
         pass
 
-    def _validate(self, valid_dataloader):
-        for valid_batch in valid_dataloader:
+    def _validate(self):
+        if self.valid_dataloader is None:
+            return
+
+        self.model.train(mode=False)
+        for valid_batch in self.valid_dataloader:
             if isinstance(valid_batch, torch.Tensor):
                 valid_batch = (valid_batch, )
             valid_batch = list(map(self._to_variable, valid_batch))
             self.validate_batch(*valid_batch)
+        self.model.train(mode=True)
