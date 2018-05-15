@@ -13,7 +13,7 @@ class SupervisedTrainer(BatchTrainer):
                  acc_meter=NullMeter(),
                  val_acc_meter=None,
                  logging_frecuency=1,
-                 validation_granularity=ValidationGranularity.AT_LOG):
+                 validation_granularity=ValidationGranularity.AT_EPOCH):
         """ Constructor
 
         Args:

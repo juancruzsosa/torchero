@@ -43,7 +43,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
                  callbacks=[],
                  train_meters={}, val_meters={},
                  logging_frecuency=1,
-                 validation_granularity=ValidationGranularity.AT_LOG):
+                 validation_granularity=ValidationGranularity.AT_EPOCH):
         """ Constructor
 
         Args:

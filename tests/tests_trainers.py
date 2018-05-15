@@ -2,6 +2,7 @@ import math
 from torch.utils.data import TensorDataset, DataLoader
 import torchtrainer
 from torchtrainer import SupervisedTrainer
+from torchtrainer.base import ValidationGranularity
 from .common import *
 
 def sign(x):
@@ -27,7 +28,7 @@ class TrainerTests(unittest.TestCase):
     def test_train_val_loss_are_calculated_after_every_log_event(self):
         self.load_training_dataset()
         self.load_validation_dataset()
-        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1)
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         self.assertEqual(len(self.history.registry), 2)
@@ -57,7 +58,7 @@ class TrainerTests(unittest.TestCase):
         acc_meter = MSE()
         self.load_training_dataset()
         self.load_validation_dataset()
-        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1)
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         for i in range(2):
@@ -77,7 +78,7 @@ class TrainerTests(unittest.TestCase):
         val_acc_meter = MSE(take_sqrt=True)
         self.load_training_dataset()
         self.load_validation_dataset()
-        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, val_acc_meter=val_acc_meter, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1)
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meter=acc_meter, val_acc_meter=val_acc_meter, criterion=self.criterion, callbacks=[self.history], logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
