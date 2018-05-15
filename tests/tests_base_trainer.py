@@ -352,3 +352,17 @@ class TorchBasetrainerTest(unittest.TestCase):
         trainer.train(dl, epochs=1)
 
         self.assertEqual(self.validations, 2)
+
+    def test_meters_should_be_reseted_before_training(self):
+        dataset = torch.zeros(1, 1)
+        dl = DataLoader(dataset, shuffle=False, batch_size=1)
+        meter = meters.Averager()
+        meter.measure(0)
+
+        def update_batch_fn(trainer, x):
+            trainer.meters['x'].measure(1)
+
+        trainer = TestTrainer(model=self.model, update_batch_fn=update_batch_fn, logging_frecuency=1, meters={'x' : meter})
+        trainer.train(dl, epochs=1)
+
+        self.assertEqual(trainer.metrics, {'x': 1.0})
