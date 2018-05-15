@@ -113,14 +113,22 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
         pass
 
-    def log(self):
-        self._compile_metrics()
-        self._callbacks.on_log()
+    def reset_meters(self):
         for meter in self.meters.values():
             meter.reset()
 
+    def log(self):
+        self._compile_metrics()
+        self._callbacks.on_log()
+
+    def log_started(self):
+        return self.logging_frecuency > 0 and self.step % self.logging_frecuency == 0
+
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
         for self.step, batch in enumerate(train_dataloader):
+            if self.log_started():
+                self.reset_meters()
+
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
                 batch = (batch, )
