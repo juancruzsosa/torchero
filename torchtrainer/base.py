@@ -39,7 +39,12 @@ class BatchTrainer(object, metaclass=ABCMeta):
     SCHED_BY_GRANULARITY = {ValidationGranularity.AT_EPOCH : _OnEpochValidScheduler,
                             ValidationGranularity.AT_LOG: _OnLogValidScheduler}
 
-    def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG):
+    def __init__(self,
+                 model,
+                 callbacks=[],
+                 meters={},
+                 logging_frecuency=1,
+                 validation_granularity=ValidationGranularity.AT_LOG):
         """ Constructor
 
         Args:
