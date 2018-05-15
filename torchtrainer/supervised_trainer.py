@@ -22,11 +22,18 @@ class SupervisedTrainer(BatchTrainer):
             criterion (:model:`torch.nn.Module`):
                 Loss criterion (eg: `torch.nn.CrossEntropyLoss`,
                                     `torch.nn.L1Loss`)
+            callbacks (:class:`torchtrainer.callbacks.Callback`):
+                Pluggable callbacks for epoch/batch events.
             optimizer (instance of :model:`torch.optim.Optimizer`):
                 Model optimizer
+            acc_meter (:class: `torchtrainer.meters.Meter'):
+                Training accuracy meter
+            val_acc_meter (:class: `torchtrainer.meters.Meter'):
+                Validation accuracy meter
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
-                :param val_meters:
+            validation_granularity (ValidationGranularity):
+                Change validation criterion (after every log vs after every epoch)
         """
         if val_acc_meter is None:
             val_acc_meter = acc_meter.clone()

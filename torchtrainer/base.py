@@ -51,8 +51,14 @@ class BatchTrainer(object, metaclass=ABCMeta):
                 Module to train
             callbacks (:class:`torchtrainer.callbacks.Callback`):
                 Pluggable callbacks for epoch/batch events.
+            train_meters (list of :class: `torchtrainer.meters.Meter'):
+                Training meters
+            val_meters (list of :class: `torchtrainer.meters.Meter'):
+                Validation meters
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
+            validation_granularity (ValidationGranularity):
+                Change validation criterion (after every log vs after every epoch)
         """
         if logging_frecuency < 0:
             raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=logging_frecuency))
