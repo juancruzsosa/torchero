@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Variable
 from abc import ABCMeta, abstractmethod
-from .callbacks import CallbackContainer
+from .callbacks import Callback, CallbackContainer
 from .meters import ZeroMeasurementsError
 from enum import Enum
 
@@ -9,6 +9,16 @@ class ValidationGranularity(Enum):
     AT_LOG='log'
     AT_EPOCH='epoch'
 
+class _OnLogValidScheduler(Callback):
+    def on_log(self):
+        self.trainer._validate()
+        self.trainer._compile_metrics()
+
+class _OnEpochValidScheduler(Callback):
+    def on_log(self):
+        if self.trainer.step == self.trainer.total_steps-1:
+            self.trainer._validate()
+        self.trainer._compile_metrics()
 
 class BatchTrainer(object, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
@@ -25,6 +35,9 @@ class BatchTrainer(object, metaclass=ABCMeta):
                                             'ValidationGranularity.AT_LOG\' or '
                                             'ValidationGranularity.AT_EPOCH\' '
                                             'got: {mode}')
+
+    SCHED_BY_GRANULARITY = {ValidationGranularity.AT_EPOCH : _OnEpochValidScheduler,
+                            ValidationGranularity.AT_LOG: _OnLogValidScheduler}
 
     def __init__(self, model, callbacks=[], meters={}, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG):
         """ Constructor
@@ -43,7 +56,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         if validation_granularity not in ValidationGranularity:
             raise Exception(self.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode=validation_granularity))
 
-        self.validation_granularity = validation_granularity
+        valid_sched = self.SCHED_BY_GRANULARITY[validation_granularity]()
 
         self.logging_frecuency = logging_frecuency
 
@@ -55,6 +68,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
+        self._callbacks.add(valid_sched)
         for callback in callbacks:
             self._callbacks.add(callback)
 
@@ -134,7 +148,6 @@ class BatchTrainer(object, metaclass=ABCMeta):
             meter.reset()
 
     def log(self):
-        self._compile_metrics()
         self._callbacks.on_log()
 
     def log_started(self):
@@ -152,10 +165,6 @@ class BatchTrainer(object, metaclass=ABCMeta):
             self.update_batch(*batch)
 
             if self._is_time_to_log():
-                if (self.validation_granularity == ValidationGranularity.AT_LOG or
-                    (self.validation_granularity == ValidationGranularity.AT_EPOCH and
-                     self.step == self.total_steps - 1)):
-                    self._validate()
                 self.log()
 
         self._epochs_trained += 1
