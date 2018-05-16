@@ -167,6 +167,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
         pass
 
     def reset_meters(self):
+        self._train_metrics = {}
+        self._val_metrics = {}
         for meter in chain(self.train_meters.values(), self.val_meters.values()):
             meter.reset()
 

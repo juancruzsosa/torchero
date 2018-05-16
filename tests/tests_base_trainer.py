@@ -424,8 +424,8 @@ class TorchBasetrainerTest(unittest.TestCase):
                               val_meters={'v': Averager()},
                               validation_granularity=ValidationGranularity.AT_EPOCH)
 
-        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
-        self.assertEqual(logs, [{'t': 0.0}, {'t': 1.0, 'v': 0.0}])
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=2)
+        self.assertEqual(logs, [{'t': 0.0}, {'t': 1.0, 'v': 0.0}, {'t': 0.0}, {'t': 1.0, 'v': 0.0}])
 
     def test_invalid_validation_granularity_argument_raises_exception(self):
         try:
