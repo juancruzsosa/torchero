@@ -67,7 +67,7 @@ def main():
                                 optimizer=optimizer,
                                 criterion=criterion,
                                 logging_frecuency=args.logging_frecuency,
-                                acc_meter=CategoricalAccuracy(aggregator=percentage(Average())),
+                                acc_meters={'acc': CategoricalAccuracy(aggregator=percentage(Average()))},
                                 callbacks=[Logger(),
                                            CSVLogger(output='training_stats.csv')
                                           ])
