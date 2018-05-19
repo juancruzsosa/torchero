@@ -1,18 +1,22 @@
 import torch
-from torch.autograd import Variable
 from abc import ABCMeta, abstractmethod
+
+from torchtrainer.utils.mixins import CudaMixin
 from .callbacks import Callback, CallbackContainer, History
 from .meters import ZeroMeasurementsError
 from enum import Enum
 from itertools import chain
 
+
 class ValidationGranularity(Enum):
     AT_LOG='log'
     AT_EPOCH='epoch'
 
+
 class _OnLogValidScheduler(Callback):
     def on_log(self):
         self.trainer._validate()
+
 
 class _OnEpochValidScheduler(Callback):
     def on_log(self):
@@ -20,15 +24,16 @@ class _OnEpochValidScheduler(Callback):
             self.trainer._validate()
 
 
-class BatchValidator(object, metaclass=ABCMeta):
+class BatchValidator(CudaMixin, metaclass=ABCMeta):
     """ Abstract class for all validation classes that works with batched inputs.
         All those validators should subclass this class
     """
     def __init__(self, model, meters):
+        super(BatchValidator, self).__init__()
         self.model = model
         self._meters = meters
         self._metrics = {}
-        self._use_cuda = False
+
 
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):
@@ -65,17 +70,6 @@ class BatchValidator(object, metaclass=ABCMeta):
         for meter in self._meters.values():
             meter.reset()
 
-    def _to_variable(self, x):
-        if self._use_cuda:
-            x = x.cuda()
-        return Variable(x)
-
-    def cuda(self):
-        self._use_cuda = True
-
-    def cpu(self):
-        self._use_cuda = False
-
     def validate(self, valid_dataloader):
         self._reset_meters()
 
@@ -93,7 +87,7 @@ class BatchValidator(object, metaclass=ABCMeta):
         self._compile_metrics()
         return self._metrics
 
-class BatchTrainer(object, metaclass=ABCMeta):
+class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
     """
@@ -145,6 +139,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
         if validation_granularity not in ValidationGranularity:
             raise Exception(self.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode=validation_granularity))
 
+        super(BatchTrainer, self).__init__()
+
         valid_sched = self.SCHED_BY_GRANULARITY[validation_granularity]()
 
         self.logging_frecuency = logging_frecuency
@@ -152,7 +148,6 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.model = model
         self._epochs_trained = 0
         self._steps_trained  = 0
-        self._use_cuda = False
         self._train_metrics = {}
         self._val_metrics = {}
         self.train_meters = train_meters
@@ -177,21 +172,16 @@ class BatchTrainer(object, metaclass=ABCMeta):
     def cuda(self):
         """ Turn model to cuda
         """
-        self._use_cuda = True
+        super(BatchTrainer, self).cuda()
         self.model.cuda()
         self.validator.cuda()
 
     def cpu(self):
         """ Turn model to cpu
         """
-        self._use_cuda = False
+        super(BatchTrainer, self).cpu()
         self.model.cpu()
         self.validator.cpu()
-
-    def _to_variable(self, x):
-        if self._use_cuda:
-            x = x.cuda()
-        return Variable(x)
 
     def meters_names(self):
         """ Returns the meters names
