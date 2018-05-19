@@ -1,3 +1,5 @@
+from collections import defaultdict
+from operator import itemgetter
 from .base import Callback
 
 class History(Callback):
@@ -29,3 +31,41 @@ class HistoryManager(Callback):
         self.records.append({'epoch' : epoch,
                              'step': step,
                              **metrics})
+
+    def step_plot(self, monitor, from_step=1):
+        """ Plot monitor history values across trained iterations
+
+        Arguments:
+            monitor (str): Monitor to plot
+            from_step (int): Starting iteration in the plot
+        """
+        import matplotlib.pyplot as plt
+
+        def condition(record):
+            return monitor in record and record['step'] >= from_step
+
+        x = map(itemgetter('step'), filter(condition, self.records))
+        y = map(itemgetter(monitor), filter(condition, self.records))
+
+        plt.plot(list(x), list(y), label=monitor)
+
+    def epoch_plot(self, monitor, from_epoch=0):
+        """ Plot monitor history values across epochs
+
+        Arguments:
+            monitor (str): Monitor to plot
+            from_epoch (int): Starting epoch in the plot
+        """
+        import matplotlib.pyplot as plt
+
+        values = defaultdict(float)
+
+        for record in self.records:
+            epoch = record['epoch']
+            if monitor in record and epoch >= from_epoch:
+                values[epoch] = record[monitor]
+
+        plt.plot(list(values.keys()),
+                 list(values.values()),
+                 label=monitor,
+                 marker='x')
