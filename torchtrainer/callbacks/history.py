@@ -8,8 +8,8 @@ class History(Callback):
         self.registry = HistoryManager()
 
     def on_log(self):
-        self.registry.append(self.trainer.epoch,
-                            self.trainer.step,
+        self.registry.append(self.trainer.epochs_trained,
+                            self.trainer.steps_trained,
                             self.trainer.metrics)
 
 class HistoryManager(Callback):

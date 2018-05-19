@@ -151,6 +151,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
         self.model = model
         self._epochs_trained = 0
+        self._steps_trained  = 0
         self._use_cuda = False
         self._train_metrics = {}
         self._val_metrics = {}
@@ -226,6 +227,10 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """
         return self._epochs_trained
 
+    @property
+    def steps_trained(self):
+        return self._steps_trained
+
     @epochs_trained.setter
     def epochs_trained(self, value):
         if value < 0:
@@ -270,6 +275,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
                 batch = (batch, )
             batch = list(map(self._to_variable, batch))
             self.update_batch(*batch)
+
+            self._steps_trained += 1
 
             if self._is_time_to_log():
                 self._compile_train_metrics()

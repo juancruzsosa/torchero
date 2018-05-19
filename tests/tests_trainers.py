@@ -39,7 +39,7 @@ class TrainerTests(unittest.TestCase):
                 self.assertIn(name, trainer.history[i].keys())
 
         self.assertEqual(trainer.history[0]['epoch'], 0)
-        self.assertEqual(trainer.history[0]['step'], 0)
+        self.assertEqual(trainer.history[0]['step'], 1)
         # first train batch loss is calculated before weights update
         self.assertAlmostEqual(trainer.history[0]['train_loss'], sum(abs(self.w*i) for i in range(1, 3))/2)
         # Validation loss is calculated over the entire valid dataset after weights update
@@ -47,7 +47,7 @@ class TrainerTests(unittest.TestCase):
         self.assertAlmostEqual(trainer.history[0]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)
 
         self.assertEqual(trainer.history[1]['epoch'], 0)
-        self.assertEqual(trainer.history[1]['step'], 1)
+        self.assertEqual(trainer.history[1]['step'], 2)
         self.assertAlmostEqual(trainer.history[1]['train_loss'], sum(abs(self.w*i) for i in range(3, 5))/2)
         self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
         self.assertAlmostEqual(trainer.history[1]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)

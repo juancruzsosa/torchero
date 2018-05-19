@@ -29,8 +29,8 @@ class HistoryCallbackTests(unittest.TestCase):
 
         trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
 
-        expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
-                             {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
+        expected_registry = [{'epoch': 0, 'step': 5, 't_c': 2.0, 'v_c': 4.5},
+                             {'epoch': 0, 'step': 10, 't_c': 7.0, 'v_c': 4.5}]
 
         self.assertEqual(list(trainer.history), expected_registry)
         self.assertEqual(trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
@@ -98,8 +98,8 @@ class CSVExporterTests(unittest.TestCase):
             lines = f.readlines()
             self.assertEqual(len(lines), 3)
             self.assertEqual(lines[0], 'epoch,step,c\n')
-            self.assertEqual(lines[1], '0,4,2.0\n')
-            self.assertEqual(lines[2], '0,9,7.0')
+            self.assertEqual(lines[1], '0,5,2.0\n')
+            self.assertEqual(lines[2], '0,10,7.0')
 
 
 
@@ -122,10 +122,10 @@ class CSVExporterTests(unittest.TestCase):
             lines = f.readlines()
             self.assertEqual(len(lines), 5)
             self.assertEqual(lines[0], 'epoch,step,c\n')
-            self.assertEqual(lines[1], '0,4,2.0\n')
-            self.assertEqual(lines[2], '0,9,7.0\n')
-            self.assertEqual(lines[3], '1,4,2.0\n')
-            self.assertEqual(lines[4], '1,9,7.0')
+            self.assertEqual(lines[1], '0,5,2.0\n')
+            self.assertEqual(lines[2], '0,10,7.0\n')
+            self.assertEqual(lines[3], '1,15,2.0\n')
+            self.assertEqual(lines[4], '1,20,7.0')
 
     def test_csv_exporter_exports_only_selected_columns(self):
         self.load_arange_dataset()
@@ -143,8 +143,8 @@ class CSVExporterTests(unittest.TestCase):
             lines = f.readlines()
             self.assertEqual(len(lines), 3)
             self.assertEqual(lines[0], 'epoch,step\n')
-            self.assertEqual(lines[1], '0,4\n')
-            self.assertEqual(lines[2], '0,9')
+            self.assertEqual(lines[1], '0,5\n')
+            self.assertEqual(lines[2], '0,10')
 
     def test_csv_exporter_exports_empty_value_in_column_cell_if_associated_metric_does_not_exist(self):
         self.load_arange_dataset()
@@ -181,10 +181,10 @@ class CSVExporterTests(unittest.TestCase):
             lines = f.readlines()
             self.assertEqual(len(lines), 5)
             self.assertEqual(lines[0], 'epoch,step\n')
-            self.assertEqual(lines[1], '1,4\n')
-            self.assertEqual(lines[2], '1,9\n')
-            self.assertEqual(lines[3], '2,4\n')
-            self.assertEqual(lines[4], '2,9')
+            self.assertEqual(lines[1], '1,15\n')
+            self.assertEqual(lines[2], '1,20\n')
+            self.assertEqual(lines[3], '2,25\n')
+            self.assertEqual(lines[4], '2,30')
 
     def tearDown(self):
         shutil.rmtree(self.base_tree)
