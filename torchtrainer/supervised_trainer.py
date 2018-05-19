@@ -1,5 +1,5 @@
 from .base import BatchTrainer, BatchValidator, ValidationGranularity
-from .meters import Averager, NullMeter
+from .meters import LossMeter, NullMeter
 
 class SupervisedValidator(BatchValidator):
     def __init__(self, model, meters, criterion):
@@ -8,9 +8,8 @@ class SupervisedValidator(BatchValidator):
 
     def validate_batch(self, x, y):
         output = self.model(x)
-        loss = self.criterion(output, y)
 
-        self._meters['val_loss'].measure(loss.data[0])
+        self._meters['val_loss'].measure(output.data, y.data)
         self._meters['val_acc'].measure(output.data, y.data)
 
 class SupervisedTrainer(BatchTrainer):
@@ -53,10 +52,10 @@ class SupervisedTrainer(BatchTrainer):
         if val_acc_meter is None:
             val_acc_meter = acc_meter.clone()
 
-        train_meters = {'train_loss' : Averager(),
+        train_meters = {'train_loss' : LossMeter(criterion),
                         'train_acc' : acc_meter}
 
-        val_meters = {'val_loss': Averager(),
+        val_meters = {'val_loss': LossMeter(criterion),
                       'val_acc': val_acc_meter}
 
         self.criterion = criterion
@@ -76,5 +75,5 @@ class SupervisedTrainer(BatchTrainer):
         loss.backward()
         self.optimizer.step()
 
-        self.train_meters['train_loss'].measure(loss.data[0])
+        self.train_meters['train_loss'].measure(output.data, y.data)
         self.train_meters['train_acc'].measure(output.data, y.data)

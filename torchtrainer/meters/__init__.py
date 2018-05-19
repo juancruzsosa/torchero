@@ -5,3 +5,4 @@ from .categorical_accuracy import CategoricalAccuracy, \
                                   BinaryWithLogitsAccuracy
 from .mse import MSE
 from .averager import Averager
+from .loss import LossMeter
