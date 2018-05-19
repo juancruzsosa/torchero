@@ -34,7 +34,7 @@ class HistoryCallbackTests(unittest.TestCase):
         expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
                              {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
 
-        self.assertEqual(callback.registry, expected_registry)
+        self.assertEqual(list(callback.registry), expected_registry)
         self.assertEqual(trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
 
 

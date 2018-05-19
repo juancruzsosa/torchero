@@ -5,10 +5,27 @@ class History(Callback):
     """
     def __init__(self):
         super(History, self).__init__()
-        self.registry = []
+        self.registry = HistoryManager()
 
     def on_log(self):
-        line = {'epoch' : self.trainer.epoch,
-                'step' : self.trainer.step}
-        line.update(self.trainer.metrics)
-        self.registry.append(line)
+        self.registry.append(self.trainer.epoch,
+                            self.trainer.step,
+                            self.trainer.metrics)
+
+class HistoryManager(Callback):
+    def __init__(self):
+        self.records = []
+
+    def __iter__(self):
+        yield from self.records
+
+    def __getitem__(self, idx):
+        return self.records[idx]
+
+    def __len__(self):
+        return len(self.records)
+
+    def append(self, epoch, step, metrics):
+        self.records.append({'epoch' : epoch,
+                             'step': step,
+                             **metrics})
