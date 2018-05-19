@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from operator import itemgetter
 from .base import Callback
@@ -69,3 +70,9 @@ class HistoryManager(Callback):
                  list(values.values()),
                  label=monitor,
                  marker='x')
+
+    def __str__(self):
+        return str(os.linesep.join(map(str, self.records)))
+
+    def __repr__(self):
+        return str(self)
