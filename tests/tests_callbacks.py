@@ -10,7 +10,6 @@ class HistoryCallbackTests(unittest.TestCase):
 
         train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
         valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
-        callback = History()
 
         def update_batch(trainer, x):
             trainer.train_meters['t_c'].measure(x.data[0][0])
@@ -19,7 +18,6 @@ class HistoryCallbackTests(unittest.TestCase):
             validator.meters['v_c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback],
                               logging_frecuency=5,
                               train_meters={'t_c' : Averager()},
                               val_meters={'v_c' : Averager()},
@@ -34,7 +32,7 @@ class HistoryCallbackTests(unittest.TestCase):
         expected_registry = [{'epoch': 0, 'step': 4, 't_c': 2.0, 'v_c': 4.5},
                              {'epoch': 0, 'step': 9, 't_c': 7.0, 'v_c': 4.5}]
 
-        self.assertEqual(list(callback.registry), expected_registry)
+        self.assertEqual(list(trainer.history), expected_registry)
         self.assertEqual(trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
 
 

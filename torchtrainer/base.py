@@ -1,7 +1,7 @@
 import torch
 from torch.autograd import Variable
 from abc import ABCMeta, abstractmethod
-from .callbacks import Callback, CallbackContainer
+from .callbacks import Callback, CallbackContainer, History
 from .meters import ZeroMeasurementsError
 from enum import Enum
 from itertools import chain
@@ -157,13 +157,21 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.train_meters = train_meters
         self.val_meters = val_meters
 
+        self._history_callback = History()
         self.validator = self.create_validator()
 
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
+
         self._callbacks.add(valid_sched)
+        self._callbacks.add(self._history_callback)
+
         for callback in callbacks:
             self._callbacks.add(callback)
+
+    @property
+    def history(self):
+        return self._history_callback.registry
 
     def cuda(self):
         """ Turn model to cuda
