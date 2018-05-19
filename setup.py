@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='torchtrainer',
-      version='0.0.1',
+      version='0.0.2',
       description='A pluggable & extensible trainer for pytorch',
       url='http://github.com/nirvguy/torchtrainer',
       author='Juan Cruz Sosa',
