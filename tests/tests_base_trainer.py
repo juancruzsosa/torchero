@@ -206,7 +206,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertTrue(self.model.training)
             batchs.append(x)
 
-        def validate_batch_fn(trainer, x):
+        def validate_batch_fn(validator, x):
             self.assertFalse(self.model.training)
             batchs.append(x)
 
@@ -240,7 +240,7 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x):
             train_batchs.append(x)
 
-        def validate_batch_fn(trainer, x):
+        def validate_batch_fn(validator, x):
             valid_batchs.append(x)
 
         trainer = TestTrainer(update_batch_fn=update_batch_fn, model=self.model, valid_batch_fn=validate_batch_fn, logging_frecuency=0)
@@ -262,7 +262,7 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.assertTrue(self.model.training)
             batchs.append(x)
 
-        def validate_batch_fn(trainer, x):
+        def validate_batch_fn(validator, x):
             self.assertFalse(self.model.training)
             batchs.append(x)
 
@@ -383,10 +383,10 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x):
             train_batchs.append(x)
 
-        def validate_batch_fn(trainer, x):
-            if trainer.epochs_trained == 0:
+        def validate_batch_fn(validator, x):
+            if validator.trainer.epochs_trained == 0:
                 self.assertEqual(len(train_batchs), 10)
-            elif trainer.epochs_trained == 1:
+            elif validator.trainer.epochs_trained == 1:
                 self.assertEqual(len(train_batchs), 20)
             self.validations += 1
 
@@ -408,8 +408,8 @@ class TorchBasetrainerTest(unittest.TestCase):
         def update_batch_fn(trainer, x):
             trainer.train_meters['t'].measure(x.data[0][0])
 
-        def validate_batch_fn(trainer, x):
-            trainer.val_meters['v'].measure(x.data[0][0])
+        def validate_batch_fn(validator, x):
+            validator.meters['v'].measure(x.data[0][0])
 
         class CustomCallback(Callback):
             def on_log(callback):

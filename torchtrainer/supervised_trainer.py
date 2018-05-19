@@ -1,9 +1,24 @@
-from .base import BatchTrainer, ValidationGranularity
+from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import Averager, NullMeter
+
+class SupervisedValidator(BatchValidator):
+    def __init__(self, model, meters, criterion):
+        super(SupervisedValidator, self).__init__(model, meters)
+        self.criterion = criterion
+
+    def validate_batch(self, x, y):
+        output = self.model(x)
+        loss = self.criterion(output, y)
+
+        self._meters['val_loss'].measure(loss.data[0])
+        self._meters['val_acc'].measure(output.data, y.data)
 
 class SupervisedTrainer(BatchTrainer):
     """ Supervised trainer
     """
+
+    def create_validator(self):
+        return SupervisedValidator(self.model, self.val_meters, self.criterion)
 
     def __init__(self,
                  model,
@@ -44,14 +59,15 @@ class SupervisedTrainer(BatchTrainer):
         val_meters = {'val_loss': Averager(),
                       'val_acc': val_acc_meter}
 
+        self.criterion = criterion
+        self.optimizer = optimizer
+
         super(SupervisedTrainer, self).__init__(model=model,
                                                 train_meters=train_meters,
                                                 val_meters=val_meters,
                                                 callbacks=callbacks,
                                                 logging_frecuency=logging_frecuency,
                                                 validation_granularity=validation_granularity)
-        self.criterion = criterion
-        self.optimizer = optimizer
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()
@@ -62,11 +78,3 @@ class SupervisedTrainer(BatchTrainer):
 
         self.train_meters['train_loss'].measure(loss.data[0])
         self.train_meters['train_acc'].measure(output.data, y.data)
-
-    def validate_batch(self, x, y):
-        self.optimizer.zero_grad()
-        output = self.model(x)
-        loss = self.criterion(output, y)
-
-        self.val_meters['val_loss'].measure(loss.data[0])
-        self.val_meters['val_acc'].measure(output.data, y.data)

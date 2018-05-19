@@ -3,7 +3,7 @@ import unittest
 import torch
 from torch import nn
 from torch.optim import SGD
-from torchtrainer.base import BatchTrainer
+from torchtrainer.base import BatchTrainer, BatchValidator
 from torchtrainer.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound
 from torchtrainer import meters
 from torchtrainer.meters import Averager, MSE
@@ -26,7 +26,19 @@ class DummyModel(nn.Module):
     def forward(self, x):
         return x
 
+class TestValidator(BatchValidator):
+    def __init__(self, model, meters, trainer=None):
+        super(TestValidator, self).__init__(model, meters)
+        self.trainer = trainer
+
+    def validate_batch(self, *args, **kwargs):
+        if self.trainer.valid_batch_fn:
+            self.trainer.valid_batch_fn(self, *args, **kwargs)
+
 class TestTrainer(BatchTrainer):
+    def create_validator(self):
+        return TestValidator(self.model, self.val_meters, self)
+
     def __init__(self, *args, **kwargs):
         self.update_batch_fn = None
         self.valid_batch_fn = None
@@ -44,16 +56,12 @@ class TestTrainer(BatchTrainer):
         if 'validation_granularity' not in kwargs:
             kwargs['validation_granularity'] = ValidationGranularity.AT_LOG
 
-
         super(TestTrainer, self).__init__(*args, **kwargs)
 
     def update_batch(self, *args, **kwargs):
         if self.update_batch_fn:
             self.update_batch_fn(self, *args, **kwargs)
 
-    def validate_batch(self, *args, **kwargs):
-        if self.valid_batch_fn:
-            self.valid_batch_fn(self, *args, **kwargs)
 
 def requires_cuda(f):
     def closure(*args, **kwargs):

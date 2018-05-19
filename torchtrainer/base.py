@@ -19,6 +19,80 @@ class _OnEpochValidScheduler(Callback):
         if self.trainer.step == self.trainer.total_steps-1:
             self.trainer._validate()
 
+
+class BatchValidator(object, metaclass=ABCMeta):
+    """ Abstract class for all validation classes that works with batched inputs.
+        All those validators should subclass this class
+    """
+    def __init__(self, model, meters):
+        self.model = model
+        self._meters = meters
+        self._metrics = {}
+        self._use_cuda = False
+
+    @abstractmethod
+    def validate_batch(self, *arg, **kwargs):
+        """ Abstract method for validate model per batch
+
+        Args:
+            *args (variable length arguments of :class:`torch.autograd.Variable`
+                   of Tensors or cuda Tensors):
+                Unamed batch parameters
+            **kwargs (variable length keyword arguments of
+                      :class:`torch.autograd.Variable` of
+                      Tensors or cuda Tensors):
+                Named batch parameters
+        """
+        pass
+
+    def meters_names(self):
+        return self._meters.keys()
+
+    @property
+    def meters(self):
+        return self._meters
+
+    def _compile_metrics(self):
+        for metric_name, meter in self._meters.items():
+            try:
+                self._metrics[metric_name] = meter.value()
+            except ZeroMeasurementsError:
+                continue
+
+    def _reset_meters(self):
+        self._metrics = {}
+
+        for meter in self._meters.values():
+            meter.reset()
+
+    def _to_variable(self, x):
+        if self._use_cuda:
+            x = x.cuda()
+        return Variable(x)
+
+    def cuda(self):
+        self._use_cuda = True
+
+    def cpu(self):
+        self._use_cuda = False
+
+    def validate(self, valid_dataloader):
+        self._reset_meters()
+
+        if not valid_dataloader:
+            return self._metrics
+
+        self.model.train(mode=False)
+        for batch in valid_dataloader:
+            if isinstance(batch, torch.Tensor):
+                batch = (batch, )
+            batch = list(map(self._to_variable, batch))
+            self.validate_batch(*batch)
+        self.model.train(mode=True)
+
+        self._compile_metrics()
+        return self._metrics
+
 class BatchTrainer(object, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
@@ -37,6 +111,11 @@ class BatchTrainer(object, metaclass=ABCMeta):
 
     SCHED_BY_GRANULARITY = {ValidationGranularity.AT_EPOCH : _OnEpochValidScheduler,
                             ValidationGranularity.AT_LOG: _OnLogValidScheduler}
+
+    @abstractmethod
+    def create_validator(self):
+        # return BatchValidator(self.model, self.val_meters)
+        pass
 
     def __init__(self,
                  model,
@@ -78,6 +157,8 @@ class BatchTrainer(object, metaclass=ABCMeta):
         self.train_meters = train_meters
         self.val_meters = val_meters
 
+        self.validator = self.create_validator()
+
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
         self._callbacks.add(valid_sched)
@@ -89,12 +170,14 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """
         self._use_cuda = True
         self.model.cuda()
+        self.validator.cuda()
 
     def cpu(self):
         """ Turn model to cpu
         """
         self._use_cuda = False
         self.model.cpu()
+        self.validator.cpu()
 
     def _to_variable(self, x):
         if self._use_cuda:
@@ -105,7 +188,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
         """ Returns the meters names
         """
         return sorted(chain(self.train_meters.keys(),
-                            self.val_meters.keys()))
+                            self.validator.meters_names()))
 
     @property
     def metrics(self):
@@ -123,15 +206,6 @@ class BatchTrainer(object, metaclass=ABCMeta):
         for metric_name, meter in self.train_meters.items():
             try:
                 self._train_metrics[metric_name] = meter.value()
-            except ZeroMeasurementsError:
-                continue
-
-    def _compile_val_metrics(self):
-        self._val_metrics = {}
-
-        for metric_name, meter in self.val_meters.items():
-            try:
-                self._val_metrics[metric_name] = meter.value()
             except ZeroMeasurementsError:
                 continue
 
@@ -169,7 +243,7 @@ class BatchTrainer(object, metaclass=ABCMeta):
     def reset_meters(self):
         self._train_metrics = {}
         self._val_metrics = {}
-        for meter in chain(self.train_meters.values(), self.val_meters.values()):
+        for meter in self.train_meters.values():
             meter.reset()
 
     def log(self):
@@ -236,30 +310,5 @@ class BatchTrainer(object, metaclass=ABCMeta):
                                   self.step == self.total_steps - 1)
                or self.step % log_frec == log_frec - 1)
 
-    @abstractmethod
-    def validate_batch(self, *arg, **kwargs):
-        """ Abstract method for validate model per batch
-
-        Args:
-            *args (variable length arguments of :class:`torch.autograd.Variable`
-                   of Tensors or cuda Tensors):
-                Unamed batch parameters
-            **kwargs (variable length keyword arguments of
-                      :class:`torch.autograd.Variable` of
-                      Tensors or cuda Tensors):
-                Named batch parameters
-        """
-        pass
-
     def _validate(self):
-        if self.valid_dataloader is None:
-            return
-
-        self.model.train(mode=False)
-        for valid_batch in self.valid_dataloader:
-            if isinstance(valid_batch, torch.Tensor):
-                valid_batch = (valid_batch, )
-            valid_batch = list(map(self._to_variable, valid_batch))
-            self.validate_batch(*valid_batch)
-        self.model.train(mode=True)
-        self._compile_val_metrics()
+        self._val_metrics = self.validator.validate(self.valid_dataloader)

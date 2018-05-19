@@ -15,8 +15,8 @@ class HistoryCallbackTests(unittest.TestCase):
         def update_batch(trainer, x):
             trainer.train_meters['t_c'].measure(x.data[0][0])
 
-        def validate_batch(trainer, x):
-            trainer.val_meters['v_c'].measure(x.data[0][0])
+        def validate_batch(validator, x):
+            validator.meters['v_c'].measure(x.data[0][0])
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
