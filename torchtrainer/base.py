@@ -6,6 +6,7 @@ from .callbacks import Callback, CallbackContainer, History
 from .meters import ZeroMeasurementsError
 from enum import Enum
 from itertools import chain
+from torch.autograd import Variable
 
 
 class ValidationGranularity(Enum):
@@ -34,6 +35,11 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
         self._meters = meters
         self._metrics = {}
 
+    def _prepare_tensor(self, x):
+        if torch.is_tensor(x):
+            return Variable(self._tensor_to_cuda(x))
+        else:
+            return x
 
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):
@@ -80,7 +86,7 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
         for batch in valid_dataloader:
             if isinstance(batch, torch.Tensor):
                 batch = (batch, )
-            batch = list(map(self._to_variable, batch))
+            batch = list(map(self._prepare_tensor, batch))
             self.validate_batch(*batch)
         self.model.train(mode=True)
 
@@ -249,6 +255,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         for meter in self.train_meters.values():
             meter.reset()
 
+    def _prepare_tensor(self, x):
+        if torch.is_tensor(x):
+            return Variable(self._tensor_to_cuda(x))
+        else:
+            return x
+
     def log(self):
         self._callbacks.on_log()
 
@@ -263,7 +275,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
                 batch = (batch, )
-            batch = list(map(self._to_variable, batch))
+            batch = map(self._prepare_tensor, batch)
             self.update_batch(*batch)
 
             self._steps_trained += 1
