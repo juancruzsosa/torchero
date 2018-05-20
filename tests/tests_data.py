@@ -2,6 +2,7 @@ import torch
 import torchtrainer
 from .common import *
 from torchtrainer.utils.data import CrossFoldValidation
+from torchtrainer.utils.data.datasets import UnsuperviseDataset
 
 class TestsDataUtils(unittest.TestCase):
     def assertDatasetEquals(self, a, b):
@@ -164,3 +165,15 @@ class TestsDataUtils(unittest.TestCase):
             self.fail()
         except Exception as e:
             self.assertEqual(str(e), CrossFoldValidation.TRAIN_AND_VALID_DATASET_SIZE_MESSAGE)
+
+    def test_unsupervise_dataset_hide_targets(self):
+        supervised_dataset = [(1, True), (2, False), (3, False)]
+        unsupervised_dataset = UnsuperviseDataset(supervised_dataset, input_indices=[0])
+
+        self.assertEqual(list(unsupervised_dataset), [1, 2, 3])
+
+    def test_unsupervise_dataset_can_select_over_input_indices(self):
+        supervised_dataset = [(1, 3, True), (2, 4, False), (5, 6, False)]
+        unsupervised_dataset = UnsuperviseDataset(supervised_dataset, input_indices=[0, 1])
+
+        self.assertEqual(list(unsupervised_dataset), [(1, 3), (2, 4), (5, 6)])
