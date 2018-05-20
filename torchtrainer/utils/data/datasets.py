@@ -1,5 +1,6 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset, TensorDataset
+
 
 class SubsetDataset(Dataset):
     """ Dataset that is a subset from another Dataset
