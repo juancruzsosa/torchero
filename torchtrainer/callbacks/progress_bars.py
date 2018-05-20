@@ -37,6 +37,7 @@ class ProgbarLogger(Callback):
                                     leave=True,
                                     ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
+        self.last_step = 0
 
     def on_epoch_begin(self):
         step_tqdm = self.tqdm(total=self.trainer.total_steps,
@@ -58,7 +59,8 @@ class ProgbarLogger(Callback):
                    for name, value in self.trainer.metrics.items()}
         step_bar = self.step_bars[-1]
         step_bar.set_postfix(**metrics),
-        step_bar.update(self.trainer.logging_frecuency)
+        step_bar.update(self.trainer.steps_trained - self.last_step)
+        self.last_step = self.trainer.steps_trained
 
     def on_epoch_end(self):
         self.epoch_bar.update()
