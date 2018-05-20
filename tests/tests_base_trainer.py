@@ -28,6 +28,10 @@ class TorchBasetrainerTest(unittest.TestCase):
         self.validation_dataset = torch.arange(limit).view(limit, 1)
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size, shuffle=False)
 
+    def load_list_dataset(self):
+        self.training_dataset = [1, 2, 3]
+        self.training_dataloader = [[1], [2], [3]]
+
     def setUp(self):
         self.model = DummyModel()
 
@@ -435,3 +439,19 @@ class TorchBasetrainerTest(unittest.TestCase):
             self.fail()
         except Exception as e:
             self.assertEqual(str(e), BatchTrainer.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode='xyz'))
+
+    def test_batch_input_should_not_converted_into_variable_if_is_not_a_tensor(self):
+        self.trained = False
+        self.load_list_dataset()
+
+        def update_batch_fn(trainer, x):
+            self.trained = True
+            self.assertIsInstance(x, int)
+
+        t = TestTrainer(model=self.model,
+                        logging_frecuency=1,
+                        update_batch_fn=update_batch_fn)
+
+        t.train(self.training_dataloader)
+
+        self.assertEqual(self.trained, True)

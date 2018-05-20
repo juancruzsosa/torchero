@@ -1,3 +1,4 @@
+import torch
 from torch.autograd import Variable
 
 
@@ -18,4 +19,7 @@ class CudaMixin(object):
         return x
 
     def _to_variable(self, x):
-        return Variable(self._tensor_to_cuda(x))
+        if torch.is_tensor(x):
+            return Variable(self._tensor_to_cuda(x))
+        else:
+            return x
