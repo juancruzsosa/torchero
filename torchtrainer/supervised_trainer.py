@@ -2,9 +2,8 @@ from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import LossMeter
 
 class SupervisedValidator(BatchValidator):
-    def __init__(self, model, meters, criterion):
+    def __init__(self, model, meters):
         super(SupervisedValidator, self).__init__(model, meters)
-        self.criterion = criterion
 
     def validate_batch(self, x, y):
         output = self.model(x)
@@ -18,7 +17,7 @@ class SupervisedTrainer(BatchTrainer):
     """
 
     def create_validator(self):
-        return SupervisedValidator(self.model, self.val_meters, self.criterion)
+        return SupervisedValidator(self.model, self.val_meters)
 
     @staticmethod
     def prepend_name_dict(prefix, d):

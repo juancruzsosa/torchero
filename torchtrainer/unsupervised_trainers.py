@@ -8,7 +8,7 @@ class AutoencoderTrainer(SupervisedTrainer):
     """ Autoencoder trainer
     """
     def create_validator(self):
-        return AutoencoderValidator(self.model, self.val_meters, self.criterion)
+        return AutoencoderValidator(self.model, self.val_meters)
 
     def update_batch(self, x):
         super(AutoencoderTrainer, self).update_batch(x, x)
