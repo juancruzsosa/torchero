@@ -15,6 +15,8 @@ class TrainerTests(unittest.TestCase):
         self.model.weight.data = torch.Tensor([[self.w]])
         self.criterion = nn.L1Loss()
         self.optimizer = SGD(self.model.parameters(), lr=1, momentum=0, weight_decay=0)
+        self.load_training_dataset()
+        self.load_validation_dataset()
 
     def load_training_dataset(self, start=1, end=5, batch_size=2):
         self.training_dataset = TensorDataset(torch.arange(start, end).view(-1, 1), torch.zeros(end-start, 1))
@@ -25,8 +27,6 @@ class TrainerTests(unittest.TestCase):
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size)
 
     def test_train_val_loss_are_calculated_after_every_log_event(self):
-        self.load_training_dataset()
-        self.load_validation_dataset()
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
@@ -55,8 +55,6 @@ class TrainerTests(unittest.TestCase):
 
     def test_trainer_with_acc_meter_argument_measure_train_and_valid_accuracy_with_same_metric(self):
         acc_meter = MSE()
-        self.load_training_dataset()
-        self.load_validation_dataset()
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meters={'acc': acc_meter}, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
@@ -75,8 +73,6 @@ class TrainerTests(unittest.TestCase):
     def test_trainer_with_val_acc_meter_argument_cant_differ_from_train_acc_meter(self):
         acc_meter = MSE()
         val_acc_meter = MSE(take_sqrt=True)
-        self.load_training_dataset()
-        self.load_validation_dataset()
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meters={'acc': acc_meter}, val_acc_meters={'acc': val_acc_meter}, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
