@@ -199,10 +199,7 @@ class CheckpointTests(unittest.TestCase):
         self.base_tree = os.path.join('tests', 'output')
         os.makedirs(self.base_tree)
 
-        self.temp_dir = os.path.join(self.base_tree, 'tmp')
-        os.makedirs(self.temp_dir)
-
-        self.checkpoint_file = os.path.join(self.base_tree, 'checkpoint')
+        self.path = os.path.join(self.base_tree, 'checkpoint')
 
     def initialize_model_with_0(self):
         self.model.weight.data = torch.zeros(1, 1)
@@ -222,10 +219,9 @@ class CheckpointTests(unittest.TestCase):
         self.train_dl = DataLoader(self.train_ds, batch_size=1, shuffle=False)
 
     def model_checkpoint(self, monitor, mode='min'):
-        return ModelCheckpoint(self.checkpoint_file,
+        return ModelCheckpoint(self.path,
                                monitor=monitor,
-                               mode=mode,
-                               temp_dir=self.temp_dir)
+                               mode=mode)
 
     @staticmethod
     def measure_zero():
@@ -251,8 +247,8 @@ class CheckpointTests(unittest.TestCase):
 
         trainer.train(self.train_dl, epochs=0)
 
-        self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
-        self.assertEqual(os.listdir(self.temp_dir), [])
+        self.assertFalse(os.path.exists(self.path + '.zip'))
+        self.assertEqual(os.listdir(self.path), [])
 
     def test_checkpoint_callback_doesnt_create_files_if_load_raises(self):
         checkpoint = self.model_checkpoint(monitor='c')
@@ -264,8 +260,7 @@ class CheckpointTests(unittest.TestCase):
         try:
             checkpoint.load()
         except Exception:
-            self.assertFalse(os.path.exists(self.checkpoint_file + '.zip'))
-            self.assertEqual(os.listdir(self.temp_dir), [])
+            self.assertFalse(os.path.exists(self.path))
 
     def test_checkpoint_callback_raises_if_meter_not_found_in_meters_names(self):
         self.load_ones_dataset(2)
@@ -279,7 +274,7 @@ class CheckpointTests(unittest.TestCase):
             self.fail()
         except MeterNotFound as e:
             self.assertEqual(trainer.epochs_trained, 0)
-        self.assertEqual(os.listdir(self.temp_dir), [])
+        self.assertEqual(os.listdir(self.path), [])
 
     def test_checkpoint_callback_raises_if_meter_not_found(self):
         self.load_ones_dataset(2)
@@ -294,7 +289,7 @@ class CheckpointTests(unittest.TestCase):
             self.fail()
         except MeterNotFound as e:
             self.assertEqual(trainer.epochs_trained, 1)
-        self.assertEqual(os.listdir(self.temp_dir), [])
+        self.assertEqual(os.listdir(self.path), [])
 
     def test_checkpoint_callback_persist_model_on_first_trained_epoch(self):
         self.load_ones_dataset(2)
@@ -309,7 +304,7 @@ class CheckpointTests(unittest.TestCase):
 
         trainer.train(self.train_dl, epochs=1)
 
-        checkpoint = ModelCheckpoint(path=self.checkpoint_file, monitor='c', mode='min', temp_dir=self.temp_dir)
+        checkpoint = ModelCheckpoint(path=self.path, monitor='c', mode='min')
 
         trainer = TestTrainer(model=self.model,
                               callbacks=[checkpoint],
@@ -321,7 +316,6 @@ class CheckpointTests(unittest.TestCase):
 
         self.assertEqual(data_best, {'epoch': 1, 'c': 0})
         self.assertEqual(self.model.weight.data[0][0], w)
-        self.assertEqual(os.listdir(self.temp_dir), [])
 
     def test_checkpoint_callback_load_raises_if_metric_not_found(self):
         self.initialize_model_with_1()
@@ -351,8 +345,6 @@ class CheckpointTests(unittest.TestCase):
             self.fail()
         except MeterNotFound:
             self.assertEqual(self.model.weight.data[0][0], 0)
-
-        self.assertEqual(os.listdir(self.temp_dir), [])
 
     def test_checkpoint_callback_not_persist_model_if_model_not_gets_better(self):
         self.initialize_model_with_0()
@@ -435,7 +427,7 @@ class CheckpointTests(unittest.TestCase):
         self.assertEqual(self.model.weight.data[0][0], 2)
 
     def test_checkpoint_callback_unrecognized_mode_raise_exception(self):
-        self.assertRaises(Exception, lambda: ModelCheckpoint(path=self.checkpoint_file, monitor='c', mode='xyz'))
+        self.assertRaises(Exception, lambda: ModelCheckpoint(path=self.path, monitor='c', mode='xyz'))
 
     def test_checkpoint_callback_with_max_mode_saves_model_on_maximum_monitor(self):
         self.initialize_model_with_0()
