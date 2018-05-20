@@ -4,7 +4,6 @@
 
 ### Trainers ###
 
-- [ ] AutoEncoder trainer
 - [ ] GAN and Conditional GAN trainer
 - [ ] Multi-threaded trainer
 - [ ] Distributed trainers
@@ -16,6 +15,5 @@
 
 ## Hooks ##
 
-- [ ] ModelCheckpoint
 - [ ] EarlyStopping
 - [ ] torch.nn.optim schedulers integration
