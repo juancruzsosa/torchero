@@ -2,7 +2,8 @@ import torch
 import torchtrainer
 from .common import *
 from torchtrainer.utils.data import CrossFoldValidation
-from torchtrainer.utils.data.datasets import UnsuperviseDataset
+from torchtrainer.utils.data.datasets import UnsuperviseDataset, \
+                                             ShrinkDataset
 
 class TestsDataUtils(unittest.TestCase):
     def assertDatasetEquals(self, a, b):
@@ -177,3 +178,43 @@ class TestsDataUtils(unittest.TestCase):
         unsupervised_dataset = UnsuperviseDataset(supervised_dataset, input_indices=[0, 1])
 
         self.assertEqual(list(unsupervised_dataset), [(1, 3), (2, 4), (5, 6)])
+
+    def test_shrink_to_p_0_is_equivalent_to_empty_dataset(self):
+        dataset = list(range(1, 11))
+        shrinked_dataset = ShrinkDataset(dataset, p=0)
+
+        self.assertEqual(list(shrinked_dataset), [])
+
+    def test_shrink_to_infimal_p_is_equivalent_to_empty_dataset(self):
+        dataset = list(range(1, 11))
+        shrinked_dataset = ShrinkDataset(dataset, p=0.001)
+
+        self.assertEqual(list(shrinked_dataset), [])
+
+    def test_shrink_to_p_1_is_all_dataset(self):
+        dataset = list(range(1, 11))
+        shrinked_dataset = ShrinkDataset(dataset, p=1)
+
+        self.assertEqual(list(shrinked_dataset), dataset)
+
+    def test_shrink_to_p_0p4_gets_gives_only_four_elements(self):
+        dataset = list(range(1, 11))
+        shrinked_dataset = ShrinkDataset(dataset, p=0.4)
+
+        self.assertEqual(list(shrinked_dataset), [2, 3, 6, 7])
+
+    def test_shrink_to_p_less_than_0_raises_exception(self):
+        dataset = list(range(1, 11))
+        try:
+            shrinked_dataset = ShrinkDataset(dataset, p=-0.01)
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), ShrinkDataset.INVALID_P_MESSAGE)
+
+    def test_shrink_to_p_greater_than_1_raises_exception(self):
+        dataset = list(range(1, 11))
+        try:
+            shrinked_dataset = ShrinkDataset(dataset, p=1.01)
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), ShrinkDataset.INVALID_P_MESSAGE)
