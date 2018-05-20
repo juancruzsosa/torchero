@@ -1,1 +1,2 @@
 from .supervised_trainer import SupervisedTrainer, SupervisedValidator
+from .unsupervised_trainers import AutoencoderTrainer, AutoencoderValidator
