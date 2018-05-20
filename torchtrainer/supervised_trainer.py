@@ -1,5 +1,5 @@
 from .base import BatchTrainer, BatchValidator, ValidationGranularity
-from .meters import LossMeter, NullMeter
+from .meters import LossMeter
 
 class SupervisedValidator(BatchValidator):
     def __init__(self, model, meters, criterion):
