@@ -1,10 +1,10 @@
 import torch
 import math
 import math
-from .base import BaseMeter 
+from .batch import BatchMeter
 from .exceptions import ZeroMeasurementsError
 
-class MSE(BaseMeter):
+class MSE(BatchMeter):
     """ Meter for mean squared error metric
     """
 
@@ -19,12 +19,8 @@ class MSE(BaseMeter):
         Arguments:
             take_sqrt (bool): Take square root in final results
         """
+        super(MSE, self).__init__()
         self.take_sqrt = take_sqrt
-        self.reset()
-
-    def reset(self):
-        self.result = 0.0
-        self.num_samples = 0
 
     def _get_result(self, a, b):
         return torch.pow(a-b, 2)
@@ -35,15 +31,10 @@ class MSE(BaseMeter):
 
         if len(a.size()) != 2 or b.shape != a.shape:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
-
-        self.result += torch.sum(self._get_result(a, b))
-        self.num_samples += len(b)
+        super(MSE, self).measure(a, b)
 
     def value(self):
-        if self.num_samples == 0:
-            raise ZeroMeasurementsError()
-
-        result = self.result / self.num_samples
+        result = super(MSE, self).value()
         if self.take_sqrt:
             result = math.sqrt(result)
         return result

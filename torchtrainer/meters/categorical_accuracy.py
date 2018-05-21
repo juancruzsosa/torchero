@@ -1,36 +1,13 @@
 import torch
-from abc import abstractmethod
-from enum import Enum
 from torch import nn
-from .base import BaseMeter, ZeroMeasurementsError
-from .aggregators.batch import Average
+from .batch import BatchMeter
 
-class _CategoricalAccuracy(BaseMeter):
+class _CategoricalAccuracy(BatchMeter):
     INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
                                        'dimension and same shape')
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
 
-    def __init__(self, aggregator=None):
-        """ Constructor
-
-        Arguments:
-            size_average (bool): Average of batch size
-        """
-        self.aggregator = aggregator
-
-        if self.aggregator is None:
-            self.aggregator = Average()
-
-        self.reset()
-
-    def reset(self):
-        self.result = self.aggregator.init()
-
-    @abstractmethod
-    def _get_result(self, a, b):
-        pass
-
-    def measure(self, a, b):
+    def check_tensors(self, a, b):
         if not torch.is_tensor(a):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
 
@@ -40,12 +17,6 @@ class _CategoricalAccuracy(BaseMeter):
 
         if len(a.size()) != 2 or len(b.size()) != 1 or len(b) != a.size()[0]:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
-
-        self.result = self.aggregator.combine(self.result,
-                                              self._get_result(a, b))
-
-    def value(self):
-        return self.aggregator.final_value(self.result)
 
 class CategoricalAccuracy(_CategoricalAccuracy):
     """ Meter for accuracy categorical on categorical targets

@@ -1,4 +1,4 @@
-from .base import BaseMeter 
+from .base import BaseMeter
 from .exceptions import ZeroMeasurementsError
 
 class Averager(BaseMeter):
