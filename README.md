@@ -1,4 +1,4 @@
-# Torchtrainer - A pluggable & extensible trainer for pytorch #
+# Torchtrainer - A training framework for pytorch #
 
 ## Features ##
 
@@ -11,24 +11,33 @@
 ### Trainers ###
 
 * `BatchTrainer`: Abstract class for all trainers that works with batched inputs
-* `SupervisedTrainer`: Supervised trainer
+* `SupervisedTrainer`: Training for supervised tasks
+* `AutoencoderTrainer`: Trainer for auto encoder tasks
 
 ### Callbacks ###
 
-* `callback.Callback`: Base callback class for all epoch/training events
-* `callback.History`: Callback that record history of all training/validation metrics
-* `callback.ProgressBars`: Callback that displays progress bars to monitor training/validation metrics
-* `callback.CallbackContainer`: Callback to group multiple hooks
-* `callback.CSVLogger`: Callback that export training/validation stadistics to a csv file
+* `callbacks.Callback`: Base callback class for all epoch/training events
+* `callbacks.History`: Callback that record history of all training/validation metrics
+* `callbacks.Logger`: Callback that display metrics per logging step
+* `callbacks.ProgbarLogger`: Callback that displays progress bars to monitor training/validation metrics
+* `callbacks.CallbackContainer`: Callback to group multiple hooks
+* `callbacks.CSVLogger`: Callback that export training/validation stadistics to a csv file
 
 ### Meters ###
 
-* `meter.Base`: Interface for all meters
-* `meter.CategoricalAccuracy`: Meter for accuracy on categorical targets
-* `meter.BinaryAccuracy`: Meter for accuracy on binary targets (assuming normalized inputs)
-* `meter.BinaryAccuracyWithLogits`: Binary accuracy meter with an integrated activation function (by default logistic function)
-* `meter.MSE`: Mean Squared Error meter
+* `meters.BaseMeter`: Interface for all meters
+* `meters.BatchMeters`: Superclass of meters that works with batchs
+* `meters.CategoricalAccuracy`: Meter for accuracy on categorical targets
+* `meters.BinaryAccuracy`: Meter for accuracy on binary targets (assuming normalized inputs)
+* `meters.BinaryAccuracyWithLogits`: Binary accuracy meter with an integrated activation function (by default logistic function)
+* `meters.MSE`: Mean Squared Error meter
 
 ### Cross validation ###
 
 * `utils.data.CrossFoldValidation`: Itererator through cross-fold-validation folds
+
+### Datasets ###
+
+* `utils.data.datasets.SubsetDataset`: Dataset that is a subset of the original dataset
+* `utils.data.datasets.ShrinkDatset`: Shrinks a dataset
+* `utils.data.datasets.UnsuperviseDataset`: Makes a dataset unsupervised
