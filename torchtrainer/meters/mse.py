@@ -13,14 +13,10 @@ class MSE(BatchMeter):
     INVALID_INPUT_TYPE_MESSAGE = ('Expected types (FloatTensor, FloatTensor) '
                                   'as inputs')
 
-    def __init__(self, take_sqrt=False):
+    def __init__(self):
         """ Constructor
-
-        Arguments:
-            take_sqrt (bool): Take square root in final results
         """
         super(MSE, self).__init__()
-        self.take_sqrt = take_sqrt
 
     def _get_result(self, a, b):
         return torch.pow(a-b, 2)
@@ -33,8 +29,8 @@ class MSE(BatchMeter):
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
         super(MSE, self).measure(a, b)
 
+class RMSE(MSE):
+    """ Meter for rooted mean squared error metric
+    """
     def value(self):
-        result = super(MSE, self).value()
-        if self.take_sqrt:
-            result = math.sqrt(result)
-        return result
+        return math.sqrt(super(RMSE, self).value())

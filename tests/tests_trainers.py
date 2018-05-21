@@ -72,7 +72,7 @@ class TrainerTests(unittest.TestCase):
 
     def test_trainer_with_val_acc_meter_argument_cant_differ_from_train_acc_meter(self):
         acc_meter = MSE()
-        val_acc_meter = MSE(take_sqrt=True)
+        val_acc_meter = RMSE()
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meters={'acc': acc_meter}, val_acc_meters={'acc': val_acc_meter}, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 

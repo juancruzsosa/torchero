@@ -6,7 +6,7 @@ from torch.optim import SGD
 from torchtrainer.base import BatchTrainer, BatchValidator
 from torchtrainer.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound
 from torchtrainer import meters
-from torchtrainer.meters import Averager, MSE
+from torchtrainer.meters import Averager, MSE, RMSE
 from torch.utils.data import DataLoader, TensorDataset
 from torchtrainer.utils.data import CrossFoldValidation
 from torchtrainer.base import ValidationGranularity

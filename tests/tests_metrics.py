@@ -236,7 +236,7 @@ class AccuracyMetricsTests(BaseMetricsTests):
 class MSETests(BaseMetricsTests):
     def test_meter_measure_is_the_square_of_the_difference(self):
         meter = meters.MSE()
-        sqrt_meter = meters.MSE(take_sqrt=True)
+        sqrt_meter = meters.RMSE()
         self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.ones(1,1))], 0)
         self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.zeros(1,1))], 1)
         self.assertMeasureEqual(meter, [(torch.zeros(1,1), torch.ones(1,1))], 1)
@@ -272,7 +272,7 @@ class MSETests(BaseMetricsTests):
 
     def test_meter_value_average_over_batch_dimention(self):
         meter = meters.MSE()
-        sqrt_meter = meters.MSE(take_sqrt=True)
+        sqrt_meter = meters.RMSE()
         self.assertMeasureEqual(meter, [(torch.ones(2,1), torch.zeros(2,1))], 1)
         self.assertMeasureEqual(meter, [(torch.zeros(2,1), torch.ones(2,1))], 1)
         self.assertMeasureEqual(meter, [(2*torch.ones(2,1), torch.zeros(2,1))], 4)
@@ -283,7 +283,7 @@ class MSETests(BaseMetricsTests):
 
     def test_meter_value_average_over_sum_of_measured_batch_dimentions(self):
         meter = meters.MSE()
-        sqrt_meter = meters.MSE(take_sqrt=True)
+        sqrt_meter = meters.RMSE()
         self.assertMeasureAlmostEqual(meter, [(torch.ones(2,1), torch.zeros(2,1)),
                                               (2*torch.ones(2,1), torch.zeros(2,1)),
                                               (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], (2*1**2 + 2*2**2 + 3*3**2)/7)
