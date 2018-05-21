@@ -1,4 +1,5 @@
-from .base import BaseMeter, ZeroMeasurementsError
+from .base import BaseMeter
+from .exceptions import ZeroMeasurementsError
 
 class NullMeter(BaseMeter):
     _instance = None

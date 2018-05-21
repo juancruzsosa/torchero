@@ -1,4 +1,5 @@
-from .base import BaseMeter, ZeroMeasurementsError
+from .base import BaseMeter
+from .exceptions import ZeroMeasurementsError
 from .nullmeter import NullMeter
 from .categorical_accuracy import CategoricalAccuracy, \
                                   BinaryAccuracy, \

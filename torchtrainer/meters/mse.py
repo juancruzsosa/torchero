@@ -1,7 +1,8 @@
 import torch
 import math
 import math
-from .base import BaseMeter, ZeroMeasurementsError
+from .base import BaseMeter 
+from .exceptions import ZeroMeasurementsError
 
 class MSE(BaseMeter):
     """ Meter for mean squared error metric

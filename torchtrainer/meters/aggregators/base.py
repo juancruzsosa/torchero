@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from .. import ZeroMeasurementsError
+from ..exceptions import ZeroMeasurementsError
 
 class Aggregator(object, metaclass=ABCMeta):
     """ Base class for all aggregators
