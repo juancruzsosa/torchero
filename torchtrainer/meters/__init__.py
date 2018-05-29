@@ -8,3 +8,4 @@ from .categorical_accuracy import CategoricalAccuracy, \
 from .mse import MSE, RMSE
 from .averager import Averager
 from .loss import LossMeter
+from .confusion_matrix import ConfusionMatrix
