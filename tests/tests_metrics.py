@@ -324,6 +324,149 @@ class MSETests(BaseMetricsTests):
         except meters.ZeroMeasurementsError as e:
             pass
 
+class ConfusionMatrixTests(BaseMetricsTests):
+    def assertTensorsEqual(self, a, b):
+        return self.assertEqual(a.tolist(), b.tolist())
+
+    def assertMeasureEqual(self, meter, batchs, measure):
+        self.assertTensorsEqual(self.measure_once(meter, batchs), measure)
+
+    def test_can_not_create_meter_with_negative_classes(self):
+        try:
+            meters.ConfusionMatrix(nr_classes=0)
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meters.ConfusionMatrix.INVALID_NR_OF_CLASSES_MESSAGE.format(nr_classes=0))
+
+    def test_cannot_measure_anything_other_than_longtensor_or_byte_tensor_on_left_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.FloatTensor([0]), torch.LongTensor([0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.FloatTensor))
+
+    def test_cannot_measure_anything_other_than_longtensor_or_byte_tensor_on_right_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.LongTensor([0]), torch.FloatTensor([0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.FloatTensor))
+
+    def test_cannot_measure_anything_other_1d_tensors_on_left_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.LongTensor([[0]]), torch.LongTensor([0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_BATCH_DIMENSION_MESSAGE.format(dims=2))
+
+    def test_cannot_measure_anything_other_1d_tensors_on_right_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.LongTensor([0]), torch.LongTensor([[[0]]]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_BATCH_DIMENSION_MESSAGE.format(dims=3))
+
+    def test_with_one_class_measures_returns_1x1_matrix_with_number_of_measured_tensors(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0]), torch.LongTensor([0]))], 1*torch.ones(1,1))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 0, 0]), torch.LongTensor([0, 0, 0]))], 3*torch.ones(1,1))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 0]),    torch.LongTensor([0, 0])),
+                                        (torch.LongTensor([0, 0, 0]), torch.LongTensor([0, 0, 0]))], 5*torch.ones(1,1))
+
+    def test_can_not_measure_tensors_of_different_length(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.LongTensor([0]), torch.LongTensor([0, 0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_LENGTHS_MESSAGE)
+
+    def test_can_not_measure_tensors_with_values_greater_than_nr_classes(self):
+        meter = meters.ConfusionMatrix(nr_classes=2)
+        try:
+            meter.measure(torch.LongTensor([0, 1, 2]), torch.LongTensor([0, 0, 0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_LABELS_MESSAGE)
+
+        try:
+            meter.measure(torch.LongTensor([0, 1, 1]), torch.LongTensor([1, 2, 0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_LABELS_MESSAGE)
+
+    def test_can_not_measure_tensors_with_values_less_than_zero(self):
+        meter = meters.ConfusionMatrix(nr_classes=2)
+        try:
+            meter.measure(torch.LongTensor([0, 1, -1]), torch.LongTensor([0, 0, 0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_LABELS_MESSAGE)
+
+        try:
+            meter.measure(torch.LongTensor([0, 1, 1]), torch.LongTensor([1, -1, 0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_LABELS_MESSAGE)
+
+    def test_meter_returns_zero_before_measurements(self):
+        self.assertTensorsEqual(meters.ConfusionMatrix(nr_classes=2).value(), torch.zeros(2, 2))
+
+    def test_confusion_matrix_with_two_classes_count_one_each_class(self):
+        meter = meters.ConfusionMatrix(nr_classes=2)
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0]), torch.LongTensor([0]))], torch.Tensor([[1, 0], [0, 0]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([1]), torch.LongTensor([1]))], torch.Tensor([[0, 0], [0, 1]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0]), torch.LongTensor([1]))], torch.Tensor([[0, 1], [0, 0]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([1]), torch.LongTensor([0]))], torch.Tensor([[0, 0], [1, 0]]))
+
+    def test_confusion_matrix_with_two_classes_count_one_each_class(self):
+        meter = meters.ConfusionMatrix(nr_classes=2)
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 1]), torch.LongTensor([0, 0]))], torch.Tensor([[1, 0], [1, 0]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([1, 0]), torch.LongTensor([1, 0]))], torch.Tensor([[1, 0], [0, 1]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 0]), torch.LongTensor([0, 0]))], torch.Tensor([[2, 0], [0, 0]]))
+        self.assertMeasureEqual(meter, [(torch.LongTensor([1, 0]), torch.LongTensor([0, 1]))], torch.Tensor([[0, 1], [1, 0]]))
+
+    def test_confusion_matrix_with_two_classes_count_one_each_class(self):
+        meter = meters.ConfusionMatrix(nr_classes=3)
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 2, 1]), torch.LongTensor([0, 0, 2])),
+                                        (torch.LongTensor([0]), torch.LongTensor([1])),
+                                        (torch.LongTensor([2, 1, 2]), torch.LongTensor([1, 1, 2]))], torch.Tensor([[1, 1, 0], [0, 1, 1], [1, 1, 1]]))
+
+    @requires_cuda
+    def test_cannot_measure_with_cuda_float_tensors_on_left_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.cuda.FloatTensor([0]), torch.LongTensor([0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.cuda.FloatTensor))
+
+    @requires_cuda
+    def test_cannot_measure_with_cuda_float_tensors_on_right_param(self):
+        meter = meters.ConfusionMatrix(nr_classes=1)
+        try:
+            meter.measure(torch.cuda.LongTensor([0]), torch.cuda.FloatTensor([0]))
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.cuda.FloatTensor))
+
+    def test_confusion_matrix_with_auto_nr_of_class_infers_nr_classes(self):
+        meter = meters.ConfusionMatrix(nr_classes='auto')
+        self.assertMeasureEqual(meter, [(torch.LongTensor([0, 1]), torch.LongTensor([0, 1])),
+                                        (torch.LongTensor([2, 1]), torch.LongTensor([1, 3]))], torch.Tensor([[1, 0, 0, 0], [0, 1, 0, 1], [0, 1, 0, 0], [0, 0, 0, 0]]))
+
+    def test_cannot_construct_with_a_str_nr_classes_different_from_auto(self):
+        try:
+            meters.ConfusionMatrix(nr_classes='xyz')
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), meters.ConfusionMatrix.INVALID_NR_OF_CLASSES_MESSAGE.format(nr_classes='xyz'))
+
+
 class AveragerTests(BaseMetricsTests):
     def measure_once(self, meter, xs):
         meter.reset()
