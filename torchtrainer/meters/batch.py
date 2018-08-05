@@ -35,4 +35,8 @@ class BatchMeter(BaseMeter):
                                               self._get_result(*xs))
 
     def value(self):
-        return self.aggregator.final_value(self.result)
+        val = self.aggregator.final_value(self.result)
+        if torch.is_tensor(val) and val.dim() == 0:
+            return val.item()
+        else:
+            return val

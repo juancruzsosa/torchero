@@ -1,3 +1,4 @@
+import torch
 from .base import BaseMeter
 from .exceptions import ZeroMeasurementsError
 
@@ -24,4 +25,11 @@ class Averager(BaseMeter):
         if self.num_samples == 0:
             raise ZeroMeasurementsError()
 
-        return self.result / self.num_samples
+        result = self.result
+
+        if torch.is_tensor(result) and result.dim() == 0:
+            result = result.item()
+
+        result = result / self.num_samples
+
+        return result

@@ -66,7 +66,8 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
     def _compile_metrics(self):
         for metric_name, meter in self._meters.items():
             try:
-                self._metrics[metric_name] = meter.value()
+                value = meter.value()
+                self._metrics[metric_name] = value
             except ZeroMeasurementsError:
                 continue
 
@@ -210,7 +211,8 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
         for metric_name, meter in self.train_meters.items():
             try:
-                self._train_metrics[metric_name] = meter.value()
+                value = meter.value()
+                self._train_metrics[metric_name] = value
             except ZeroMeasurementsError:
                 continue
 
