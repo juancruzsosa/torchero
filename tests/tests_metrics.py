@@ -114,28 +114,12 @@ class AccuracyMetricsTests(BaseMetricsTests):
             self.assertEqual(str(e), meter.INVALID_BATCH_DIMENSION_MESSAGE)
 
     def test_cannot_measure_inputs_other_than_tensors(self):
-        from torch.autograd import Variable
         a = torch.Tensor([[0.1]])
-        va = Variable(a)
         t = torch.FloatTensor([0])
-        lt = torch.LongTensor([0])
-        vt = Variable(lt)
         meter = meters.CategoricalAccuracy()
 
         try:
-            meter.measure(va, lt)
-            self.fail()
-        except TypeError as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
-
-        try:
             meter.measure(a, t)
-            self.fail()
-        except TypeError as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
-
-        try:
-            meter.measure(a, vt)
             self.fail()
         except TypeError as e:
             self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
@@ -292,7 +276,6 @@ class MSETests(BaseMetricsTests):
                                               (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], math.sqrt((2*1**2 + 2*2**2 + 3*3**2)/7))
 
     def test_cannot_measure_with_different_type_of_tensors(self):
-        from torch.autograd import Variable
         import numpy as np
 
         a = [[0.2]]
@@ -306,12 +289,6 @@ class MSETests(BaseMetricsTests):
 
         try:
             meter.measure(a, a)
-            self.fail()
-        except TypeError as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
-
-        try:
-            meter.measure(Variable(torch.Tensor(a)), Variable(torch.Tensor(a)))
             self.fail()
         except TypeError as e:
             self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
