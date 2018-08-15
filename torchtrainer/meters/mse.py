@@ -3,6 +3,7 @@ import math
 import math
 from .batch import BatchMeter
 from .exceptions import ZeroMeasurementsError
+from .aggregators.batch import Average
 
 class MSE(BatchMeter):
     """ Meter for mean squared error metric
@@ -13,10 +14,10 @@ class MSE(BatchMeter):
     INVALID_INPUT_TYPE_MESSAGE = ('Expected types (FloatTensor, FloatTensor) '
                                   'as inputs')
 
-    def __init__(self):
+    def __init__(self, transform=None):
         """ Constructor
         """
-        super(MSE, self).__init__()
+        super(MSE, self).__init__(transform=transform, aggregator=Average())
 
     def _get_result(self, a, b):
         return torch.pow(a-b, 2)
@@ -34,3 +35,16 @@ class RMSE(MSE):
     """
     def value(self):
         return math.sqrt(super(RMSE, self).value())
+
+class MSLE(MSE):
+    """ Meter for mean squared log error metric
+    """
+    def __init__(self, transform=None):
+        transform = transform or (lambda x: x)
+        super(MSLE, self).__init__(transform=lambda x: transform(torch.log(x+1)))
+
+class RMSLE(MSLE):
+    """ Meter for rooted mean squared log error metric
+    """
+    def value(self):
+        return math.sqrt(super(RMSLE, self).value())
