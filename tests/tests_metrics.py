@@ -257,6 +257,8 @@ class MSETests(BaseMetricsTests):
     def test_meter_value_average_over_batch_dimention(self):
         meter = meters.MSE()
         sqrt_meter = meters.RMSE()
+        msle_meter = meters.MSLE()
+        rmsle_meter = meters.RMSLE()
         self.assertMeasureEqual(meter, [(torch.ones(2,1), torch.zeros(2,1))], 1)
         self.assertMeasureEqual(meter, [(torch.zeros(2,1), torch.ones(2,1))], 1)
         self.assertMeasureEqual(meter, [(2*torch.ones(2,1), torch.zeros(2,1))], 4)
@@ -264,6 +266,12 @@ class MSETests(BaseMetricsTests):
         self.assertMeasureEqual(meter, [(torch.zeros(2,1), 2*torch.ones(2,1))], 4)
         self.assertMeasureAlmostEqual(meter, [(torch.arange(0, 3).float().view(3, 1), torch.arange(3, 6).float().view(3, 1))], 3**2)
         self.assertMeasureAlmostEqual(sqrt_meter, [(torch.arange(0, 3).float().view(3, 1), torch.arange(3, 6).float().view(3, 1))], 3)
+        self.assertMeasureAlmostEqual(msle_meter, [(torch.Tensor([[math.exp(2)-1, math.exp(1)-1]]),
+                                                    torch.Tensor([[math.exp(4)-1, math.exp(2)-1]]))],
+                                      ((2-4)**2 + (1-2)**2) / 2)
+        self.assertMeasureAlmostEqual(rmsle_meter, [(torch.Tensor([[math.exp(2)-1, math.exp(1)-1]]),
+                                                     torch.Tensor([[math.exp(4)-1, math.exp(2)-1]]))],
+                                      math.sqrt(((2-4)**2 + (1-2)**2)/2))
 
     def test_meter_value_average_over_sum_of_measured_batch_dimentions(self):
         meter = meters.MSE()
