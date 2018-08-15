@@ -317,19 +317,23 @@ class ConfusionMatrixTests(BaseMetricsTests):
 
     def test_cannot_measure_anything_other_than_longtensor_or_byte_tensor_on_left_param(self):
         meter = meters.ConfusionMatrix(nr_classes=1)
+        a = torch.zeros(1).type(torch.FloatTensor)
+        b = torch.zeros(1).type(torch.LongTensor)
         try:
-            meter.measure(torch.FloatTensor([0]), torch.LongTensor([0]))
+            meter.measure(a, b)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.FloatTensor))
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=a.type()))
 
     def test_cannot_measure_anything_other_than_longtensor_or_byte_tensor_on_right_param(self):
         meter = meters.ConfusionMatrix(nr_classes=1)
+        a = torch.zeros(1).type(torch.FloatTensor)
+        b = torch.zeros(1).type(torch.LongTensor)
         try:
-            meter.measure(torch.LongTensor([0]), torch.FloatTensor([0]))
+            meter.measure(b, a)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.FloatTensor))
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=a.type()))
 
     def test_cannot_measure_anything_other_1d_tensors_on_left_param(self):
         meter = meters.ConfusionMatrix(nr_classes=1)
@@ -416,20 +420,24 @@ class ConfusionMatrixTests(BaseMetricsTests):
     @requires_cuda
     def test_cannot_measure_with_cuda_float_tensors_on_left_param(self):
         meter = meters.ConfusionMatrix(nr_classes=1)
+        a = torch.zeros(1).type(torch.FloatTensor).cuda()
+        b = torch.zeros(1).type(torch.LongTensor).cuda()
         try:
-            meter.measure(torch.cuda.FloatTensor([0]), torch.LongTensor([0]))
+            meter.measure(a, b)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.cuda.FloatTensor))
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=a.type()))
 
     @requires_cuda
     def test_cannot_measure_with_cuda_float_tensors_on_right_param(self):
         meter = meters.ConfusionMatrix(nr_classes=1)
+        a = torch.zeros(1).type(torch.FloatTensor).cuda()
+        b = torch.zeros(1).type(torch.LongTensor).cuda()
         try:
-            meter.measure(torch.cuda.LongTensor([0]), torch.cuda.FloatTensor([0]))
+            meter.measure(b, a)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=torch.cuda.FloatTensor))
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE.format(type_=a.type()))
 
     def test_confusion_matrix_with_auto_nr_of_class_infers_nr_classes(self):
         meter = meters.ConfusionMatrix(nr_classes='auto')

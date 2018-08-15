@@ -90,7 +90,7 @@ class ConfusionMatrix(BaseMeter):
 
     def check_tensor(self, a):
         if isinstance(a, torch.FloatTensor) or isinstance(a, torch.cuda.FloatTensor):
-            raise Exception(self.INVALID_INPUT_TYPE_MESSAGE.format(type_=type(a)))
+            raise Exception(self.INVALID_INPUT_TYPE_MESSAGE.format(type_=a.type()))
 
         if a.dim() > 1:
             raise Exception(self.INVALID_BATCH_DIMENSION_MESSAGE.format(dims=a.dim()))
