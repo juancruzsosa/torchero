@@ -12,18 +12,20 @@ class TrainerTests(unittest.TestCase):
     def setUp(self):
         self.w = 4
         self.model = nn.Linear(1, 1, bias=False)
-        self.model.weight.data = torch.Tensor([[self.w]])
+        self.model.weight.data = torch.FloatTensor([[self.w]])
         self.criterion = nn.L1Loss()
-        self.optimizer = SGD(self.model.parameters(), lr=1, momentum=0, weight_decay=0)
+        self.optimizer = SGD(self.model.parameters(), lr=1.0, momentum=0.0, weight_decay=0.0)
         self.load_training_dataset()
         self.load_validation_dataset()
 
     def load_training_dataset(self, start=1, end=5, batch_size=2):
-        self.training_dataset = TensorDataset(torch.arange(start, end).view(-1, 1), torch.zeros(end-start, 1))
+        self.training_dataset = TensorDataset(torch.arange(start, end).view(-1, 1).float(),
+                                              torch.zeros(end-start, 1).float())
         self.training_dataloader = DataLoader(self.training_dataset, batch_size=batch_size)
 
     def load_validation_dataset(self, start=0, end=10, batch_size=2):
-        self.validation_dataset = TensorDataset(torch.arange(start, end).view(-1, 1), torch.zeros(end-start, 1))
+        self.validation_dataset = TensorDataset(torch.arange(start, end).view(-1, 1).float(),
+                                                torch.zeros(end-start, 1).float())
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size)
 
     def test_train_val_loss_are_calculated_after_every_log_event(self):
@@ -85,18 +87,18 @@ class UnsupervisedTrainerTests(unittest.TestCase):
     def setUp(self):
         self.w = 4
         self.model = nn.Linear(1, 1, bias=False)
-        self.model.weight.data = torch.Tensor([[self.w]])
+        self.model.weight.data = torch.FloatTensor([[self.w]])
         self.criterion = nn.L1Loss()
         self.optimizer = SGD(self.model.parameters(), lr=1, momentum=0, weight_decay=0)
         self.load_training_dataset()
         self.load_validation_dataset()
 
     def load_training_dataset(self, start=1, end=5, batch_size=2):
-        self.training_dataset = torch.arange(start, end).view(-1, 1)
+        self.training_dataset = torch.arange(start, end).view(-1, 1).float()
         self.training_dataloader = DataLoader(self.training_dataset, batch_size=batch_size)
 
     def load_validation_dataset(self, start=0, end=10, batch_size=2):
-        self.validation_dataset = torch.arange(start, end).view(-1, 1)
+        self.validation_dataset = torch.arange(start, end).view(-1, 1).float()
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size)
 
     def test_autoencoder_trainer_use_supervised_trainer(self):
