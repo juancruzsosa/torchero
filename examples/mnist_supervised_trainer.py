@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument('--logging_frecuency', type=int, help='Logging frecuency in batchs', default=10)
     parser.add_argument('--data', type=str, help="Path to data folder", default=os.path.join('data', 'mnist'))
     parser.add_argument('--lr', type=float, help="Learning rate", default=1e-2)
+    parser.add_argument('--cuda', dest='use_cuda', help="Use cuda", action='store_true')
     return parser.parse_args()
 
 def main():
@@ -71,6 +72,9 @@ def main():
                                 callbacks=[Logger(),
                                            CSVLogger(output='training_stats.csv')
                                           ])
+    if args.use_cuda:
+        trainer.cuda()
+
     trainer.train(dataloader=train_dl,
                   valid_dataloader=test_dl,
                   epochs=args.epochs)
