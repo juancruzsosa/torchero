@@ -6,13 +6,14 @@ from .aggregators.batch import Average
 class BatchMeter(BaseMeter):
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
 
-    def __init__(self, aggregator=None):
+    def __init__(self, aggregator=None, transform=None):
         """ Constructor
 
         Arguments:
             size_average (bool): Average of batch size
         """
         self.aggregator = aggregator
+        self._transform = transform or (lambda x: x)
 
         if self.aggregator is None:
             self.aggregator = Average()
@@ -32,7 +33,7 @@ class BatchMeter(BaseMeter):
     def measure(self, *xs):
         self.check_tensors(*xs)
         self.result = self.aggregator.combine(self.result,
-                                              self._get_result(*xs))
+                                              self._get_result(*map(self._transform, xs)))
 
     def value(self):
         val = self.aggregator.final_value(self.result)
