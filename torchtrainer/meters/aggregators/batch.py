@@ -15,11 +15,20 @@ class Sum(BatchAggregator):
     def combine_batch(self, old_result, value):
         return old_result + torch.sum(value)
 
-class Average(Sum):
+class Average(BatchAggregator):
+    """ Aggregator that return the sums of all given batchs
+    """
+    def initial_value(self):
+        return 0
+
+    def combine_batch(self, old_result, value):
+        return old_result + torch.sum(value, dim=0)
+
     """ Aggregator that returns the average of all given batchs
     """
     def final_value(self, result):
-        return super(Average, self).final_value(result) / self.num_samples
+        result = super(Average, self).final_value(result)
+        return torch.sum(result) / (self._num_samples * result.nelement())
 
 class Maximum(BatchAggregator):
     """ Aggregator that returns the maximum of all given batchs

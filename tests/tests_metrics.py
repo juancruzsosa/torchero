@@ -224,13 +224,13 @@ class MSETests(BaseMetricsTests):
         self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.ones(1,1))], 0)
         self.assertMeasureEqual(meter, [(torch.ones(1,1), torch.zeros(1,1))], 1)
         self.assertMeasureEqual(meter, [(torch.zeros(1,1), torch.ones(1,1))], 1)
-        self.assertMeasureEqual(meter, [(-torch.ones(1,2), torch.zeros(1,2))], 2*1)
-        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -torch.ones(1,2))], 2*1)
-        self.assertMeasureEqual(meter, [(2*torch.ones(1,2), torch.zeros(1,2))], 4*2)
-        self.assertMeasureEqual(meter, [(torch.zeros(1,2), 2*torch.ones(1,2))], 4*2)
-        self.assertMeasureEqual(meter, [(-2*torch.ones(1,2), torch.zeros(1,2))], 4*2)
-        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], 4*2)
-        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], math.sqrt(4*2))
+        self.assertMeasureEqual(meter, [(-torch.ones(1,2), torch.zeros(1,2))], 2/2)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -torch.ones(1,2))], 2/2)
+        self.assertMeasureEqual(meter, [(2*torch.ones(1,2), torch.zeros(1,2))], 2**2*2/2)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), 2*torch.ones(1,2))], 2**2*2/2)
+        self.assertMeasureEqual(meter, [(-2*torch.ones(1,2), torch.zeros(1,2))], 2**2*2/2)
+        self.assertMeasureEqual(meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], 2**2*2/2)
+        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.zeros(1,2), -2*torch.ones(1,2))], math.sqrt(2**2*2/2))
 
     def test_cannot_measure_with_1d_tensors(self):
         a = torch.Tensor([0.2])
@@ -262,18 +262,18 @@ class MSETests(BaseMetricsTests):
         self.assertMeasureEqual(meter, [(2*torch.ones(2,1), torch.zeros(2,1))], 4)
         self.assertMeasureEqual(meter, [(torch.zeros(2,1), 2*torch.ones(2,1))], 4)
         self.assertMeasureEqual(meter, [(torch.zeros(2,1), 2*torch.ones(2,1))], 4)
-        self.assertMeasureAlmostEqual(meter, [(torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], 3**2)
-        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], 3)
+        self.assertMeasureAlmostEqual(meter, [(torch.arange(0, 3).float().view(3, 1), torch.arange(3, 6).float().view(3, 1))], 3**2)
+        self.assertMeasureAlmostEqual(sqrt_meter, [(torch.arange(0, 3).float().view(3, 1), torch.arange(3, 6).float().view(3, 1))], 3)
 
     def test_meter_value_average_over_sum_of_measured_batch_dimentions(self):
         meter = meters.MSE()
         sqrt_meter = meters.RMSE()
         self.assertMeasureAlmostEqual(meter, [(torch.ones(2,1), torch.zeros(2,1)),
-                                              (2*torch.ones(2,1), torch.zeros(2,1)),
-                                              (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], (2*1**2 + 2*2**2 + 3*3**2)/7)
+                                              (2*torch.ones(2,1), torch.zeros(2,1))],
+                                      (2*1**2 + 2*2**2)/4)
         self.assertMeasureAlmostEqual(sqrt_meter, [(torch.ones(2,1), torch.zeros(2,1)),
-                                              (2*torch.ones(2,1), torch.zeros(2,1)),
-                                              (torch.arange(0, 3).view(3, 1), torch.arange(3, 6).view(3, 1))], math.sqrt((2*1**2 + 2*2**2 + 3*3**2)/7))
+                                                   (2*torch.ones(2,1), torch.zeros(2,1))],
+                                      math.sqrt((2*1**2 + 2*2**2)/4))
 
     def test_cannot_measure_with_different_type_of_tensors(self):
         import numpy as np

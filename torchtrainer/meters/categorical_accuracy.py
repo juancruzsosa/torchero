@@ -26,7 +26,7 @@ class CategoricalAccuracy(_CategoricalAccuracy):
         self.k = k
 
     def _get_result(self, a, b):
-        return (a.topk(k=self.k, dim=1)[1] == b.unsqueeze(-1))
+        return torch.sum((a.topk(k=self.k, dim=1)[1] == b.unsqueeze(-1)).float(), dim=1)
 
 class BinaryAccuracy(_CategoricalAccuracy):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
