@@ -41,7 +41,7 @@ class MSLE(MSE):
     """
     def __init__(self, transform=None):
         transform = transform or (lambda x: x)
-        super(MSLE, self).__init__(transform=lambda x: transform(torch.log(x+1)))
+        super(MSLE, self).__init__(transform=lambda x: torch.log(transform(x)+1))
 
 class RMSLE(MSLE):
     """ Meter for rooted mean squared log error metric
