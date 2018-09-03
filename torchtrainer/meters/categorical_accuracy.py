@@ -3,6 +3,7 @@ from torch import nn
 from .batch import BatchMeter
 
 class _CategoricalAccuracy(BatchMeter):
+    DEFAULT_MODE = 'max'
     INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
                                        'dimension and same shape')
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'

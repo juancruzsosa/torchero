@@ -5,38 +5,50 @@ import yaml
 import torch
 from .base import Callback
 from .exceptions import MeterNotFound
+from torchtrainer.utils.defaults import get_default_mode
 
 class ModelCheckpoint(Callback):
     """ Callback for checkpoint a model if it get betters in a given metric
     """
-    UNRECOGNIZED_MODE = "Unrecognized mode {mode}. Options are: 'max', 'min'"
+    UNRECOGNIZED_MODE = "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
+    INVALID_MODE_INFERENCE_MESSAGE = "Could not infer mode from meter {meter}"
 
-    def __init__(self, path, monitor, mode='min'):
+    def __init__(self, path, monitor, mode='auto'):
         """ Constructor
 
         Arguments:
             path (str): Path for the checkpoint file
             monitor (str): Metric name to monitor
             temp_dir (str): Temporary folder path.
-            mode (str): One of 'max' or 'min'. Alters the checkpoint criterion
+            mode (str): One of 'max', 'min', 'auto'. Alters the checkpoint criterion
             to be based on maximum or minimum monitor quantity (respectively).
         """
+        if mode not in ('max', 'min', 'auto'):
+            raise Exception(self.UNRECOGNIZED_MODE.format(mode))
 
+        self._mode = mode
         self.monitor_name = monitor
         self.path = path
         self.last_value = None
         self.outperform = False
-        self.is_better = self.criterion(mode)
 
     def criterion(self, mode):
         criterion_by_name = {'max': lambda b: self.last_value < b,
                              'min': lambda b: self.last_value > b}
-        try:
-            return criterion_by_name[mode.lower()]
-        except KeyError:
-            raise Exception(self.UNRECOGNIZED_MODE.format(mode))
+        return criterion_by_name[mode.lower()]
+
+    @property
+    def mode(self):
+        return self._mode
 
     def on_train_begin(self):
+        if self._mode.lower() == 'auto':
+            self._mode = get_default_mode(self.trainer.meters[self.monitor_name])
+            if self._mode == '':
+                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE.format(meter=self.monitor_name))
+
+        self.is_better = self.criterion(self._mode)
+
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
