@@ -198,6 +198,10 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                             self.validator.meters_names()))
 
     @property
+    def meters(self):
+        return {**self.train_meters, **self.validator.meters}
+
+    @property
     def metrics(self):
         """ Last statistic recopiled from meters
 
