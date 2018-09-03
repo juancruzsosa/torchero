@@ -159,6 +159,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         self._val_metrics = {}
         self.train_meters = train_meters
         self.val_meters = val_meters
+        self._raised_stop_training = False
 
         self._history_callback = History()
         self.validator = self.create_validator()
@@ -302,6 +303,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         if epochs < 0:
             raise Exception(self.INVALID_EPOCH_MESSAGE.format(epochs=epochs))
 
+        self._raised_stop_training = False
         self.total_epochs = epochs
         self.total_steps = len(dataloader)
         self.valid_dataloader = valid_dataloader
@@ -311,10 +313,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         # Turn model to training mode
         self.model.train(mode=True)
 
-        for self.epoch in range(self.total_epochs):
+        self.epoch = 0
+        while self.epoch < self.total_epochs and not self._raised_stop_training:
             self._callbacks.on_epoch_begin()
             self._train_epoch(dataloader, valid_dataloader)
             self._callbacks.on_epoch_end()
+            self.epoch += 1
 
         self._callbacks.on_train_end()
 
@@ -331,3 +335,6 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     def _validate(self):
         self._val_metrics = self.validator.validate(self.valid_dataloader)
+
+    def stop_training(self):
+        self._raised_stop_training = True
