@@ -448,3 +448,137 @@ class CheckpointTests(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base_tree)
+
+class EarlyStoppingTests(unittest.TestCase):
+    def setUp(self):
+        self.load_model()
+
+    def load_model(self):
+        self.model = DummyModel()
+
+    def load_ones_dataset(self, batchs):
+        self.train_ds = torch.ones(batchs, 1)
+        self.train_dl = DataLoader(self.train_ds, batch_size=1, shuffle=False)
+
+    def early_callback(self, monitor, mode='min', patience=0, min_delta=0):
+        return EarlyStopping(monitor=monitor,
+                               mode=mode,
+                               patience=patience,
+                               min_delta=min_delta)
+
+    @staticmethod
+    def meter_from_list(measure_list, meter_name):
+        def update_batch_fn(trainer, _):
+            trainer.train_meters['t'].measure(measure_list[trainer.epochs_trained])
+        return update_batch_fn
+
+    def make_test_trainer(self, callbacks, measures):
+        return TestTrainer(model=self.model,
+                           callbacks=callbacks,
+                           logging_frecuency=1,
+                           train_meters={'t': Averager()},
+                           update_batch_fn=self.meter_from_list(measures, 't'))
+
+    def test_never_stop_if_measure_is_always_decreasing(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min')
+        callback_max = self.early_callback(monitor='t', mode='max')
+
+        measures_min = [3, 2, 1, 0]
+        measures_max = [0, 1, 2, 3]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=4)
+        trainer_max.train(self.train_dl, epochs=4)
+        self.assertEqual(trainer_min.epochs_trained, 4)
+        self.assertEqual(trainer_max.epochs_trained, 4)
+
+    def test_stops_when_measure_not_strictly_improve_with_0_patience(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min')
+        callback_max = self.early_callback(monitor='t', mode='max')
+
+        measures_min = [3, 3, 2]
+        measures_max = [3, 3, 4]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=3)
+        trainer_max.train(self.train_dl, epochs=3)
+        self.assertEqual(trainer_min.epochs_trained, 2)
+        self.assertEqual(trainer_max.epochs_trained, 2)
+
+    def test_stops_when_measure_not_improve_with_0_patience(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min')
+        callback_max = self.early_callback(monitor='t', mode='max')
+
+        measures_min = [3, 4, 1]
+        measures_max = [2, 1, 4]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=3)
+        trainer_max.train(self.train_dl, epochs=3)
+        self.assertEqual(trainer_min.epochs_trained, 2)
+        self.assertEqual(trainer_max.epochs_trained, 2)
+
+    def test_stops_when_measure_not_improve_more_than_1_epoch_of_margin_with_1_patience(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min', patience=1)
+        callback_max = self.early_callback(monitor='t', mode='max', patience=1)
+
+        measures_min = [3, 4, 2, 0]
+        measures_max = [3, 2, 4, 5]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=4)
+        trainer_max.train(self.train_dl, epochs=4)
+        self.assertEqual(trainer_min.epochs_trained, 4)
+        self.assertEqual(trainer_max.epochs_trained, 4)
+
+    def test_should_reset_the_patience_counter_after_improvement(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min', patience=1)
+        callback_max = self.early_callback(monitor='t', mode='max', patience=1)
+
+        measures_min = [3, 4, 2, 3, 1]
+        measures_max = [3, 2, 4, 3, 5]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=5)
+        trainer_max.train(self.train_dl, epochs=5)
+        self.assertEqual(trainer_min.epochs_trained, 5)
+        self.assertEqual(trainer_max.epochs_trained, 5)
+
+    def test_min_delta_param_should_set_different_margin_for_error_improvement_with_max(self):
+        self.load_ones_dataset(1)
+        callback_min = self.early_callback(monitor='t', mode='min', patience=0, min_delta=1)
+        callback_max = self.early_callback(monitor='t', mode='max', patience=0, min_delta=1)
+
+        measures_min = [3, 3.99, 2, 4, 1]
+        measures_max = [3, 2.01, 4, 2, 5]
+
+        trainer_min = self.make_test_trainer(callbacks=[callback_min], measures=measures_min)
+        trainer_max = self.make_test_trainer(callbacks=[callback_max], measures=measures_max)
+
+        trainer_min.train(self.train_dl, epochs=5)
+        trainer_max.train(self.train_dl, epochs=5)
+        self.assertEqual(trainer_min.epochs_trained, 4)
+        self.assertEqual(trainer_max.epochs_trained, 4)
+
+    def test_max_min_mode_are_the_only_modes_available(self):
+        mode = 'maximum'
+        try:
+            checkpoint = self.early_callback(monitor='t', mode=mode)
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), EarlyStopping.UNRECOGNIZED_MODE_MESSAGE.format(mode=mode))
