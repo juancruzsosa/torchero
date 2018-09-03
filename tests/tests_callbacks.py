@@ -449,6 +449,38 @@ class CheckpointTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.base_tree)
 
+    def test_mode_auto_infer_mode(self):
+        self.load_ones_dataset(1)
+        checkpoint = self.model_checkpoint(monitor='t', mode='auto')
+        measures = []
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[checkpoint],
+                              logging_frecuency=1,
+                              train_meters={'t': MSE()},
+                              update_batch_fn=self.meter_from_list(measures, 't'))
+        trainer.train(self.train_dl, epochs=0)
+        self.assertEqual(checkpoint.mode, 'min')
+
+        checkpoint = self.model_checkpoint(monitor='t', mode='auto')
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[checkpoint],
+                              logging_frecuency=1,
+                              train_meters={'t': CategoricalAccuracy()},
+                              update_batch_fn=self.meter_from_list(measures, 't'))
+        trainer.train(self.train_dl, epochs=0)
+        self.assertEqual(checkpoint.mode, 'max')
+
+        checkpoint = self.model_checkpoint(monitor='t', mode='auto')
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[checkpoint],
+                              logging_frecuency=1,
+                              train_meters={'t': Averager()},
+                              update_batch_fn=self.meter_from_list(measures, 't'))
+        try:
+            trainer.train(self.train_dl, epochs=0)
+        except Exception as e:
+            self.assertEqual(str(e), checkpoint.INVALID_MODE_INFERENCE_MESSAGE.format(meter='t'))
+
 class EarlyStoppingTests(unittest.TestCase):
     def setUp(self):
         self.load_model()
@@ -582,3 +614,35 @@ class EarlyStoppingTests(unittest.TestCase):
             self.fail()
         except ValueError as e:
             self.assertEqual(str(e), EarlyStopping.UNRECOGNIZED_MODE_MESSAGE.format(mode=mode))
+
+    def test_mode_auto_infer_mode(self):
+        self.load_ones_dataset(1)
+        callback = self.early_callback(monitor='v', mode='auto', patience=0, min_delta=1)
+        measures = []
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[callback],
+                              logging_frecuency=1,
+                              train_meters={'v': MSE()},
+                              update_batch_fn=self.meter_from_list(measures, 'v'))
+        trainer.train(self.train_dl, epochs=0)
+        self.assertEqual(callback.mode, 'min')
+
+        callback = self.early_callback(monitor='v', mode='auto', patience=0, min_delta=1)
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[callback],
+                              logging_frecuency=1,
+                              train_meters={'v': CategoricalAccuracy()},
+                              update_batch_fn=self.meter_from_list(measures, 'v'))
+        trainer.train(self.train_dl, epochs=0)
+        self.assertEqual(callback.mode, 'max')
+
+        callback = self.early_callback(monitor='v', mode='auto', patience=0, min_delta=1)
+        trainer = TestTrainer(model=self.model,
+                              callbacks=[callback],
+                              logging_frecuency=1,
+                              train_meters={'v': Averager()},
+                              update_batch_fn=self.meter_from_list(measures, 'v'))
+        try:
+            trainer.train(self.train_dl, epochs=0)
+        except Exception as e:
+            self.assertEqual(str(e), callback.INVALID_MODE_INFERENCE_MESSAGE.format(meter='v'))
