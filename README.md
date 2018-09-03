@@ -21,6 +21,8 @@
 * `callbacks.Logger`: Callback that display metrics per logging step
 * `callbacks.ProgbarLogger`: Callback that displays progress bars to monitor training/validation metrics
 * `callbacks.CallbackContainer`: Callback to group multiple hooks
+* `callbacks.ModelCheckpoint`: Callback to save best model after every epoch
+* `callbacks.EarlyStopping`: Callback to stop training when monitored quanity not improves
 * `callbacks.CSVLogger`: Callback that export training/validation stadistics to a csv file
 
 ### Meters ###
@@ -30,7 +32,11 @@
 * `meters.CategoricalAccuracy`: Meter for accuracy on categorical targets
 * `meters.BinaryAccuracy`: Meter for accuracy on binary targets (assuming normalized inputs)
 * `meters.BinaryAccuracyWithLogits`: Binary accuracy meter with an integrated activation function (by default logistic function)
+* `meters.ConfusionMatrix`: Meter for confusion matrix.
 * `meters.MSE`: Mean Squared Error meter
+* `meters.MSLE`: Mean Squared Log Error meter
+* `meters.RMSE`: Rooted Mean Squared Error meter
+* `meters.RMSLE`: Rooted Mean Squared Log Error meter
 
 ### Cross validation ###
 
