@@ -56,14 +56,8 @@ class SupervisedTrainer(BatchTrainer):
         if val_acc_meters is None:
             val_acc_meters = {name: meter.clone() for name, meter in acc_meters.items()}
 
-        train_meters = {'loss' : LossMeter(criterion),
-                        **acc_meters}
-
-        val_meters = {'loss': LossMeter(criterion),
-                      **val_acc_meters}
-
-        train_meters = self.prepend_name_dict('train_', train_meters)
-        val_meters = self.prepend_name_dict('val_', val_meters)
+        train_meters = self.prepend_name_dict('train_', acc_meters)
+        val_meters = self.prepend_name_dict('val_', val_acc_meters)
 
         self.criterion = criterion
         self.optimizer = optimizer
@@ -74,6 +68,9 @@ class SupervisedTrainer(BatchTrainer):
                                                 callbacks=callbacks,
                                                 logging_frecuency=logging_frecuency,
                                                 validation_granularity=validation_granularity)
+
+        self.add_named_train_meter('train_loss', LossMeter(criterion))
+        self.add_named_val_meter('val_loss', LossMeter(criterion))
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()

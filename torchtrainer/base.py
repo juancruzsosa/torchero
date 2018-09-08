@@ -29,6 +29,8 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
     """ Abstract class for all validation classes that works with batched inputs.
         All those validators should subclass this class
     """
+    METER_ALREADY_EXISTS_MESSAGE=('Meter {name} already exists as train meter')
+
     def __init__(self, model, meters):
         super(BatchValidator, self).__init__()
         self.model = model
@@ -94,6 +96,12 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
         self._compile_metrics()
         return self._metrics
 
+    def add_named_meter(self, name, meter):
+        if name in self._meters:
+            raise Exception(self.METER_ALREADY_EXISTS_MESSAGE.format(name=name))
+
+        self._meters[name] = meter
+
 class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
@@ -109,6 +117,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                                             'ValidationGranularity.AT_LOG\' or '
                                             'ValidationGranularity.AT_EPOCH\' '
                                             'got: {mode}')
+    METER_ALREADY_EXISTS_MESSAGE=('Meter {name} already exists as train meter')
 
     SCHED_BY_GRANULARITY = {ValidationGranularity.AT_EPOCH : _OnEpochValidScheduler,
                             ValidationGranularity.AT_LOG: _OnLogValidScheduler}
@@ -342,3 +351,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     def stop_training(self):
         self._raised_stop_training = True
+
+    def add_named_train_meter(self, name, meter):
+        if name in self.train_meters:
+            raise Exception(self.METER_ALREADY_EXISTS_MESSAGE.format(name=name))
+
+        self.train_meters[name] = meter
+
+    def add_named_val_meter(self, name, meter):
+        self.validator.add_named_meter(name, meter)
