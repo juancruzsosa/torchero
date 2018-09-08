@@ -455,3 +455,40 @@ class TorchBasetrainerTest(unittest.TestCase):
         t.train(self.training_dataloader)
 
         self.assertEqual(self.trained, True)
+
+    def test_add_existent_meter_raises_exception(self):
+        t = TestTrainer(model=self.model,
+                        logging_frecuency=1,
+                        train_meters={'t': Averager()},
+                        update_batch_fn=lambda x: None)
+        try:
+            t.add_named_train_meter('t', Averager())
+            self.fail()
+        except Exception as e:
+            self.assertEqual(str(e), TestTrainer.METER_ALREADY_EXISTS_MESSAGE.format(name='t'))
+
+    def test_add_meter_reads_meters_after_every_log(self):
+        logs = []
+
+        self.load_arange_training_dataset(2, 1)
+        self.load_arange_validation_dataset(1, 1)
+
+        def update_batch_fn(trainer, x):
+            trainer.train_meters['t'].measure(x.data[0][0])
+
+        class CustomCallback(Callback):
+            def on_log(callback):
+                logs.append(callback.trainer.metrics)
+
+        trainer = TestTrainer(model=self.model,
+                              logging_frecuency=1,
+                              update_batch_fn=update_batch_fn,
+                              callbacks=[CustomCallback()],
+                              validation_granularity=ValidationGranularity.AT_EPOCH)
+        avg = Averager()
+        trainer.add_named_train_meter('t', avg)
+        self.assertTrue('t' in trainer.meters_names())
+        self.assertTrue(avg in trainer.meters.values())
+        self.assertFalse('t' in trainer.metrics)
+        trainer.train(self.training_dataloader, epochs=2)
+        self.assertEqual(logs, [{'t': 0.0}, {'t': 1.0}, {'t': 0.0}, {'t': 1.0}])
