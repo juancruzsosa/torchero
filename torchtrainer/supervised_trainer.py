@@ -1,5 +1,6 @@
 from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import LossMeter
+from .utils.defaults import get_optimizer_by_name
 
 class SupervisedValidator(BatchValidator):
     def __init__(self, model, meters):
@@ -60,6 +61,9 @@ class SupervisedTrainer(BatchTrainer):
         val_meters = self.prepend_name_dict('val_', val_acc_meters)
 
         self.criterion = criterion
+
+        if isinstance(optimizer, str):
+            optimizer = get_optimizer_by_name(optimizer, model)
         self.optimizer = optimizer
 
         super(SupervisedTrainer, self).__init__(model=model,
