@@ -15,5 +15,5 @@
 
 ## Hooks ##
 
-- [ ] EarlyStopping
-- [ ] torch.nn.optim schedulers integration
+- [x] EarlyStopping
+- [x] torch.nn.optim schedulers integration
