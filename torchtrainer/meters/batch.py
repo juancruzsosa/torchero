@@ -13,6 +13,7 @@ class BatchMeter(BaseMeter):
             size_average (bool): Average of batch size
         """
         self.aggregator = aggregator
+        self.scale = 1
         self._transform = transform or (lambda x: x)
 
         if self.aggregator is None:
@@ -36,8 +37,12 @@ class BatchMeter(BaseMeter):
                                               self._get_result(*map(self._transform, xs)))
 
     def value(self):
-        val = self.aggregator.final_value(self.result)
+        val = self.aggregator.final_value(self.result) * self.scale
         if torch.is_tensor(val) and val.dim() == 0:
             return val.item()
         else:
             return val
+
+    def __mul__(self, y):
+        self.scale *= y
+        return self
