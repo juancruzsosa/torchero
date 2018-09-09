@@ -53,9 +53,6 @@ class SupervisedTrainer(BatchTrainer):
             validation_granularity (ValidationGranularity):
                 Change validation criterion (after every log vs after every epoch)
         """
-        if val_acc_meters is None:
-            val_acc_meters = {name: meter.clone() for name, meter in acc_meters.items()}
-
         if isinstance(criterion, str):
             criterion = get_loss_by_name(criterion)
         self.criterion = criterion

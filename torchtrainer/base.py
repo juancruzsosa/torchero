@@ -7,6 +7,7 @@ from .meters import ZeroMeasurementsError
 from enum import Enum
 from itertools import chain
 from torch.autograd import Variable
+from .utils.defaults import parse_meters
 
 
 class ValidationGranularity(Enum):
@@ -176,8 +177,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         self._val_metrics = {}
         self._prefixes = prefixes
 
+        train_meters = parse_meters(train_meters)
+
         if val_meters is None:
             val_meters = {name: meter.clone() for name, meter in train_meters.items()}
+        else:
+            val_meters = parse_meters(val_meters)
 
         self.train_meters = self.prepend_name_dict(prefixes[0], train_meters)
         self.val_meters = self.prepend_name_dict(prefixes[1], val_meters)
