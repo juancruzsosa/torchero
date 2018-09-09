@@ -15,7 +15,7 @@ class ProgbarLogger(Callback):
         training/validation metrics
     """
 
-    def __init__(self, ascii=False, notebook=False):
+    def __init__(self, ascii=False, notebook=False, monitors=None):
         """ Constructor
 
         Arguments:
@@ -28,6 +28,7 @@ class ProgbarLogger(Callback):
             self.tqdm = tqdm.tqdm_notebook
         else:
             self.tqdm = tqdm.tqdm
+        self.monitors = monitors
 
         self.step_tqdms = []
         self.step_bars = []
@@ -50,8 +51,14 @@ class ProgbarLogger(Callback):
 
 
     def on_log(self):
-        metrics = {name: format_metric(value)
-                   for name, value in self.trainer.metrics.items()}
+        monitors = self.monitors
+        if self.monitors is None:
+            monitors = self.trainer.metrics.keys()
+
+        metrics = {name: format_metric(self.trainer.metrics[name])
+                   for name in monitors
+                   if name in self.trainer.metrics}
+
         step_bar = self.step_bars[-1]
         step_bar.set_postfix(**metrics),
         step_bar.update(self.trainer.steps_trained - self.last_step)
