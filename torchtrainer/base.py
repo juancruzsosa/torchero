@@ -360,3 +360,6 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     def add_named_val_meter(self, name, meter):
         self.validator.add_named_meter(name, meter)
+
+    def add_callback(self, callback):
+        self._callbacks.add(callback)
