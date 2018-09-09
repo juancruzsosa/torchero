@@ -17,7 +17,7 @@ class DummyModel(nn.Module):
         self.train(mode=True)
         self.is_cuda = False
 
-    def cuda(self):
+    def cuda(self, device=None):
         self.is_cuda = True
 
     def cpu(self):

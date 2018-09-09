@@ -205,12 +205,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     def history(self):
         return self._history_callback.registry
 
-    def cuda(self):
+    def cuda(self, device=None):
         """ Turn model to cuda
         """
-        super(BatchTrainer, self).cuda()
-        self.model.cuda()
-        self.validator.cuda()
+        super(BatchTrainer, self).cuda(device=device)
+        self.model.cuda(device=device)
+        self.validator.cuda(device=device)
 
     def cpu(self):
         """ Turn model to cpu
