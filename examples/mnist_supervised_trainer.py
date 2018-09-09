@@ -12,8 +12,6 @@ from torchvision import transforms
 import torchtrainer
 from torchtrainer import SupervisedTrainer
 from torchtrainer.meters import CategoricalAccuracy
-from torchtrainer.meters.aggregators.batch import Average
-from torchtrainer.meters.aggregators.scale import percentage
 from torchtrainer.callbacks import ProgbarLogger as Logger, CSVLogger
 
 class Network(nn.Module):
@@ -43,7 +41,6 @@ def parse_args():
     parser.add_argument('--val_batch_size', type=int, help='Batch size', default=100)
     parser.add_argument('--logging_frecuency', type=int, help='Logging frecuency in batchs', default=10)
     parser.add_argument('--data', type=str, help="Path to data folder", default=os.path.join('data', 'mnist'))
-    parser.add_argument('--lr', type=float, help="Learning rate", default=1e-2)
     parser.add_argument('--cuda', dest='use_cuda', help="Use cuda", action='store_true')
     return parser.parse_args()
 
@@ -61,14 +58,12 @@ def main():
     test_dl = DataLoader(test_ds, batch_size=args.val_batch_size)
 
     model = Network()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr)
 
     trainer = SupervisedTrainer(model=model,
-                                optimizer=optimizer,
-                                criterion=criterion,
+                                optimizer='sgd',
+                                criterion='cross_entropy',
                                 logging_frecuency=args.logging_frecuency,
-                                acc_meters={'acc': CategoricalAccuracy(aggregator=percentage(Average()))},
+                                acc_meters={'acc': 'categorical_accuracy_percentage'},
                                 callbacks=[Logger(),
                                            CSVLogger(output='training_stats.csv')
                                           ])
