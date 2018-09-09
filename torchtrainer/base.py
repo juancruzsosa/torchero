@@ -34,6 +34,7 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
     def __init__(self, model, meters):
         super(BatchValidator, self).__init__()
         self.model = model
+        meters = parse_meters(meters)
         self._meters = meters
         self._metrics = {}
 
@@ -122,6 +123,10 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     SCHED_BY_GRANULARITY = {ValidationGranularity.AT_EPOCH : _OnEpochValidScheduler,
                             ValidationGranularity.AT_LOG: _OnLogValidScheduler}
 
+    @staticmethod
+    def prepend_name_dict(prefix, d):
+        return {prefix + name: value for name, value in d.items()}
+
     @abstractmethod
     def create_validator(self):
         # return BatchValidator(self.model, self.val_meters)
@@ -132,6 +137,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                  callbacks=[],
                  train_meters={}, val_meters={},
                  logging_frecuency=1,
+                 prefixes=('', ''),
                  validation_granularity=ValidationGranularity.AT_EPOCH):
         """ Constructor
 
@@ -146,6 +152,8 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                 Validation meters
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
+            prefixes (tuple, list):
+                Prefixes of train and val metrics
             validation_granularity (ValidationGranularity):
                 Change validation criterion (after every log vs after every epoch)
         """
@@ -166,8 +174,14 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         self._steps_trained  = 0
         self._train_metrics = {}
         self._val_metrics = {}
-        self.train_meters = train_meters
-        self.val_meters = val_meters
+        self._prefixes = prefixes
+
+        if val_meters is None:
+            val_meters = {name: meter.clone() for name, meter in train_meters.items()}
+
+        self.train_meters = self.prepend_name_dict(prefixes[0], train_meters)
+        self.val_meters = self.prepend_name_dict(prefixes[1], val_meters)
+
         self._raised_stop_training = False
 
         self._history_callback = History()
@@ -353,12 +367,14 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         self._raised_stop_training = True
 
     def add_named_train_meter(self, name, meter):
+        name = self._prefixes[0] + name
         if name in self.train_meters:
             raise Exception(self.METER_ALREADY_EXISTS_MESSAGE.format(name=name))
 
         self.train_meters[name] = meter
 
     def add_named_val_meter(self, name, meter):
+        name = self._prefixes[1] + name
         self.validator.add_named_meter(name, meter)
 
     def add_callback(self, callback):

@@ -20,10 +20,6 @@ class SupervisedTrainer(BatchTrainer):
     def create_validator(self):
         return SupervisedValidator(self.model, self.val_meters)
 
-    @staticmethod
-    def prepend_name_dict(prefix, d):
-        return {prefix + name: value for name, value in d.items()}
-
     def __init__(self,
                  model,
                  criterion,
@@ -32,6 +28,7 @@ class SupervisedTrainer(BatchTrainer):
                  acc_meters={},
                  val_acc_meters=None,
                  logging_frecuency=1,
+                 prefixes=('train_', 'val_'),
                  validation_granularity=ValidationGranularity.AT_EPOCH):
         """ Constructor
 
@@ -51,14 +48,13 @@ class SupervisedTrainer(BatchTrainer):
                 Validation accuracy meter by meter name
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
+            prefixes (tuple, list):
+                Prefixes of train and val metrics
             validation_granularity (ValidationGranularity):
                 Change validation criterion (after every log vs after every epoch)
         """
         if val_acc_meters is None:
             val_acc_meters = {name: meter.clone() for name, meter in acc_meters.items()}
-
-        train_meters = self.prepend_name_dict('train_', acc_meters)
-        val_meters = self.prepend_name_dict('val_', val_acc_meters)
 
         if isinstance(criterion, str):
             criterion = get_loss_by_name(criterion)
@@ -69,14 +65,15 @@ class SupervisedTrainer(BatchTrainer):
         self.optimizer = optimizer
 
         super(SupervisedTrainer, self).__init__(model=model,
-                                                train_meters=train_meters,
-                                                val_meters=val_meters,
+                                                train_meters=acc_meters,
+                                                val_meters=val_acc_meters,
                                                 callbacks=callbacks,
                                                 logging_frecuency=logging_frecuency,
+                                                prefixes=prefixes,
                                                 validation_granularity=validation_granularity)
 
-        self.add_named_train_meter('train_loss', LossMeter(criterion))
-        self.add_named_val_meter('val_loss', LossMeter(criterion))
+        self.add_named_train_meter('loss', LossMeter(criterion))
+        self.add_named_val_meter('loss', LossMeter(criterion))
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()

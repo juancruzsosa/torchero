@@ -1,4 +1,5 @@
 from torch import optim
+from torch import nn
 
 def get_default_mode(meter):
     if hasattr(meter.__class__, 'DEFAULT_MODE'):
