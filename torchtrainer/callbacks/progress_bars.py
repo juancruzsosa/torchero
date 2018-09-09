@@ -1,5 +1,6 @@
 from .base import Callback
 from .container import CallbackContainer
+from torchtrainer.utils.format import format_metric
 
 try:
     import tqdm
@@ -48,14 +49,8 @@ class ProgbarLogger(Callback):
         self.step_bars.append(step_tqdm.__enter__())
 
 
-    def format(self, value):
-        if isinstance(value, float):
-            return '{:.3f}'.format(value)
-        else:
-            return str(value)
-
     def on_log(self):
-        metrics = {name: self.format(value)
+        metrics = {name: format_metric(value)
                    for name, value in self.trainer.metrics.items()}
         step_bar = self.step_bars[-1]
         step_bar.set_postfix(**metrics),
