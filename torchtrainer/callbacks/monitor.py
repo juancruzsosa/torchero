@@ -1,5 +1,4 @@
 from .base import Callback
-from torchtrainer.meters import LastMeter
 
 class Monitor(Callback):
     def __init__(self, property_name, property_fn):
