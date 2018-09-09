@@ -281,7 +281,6 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                       Tensors or cuda Tensors):
                 Named batch parameters
         """
-
         pass
 
     def reset_meters(self):
