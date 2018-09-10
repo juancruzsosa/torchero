@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='torchtrainer',
-      version='0.0.2',
+      version='0.1',
       description='A pluggable & extensible trainer for pytorch',
       url='http://github.com/nirvguy/torchtrainer',
       author='Juan Cruz Sosa',
@@ -13,6 +13,7 @@ setup(name='torchtrainer',
           'pyyaml'
       ],
       extra_requires={
-        'monitor training/validation with progress bar support' : ['tqdm']
+        'monitor training/validation with progress bar support' : ['tqdm'],
+        'remote monitor callback': ['requests']
       },
       zip_safe=False)
