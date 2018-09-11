@@ -144,9 +144,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
             pass
 
     def test_binary_meters_with_incresing_threholds_change_region_decision(self):
-        a1 = torch.Tensor([[0.3]])
-        a2 = torch.Tensor([[0.5]])
-        a3 = torch.Tensor([[0.7]])
+        a1 = torch.Tensor([0.3])
+        a2 = torch.Tensor([0.5])
+        a3 = torch.Tensor([0.7])
 
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
@@ -169,9 +169,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
 
 
     def test_binary_accuracy_with_logits_applies_activation_applies_activation_before_regiion_decision(self):
-        a1 = torch.Tensor([[-1]])
-        a2 = torch.Tensor([[0]])
-        a3 = torch.Tensor([[1]])
+        a1 = torch.Tensor([-1])
+        a2 = torch.Tensor([0])
+        a3 = torch.Tensor([1])
 
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
@@ -193,9 +193,9 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureEqual(meter_th_p8, [(a3, t2)], 1.0)
 
     def test_binary_accuracy_with_custom_activation_applies_that_activation(self):
-        a1 = torch.Tensor([[-1]])
-        a2 = torch.Tensor([[0]])
-        a3 = torch.Tensor([[1]])
+        a1 = torch.Tensor([-1])
+        a2 = torch.Tensor([0])
+        a3 = torch.Tensor([1])
 
         t1 = torch.LongTensor([1])
         t2 = torch.LongTensor([0])
