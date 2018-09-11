@@ -2,11 +2,17 @@ import torch
 from torch import nn
 from .batch import BatchMeter
 
-class _CategoricalAccuracy(BatchMeter):
+class CategoricalAccuracy(BatchMeter):
+    """ Meter for accuracy categorical on categorical targets
+    """
     DEFAULT_MODE = 'max'
     INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
                                        'dimension and same shape')
     INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
+
+    def __init__(self, k=1, aggregator=None):
+        super(CategoricalAccuracy, self).__init__(aggregator=aggregator)
+        self.k = k
 
     def check_tensors(self, a, b):
         if not torch.is_tensor(a):
@@ -18,13 +24,6 @@ class _CategoricalAccuracy(BatchMeter):
 
         if len(a.size()) != 2 or len(b.size()) != 1 or len(b) != a.size()[0]:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
-
-class CategoricalAccuracy(_CategoricalAccuracy):
-    """ Meter for accuracy categorical on categorical targets
-    """
-    def __init__(self, k=1, aggregator=None):
-        super(CategoricalAccuracy, self).__init__(aggregator=aggregator)
-        self.k = k
 
     def _get_result(self, a, b):
         return torch.sum((a.topk(k=self.k, dim=1)[1] == b.unsqueeze(-1)).float(), dim=1)
