@@ -29,9 +29,13 @@ class CategoricalAccuracy(_CategoricalAccuracy):
     def _get_result(self, a, b):
         return torch.sum((a.topk(k=self.k, dim=1)[1] == b.unsqueeze(-1)).float(), dim=1)
 
-class BinaryAccuracy(_CategoricalAccuracy):
+class BinaryAccuracy(BatchMeter):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
     """
+    INVALID_DIMENSION_MESSAGE = 'Expected both tensors have same dimension'
+    INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
+    INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
+
     def __init__(self, threshold=0.5, aggregator=None):
         """ Constructor
 
@@ -42,12 +46,28 @@ class BinaryAccuracy(_CategoricalAccuracy):
         self.threshold = threshold
 
     def _get_result(self, output, target):
-        predictions = output.squeeze(1) >= self.threshold
+        predictions = output >= self.threshold
+
         if predictions.is_cuda:
             predictions = predictions.type(torch.cuda.LongTensor)
         else:
             predictions = predictions.type(torch.LongTensor)
-        return (predictions == target)
+
+        if target.is_cuda:
+            target = target.type(torch.cuda.LongTensor)
+        else:
+            target = target.type(torch.LongTensor)
+        return (predictions == target).float()
+
+    def check_tensors(self, a, b):
+        if not torch.is_tensor(a) or not torch.is_tensor(b):
+            raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
+
+        if not (a.shape == b.shape):
+            raise ValueError(self.INVALID_DIMENSION_MESSAGE)
+
+        if not ((b == 0) | (b == 1)).all():
+            raise ValueError(self.INVALID_TENSOR_CONTENT_MESSAGE)
 
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
