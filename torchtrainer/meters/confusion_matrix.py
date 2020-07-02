@@ -105,4 +105,21 @@ class ConfusionMatrix(BaseMeter):
         self.matrix_controller.increment(a, b)
 
     def value(self):
-        return self.matrix_controller.matrix
+        result = self.matrix_controller.matrix.clone()
+        if self.normalize:
+            result /= result.sum(dim=0)
+        return result
+
+    def plot(self, ax=None, classes=None):
+        try:
+            from matplotlib import pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib is required in order to plot confusion matrix")
+
+        if ax is None:
+            ax = plt.gca()
+        ax.imshow(self.value())
+
+        if classes is not None:
+            ax.set_xticks(classes, rotation=90)
+            ax.set_yticks(classes)

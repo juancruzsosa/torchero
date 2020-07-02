@@ -33,7 +33,7 @@ class HistoryManager(Callback):
                              'step': step,
                              **metrics})
 
-    def step_plot(self, monitor, from_step=1):
+    def step_plot(self, monitor, from_step=1, ax=None):
         """ Plot monitor history values across trained iterations
 
         Arguments:
@@ -42,15 +42,19 @@ class HistoryManager(Callback):
         """
         import matplotlib.pyplot as plt
 
+        if ax is None:
+            ax = plt.gca()
+
         def condition(record):
             return monitor in record and record['step'] >= from_step
 
         x = map(itemgetter('step'), filter(condition, self.records))
         y = map(itemgetter(monitor), filter(condition, self.records))
 
-        plt.plot(list(x), list(y), label=monitor)
+        ax.plot(list(x), list(y), label=monitor)
+        ax.legend()
 
-    def epoch_plot(self, monitor, from_epoch=0):
+    def epoch_plot(self, monitor, from_epoch=0, ax=None):
         """ Plot monitor history values across epochs
 
         Arguments:
@@ -59,6 +63,9 @@ class HistoryManager(Callback):
         """
         import matplotlib.pyplot as plt
 
+        if ax is None:
+            ax = plt.gca()
+
         values = defaultdict(float)
 
         for record in self.records:
@@ -66,10 +73,11 @@ class HistoryManager(Callback):
             if monitor in record and epoch >= from_epoch:
                 values[epoch] = record[monitor]
 
-        plt.plot(list(values.keys()),
+        ax.plot(list(values.keys()),
                  list(values.values()),
                  label=monitor,
                  marker='x')
+        ax.legend()
 
     def __str__(self):
         return str(os.linesep.join(map(str, self.records)))
