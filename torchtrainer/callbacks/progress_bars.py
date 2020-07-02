@@ -68,11 +68,11 @@ class ProgbarLogger(Callback):
         self.epoch_bar.update()
 
     def on_train_end(self):
-        self.epoch_bar.__exit__()
+        self.epoch_bar.close()
         self.epoch_tqdm.close()
 
         for step_tqdm, step_bar in zip(self.step_tqdms, self.step_bars):
-            step_bar.__exit__()
+            step_bar.close()
             step_tqdm.close()
 
         self.step_tqdms = []
