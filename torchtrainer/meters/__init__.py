@@ -9,3 +9,4 @@ from .mse import MSE, RMSE, MSLE, RMSLE
 from .averager import Averager
 from .loss import LossMeter
 from .confusion_matrix import ConfusionMatrix
+from .balanced_accuracy import BalancedAccuracy

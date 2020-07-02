@@ -4,6 +4,7 @@ from torch.nn.functional import pad
 from .base import BaseMeter
 from .exceptions import ZeroMeasurementsError
 
+
 class ConfusionMatrixController(object, metaclass=ABCMeta):
     @property
     @abstractmethod
