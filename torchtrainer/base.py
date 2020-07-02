@@ -162,7 +162,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         if logging_frecuency < 0:
             raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE.format(logging_frecuency=logging_frecuency))
 
-        if validation_granularity not in ValidationGranularity:
+        if not isinstance(validation_granularity,ValidationGranularity) or validation_granularity not in ValidationGranularity:
             raise Exception(self.INVALID_VALIDATION_GRANULARITY_MESSAGE.format(mode=validation_granularity))
 
         super(BatchTrainer, self).__init__()
