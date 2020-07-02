@@ -480,3 +480,13 @@ class AveragerTests(BaseMetricsTests):
         self.assertMeasureEqual(meter, [1], 1)
         self.assertMeasureAlmostEqual(meter, [1, 2], (1+2)/2)
         self.assertMeasureAlmostEqual(meter, [1, 2, 3], (1+2+3)/3)
+
+class BalancedAccuracyTests(BaseMetricsTests):
+    def test_final_value(self):
+        meter = meters.BalancedAccuracy()
+
+        self.assertMeasureAlmostEqual(meter, [(torch.Tensor([[1, 0, 0], # 0
+                                                            [0, 1, 0],  # 1
+                                                            [0, 1, 0],  # 1
+                                                            [0, 0, 1]]), # 2
+                                               torch.LongTensor([0,1,0,2]))], (1/2+1/1+1/1)/3)
