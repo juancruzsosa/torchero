@@ -12,5 +12,7 @@ def format_metric(value):
         return repr({k: format_metric(v) for k, v in value.items()})
     elif isinstance(value, list) or isinstance(value, tuple):
         return '[{}]'.format(', '.join(map(format_metric, value)))
+    elif torch.is_tensor(value):
+        return repr(value.cpu().tolist())
     else:
         return str(value)
