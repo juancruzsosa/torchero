@@ -79,13 +79,13 @@ class ConfusionMatrix(BaseMeter):
     INVALID_LENGTHS_MESSAGE = 'Expected input and targets of same lengths'
     INVALID_LABELS_MESSAGE = 'Expected labels between 0 and number of classes'
 
-    def __init__(self, nr_classes='auto', normalize=True):
+    def __init__(self, nr_classes='auto', normalize=False):
         if isinstance(nr_classes, str) and nr_classes == 'auto':
             self.matrix_controller = ResizableConfusionMatrixController()
         elif isinstance(nr_classes, int) and nr_classes > 0:
             self.matrix_controller = FixedConfusionMatrixController(nr_classes)
         else:
-            raise ValueError("Invalid value for nr_classes parameter. Must be 'auto' or a positive number")
+            raise ValueError(self.INVALID_NR_OF_CLASSES_MESSAGE.format(nr_classes=nr_classes))
         self.normalize = normalize
         self.reset()
 
