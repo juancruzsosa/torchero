@@ -88,11 +88,12 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
             return self._metrics
 
         self.model.train(mode=False)
-        for batch in valid_dataloader:
-            if isinstance(batch, torch.Tensor):
-                batch = (batch, )
-            batch = list(map(self._prepare_tensor, batch))
-            self.validate_batch(*batch)
+        with torch.no_grad():
+            for batch in valid_dataloader:
+                if isinstance(batch, torch.Tensor):
+                    batch = (batch, )
+                batch = list(map(self._prepare_tensor, batch))
+                self.validate_batch(*batch)
         self.model.train(mode=True)
 
         self._compile_metrics()

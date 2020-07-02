@@ -1,3 +1,4 @@
+import torch
 from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import LossMeter
 from .utils.defaults import get_optimizer_by_name, get_loss_by_name
@@ -79,5 +80,8 @@ class SupervisedTrainer(BatchTrainer):
         loss.backward()
         self.optimizer.step()
 
-        for meter in self.train_meters.values():
-            meter.measure(output.data, y.data)
+        self.model.train(mode=False)
+        with torch.no_grad():
+            for meter in self.train_meters.values():
+                meter.measure(output.data, y.data)
+        self.model.train(mode=True)

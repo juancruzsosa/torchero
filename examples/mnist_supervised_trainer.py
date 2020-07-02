@@ -74,5 +74,14 @@ def main():
                   valid_dataloader=test_dl,
                   epochs=args.epochs)
 
+    validator = trainer.validator
+
+    if args.use_cuda:
+        validator.cuda()
+
+    result = validator.validate(test_dl)
+    plt.imshow(result['val_cfg'].cpu().numpy())
+    plt.show()
+
 if __name__ == '__main__':
     main()

@@ -1,3 +1,5 @@
+import torch
+
 def format_metric(value):
     if isinstance(value, float):
         if abs(value) > 1e-3:
