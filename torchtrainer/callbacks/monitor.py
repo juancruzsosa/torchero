@@ -18,7 +18,7 @@ class OptimizerMonitor(Monitor):
         if self._optimizer is None and not hasattr(trainer, 'optimizer'):
             raise Exception("Trainer has not optimizer!")
         elif self._optimizer is None:
-            self._optimizer = self.trainer.optimizer
+            self._optimizer = trainer.optimizer
         super(OptimizerMonitor, self).accept(trainer)
 
 class LRMonitor(OptimizerMonitor):

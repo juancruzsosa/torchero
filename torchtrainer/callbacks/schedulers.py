@@ -16,7 +16,7 @@ class OptimizerScheduler(Callback):
         if self._optimizer is None and not hasattr(trainer, 'optimizer'):
             raise Exception("Trainer has not optimizer!")
         elif self._optimizer is None:
-            self._optimizer = self.trainer.optimizer
+            self._optimizer = trainer.optimizer
         super(OptimizerScheduler, self).accept(trainer)
         trainer.add_callback(LRMonitor(optimizer=self._optimizer))
 
