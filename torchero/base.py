@@ -1,7 +1,7 @@
 import torch
 from abc import ABCMeta, abstractmethod
 
-from torchtrainer.utils.mixins import CudaMixin
+from torchero.utils.mixins import CudaMixin
 from .callbacks import Callback, CallbackContainer, History
 from .meters import ZeroMeasurementsError
 from enum import Enum
@@ -146,11 +146,11 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         Args:
             model (:class:`torch.nn.Module`):
                 Module to train
-            callbacks (:class:`torchtrainer.callbacks.Callback`):
+            callbacks (:class:`torchero.callbacks.Callback`):
                 Pluggable callbacks for epoch/batch events.
-            train_meters (list of :class: `torchtrainer.meters.Meter'):
+            train_meters (list of :class: `torchero.meters.Meter'):
                 Training meters
-            val_meters (list of :class: `torchtrainer.meters.Meter'):
+            val_meters (list of :class: `torchero.meters.Meter'):
                 Validation meters
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation

@@ -1,4 +1,4 @@
-# Torchtrainer - A training framework for pytorch #
+# Torchero - A training framework for pytorch #
 
 ## Features ##
 

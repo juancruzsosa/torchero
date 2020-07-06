@@ -1,8 +1,8 @@
 import math
 from torch.utils.data import TensorDataset, DataLoader
-import torchtrainer
-from torchtrainer import SupervisedTrainer, AutoencoderTrainer
-from torchtrainer.base import ValidationGranularity
+import torchero
+from torchero import SupervisedTrainer, AutoencoderTrainer
+from torchero.base import ValidationGranularity
 from .common import *
 
 def sign(x):

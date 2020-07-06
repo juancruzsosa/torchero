@@ -1,6 +1,6 @@
 import math
 from .common import *
-from torchtrainer.meters.aggregators import batch, scale
+from torchero.meters.aggregators import batch, scale
 
 class BaseMetricsTests(unittest.TestCase):
     def measure_once(self, meter, batchs):

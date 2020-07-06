@@ -1,6 +1,6 @@
 from .base import Callback
 from .container import CallbackContainer
-from torchtrainer.utils.format import format_metric
+from torchero.utils.format import format_metric
 
 try:
     import tqdm

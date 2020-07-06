@@ -3,13 +3,13 @@ import unittest
 import torch
 from torch import nn
 from torch.optim import SGD
-from torchtrainer.base import BatchTrainer, BatchValidator
-from torchtrainer.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping
-from torchtrainer import meters
-from torchtrainer.meters import Averager, MSE, RMSE, CategoricalAccuracy
+from torchero.base import BatchTrainer, BatchValidator
+from torchero.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping
+from torchero import meters
+from torchero.meters import Averager, MSE, RMSE, CategoricalAccuracy
 from torch.utils.data import DataLoader, TensorDataset
-from torchtrainer.utils.data import CrossFoldValidation
-from torchtrainer.base import ValidationGranularity
+from torchero.utils.data import CrossFoldValidation
+from torchero.base import ValidationGranularity
 
 class DummyModel(nn.Module):
     def __init__(self):

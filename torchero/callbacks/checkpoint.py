@@ -5,7 +5,7 @@ import yaml
 import torch
 from .base import Callback
 from .exceptions import MeterNotFound
-from torchtrainer.utils.defaults import get_default_mode
+from torchero.utils.defaults import get_default_mode
 
 class ModelCheckpoint(Callback):
     """ Callback for checkpoint a model if it get betters in a given metric

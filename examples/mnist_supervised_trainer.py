@@ -9,10 +9,10 @@ from torch import optim
 import torchvision
 from torchvision.datasets import MNIST
 from torchvision import transforms
-import torchtrainer
-from torchtrainer import SupervisedTrainer
-from torchtrainer.meters import CategoricalAccuracy
-from torchtrainer.callbacks import ProgbarLogger as Logger, CSVLogger
+import torchero
+from torchero import SupervisedTrainer
+from torchero.meters import CategoricalAccuracy
+from torchero.callbacks import ProgbarLogger as Logger, CSVLogger
 
 class Network(nn.Module):
     def __init__(self):

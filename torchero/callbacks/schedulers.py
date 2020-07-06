@@ -37,7 +37,7 @@ class OptimizerScheduler(Callback):
         pass
 
 class _TorchScheduler(OptimizerScheduler):
-    """ Adapts Torch learning rate scheduler to Torchtrainer Optimzer scheduler
+    """ Adapts Torch learning rate scheduler to Torchero Optimzer scheduler
     """
     def __init__(self, params, on_event='epoch_begin', optimizer=None):
         super(_TorchScheduler, self).__init__(on_event=on_event, optimizer=optimizer)

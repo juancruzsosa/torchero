@@ -10,7 +10,7 @@ class Callback(object):
         """ Accept a trainer
 
         Args:
-            trainer(instance of :class:`torchtrainer.base.BaseTrainer`):
+            trainer(instance of :class:`torchero.base.BaseTrainer`):
                 Trainer to attach to
         """
         self.trainer = trainer

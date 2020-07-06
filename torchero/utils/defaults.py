@@ -1,6 +1,6 @@
 from torch import optim
 from torch import nn
-from torchtrainer import meters
+from torchero import meters
 from collections import Iterable
 
 def get_default_mode(meter):

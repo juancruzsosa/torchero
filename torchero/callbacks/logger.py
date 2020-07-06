@@ -1,5 +1,5 @@
 from .base import Callback
-from torchtrainer.utils.format import format_metric
+from torchero.utils.format import format_metric
 
 class Logger(Callback):
     def __init__(self, separator=',\t', monitors=None):

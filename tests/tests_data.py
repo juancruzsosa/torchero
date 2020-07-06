@@ -1,8 +1,8 @@
 import torch
-import torchtrainer
+import torchero
 from .common import *
-from torchtrainer.utils.data import CrossFoldValidation
-from torchtrainer.utils.data.datasets import UnsuperviseDataset, \
+from torchero.utils.data import CrossFoldValidation
+from torchero.utils.data.datasets import UnsuperviseDataset, \
                                              ShrinkDataset
 
 class TestsDataUtils(unittest.TestCase):

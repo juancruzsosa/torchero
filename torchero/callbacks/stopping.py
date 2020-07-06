@@ -1,5 +1,5 @@
 from .base import Callback
-from torchtrainer.utils.defaults import get_default_mode
+from torchero.utils.defaults import get_default_mode
 
 class EarlyStopping(Callback):
     """ Callback for stop training when monitored metric not improve in time

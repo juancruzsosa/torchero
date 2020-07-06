@@ -1,6 +1,6 @@
 import json
 from .base import Callback
-from torchtrainer.utils.format import format_metric
+from torchero.utils.format import format_metric
 import warnings
 
 try:

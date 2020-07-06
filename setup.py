@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
-setup(name='torchtrainer',
+setup(name='torchero',
       version='0.1',
       description='A pluggable & extensible trainer for pytorch',
-      url='http://github.com/nirvguy/torchtrainer',
+      url='http://github.com/nirvguy/torchero',
       author='Juan Cruz Sosa',
       author_email='nirvguy@gmail.com',
       license='MIT',

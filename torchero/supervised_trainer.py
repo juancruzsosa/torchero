@@ -39,13 +39,13 @@ class SupervisedTrainer(BatchTrainer):
             criterion (:model:`torch.nn.Module`):
                 Loss criterion (eg: `torch.nn.CrossEntropyLoss`,
                                     `torch.nn.L1Loss`)
-            callbacks (:class:`torchtrainer.callbacks.Callback`):
+            callbacks (:class:`torchero.callbacks.Callback`):
                 Pluggable callbacks for epoch/batch events.
             optimizer (instance of :model:`torch.optim.Optimizer`):
                 Model optimizer
-            acc_meters (dictionary of :class:`torchtrainer.meters.Meter'):
+            acc_meters (dictionary of :class:`torchero.meters.Meter'):
                 Training accuracy meters by meter name
-            val_acc_meters (dictionary of :class:`torchtrainer.meters.Meter'):
+            val_acc_meters (dictionary of :class:`torchero.meters.Meter'):
                 Validation accuracy meter by meter name
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
