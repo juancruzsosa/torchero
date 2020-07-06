@@ -8,6 +8,73 @@
 * Training/validation statistics monitors
 * Cross fold validation iterators for splitting validation data from train data
 
+## Example ##
+
+### Training with MNIST 
+
+```python
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from torch import optim
+import torchvision
+from torchvision.datasets import MNIST
+from torchvision import transforms
+import torchero
+from torchero import SupervisedTrainer
+from torchero.meters import CategoricalAccuracy
+from torchero.callbacks import ProgbarLogger as Logger, CSVLogger
+
+class Network(nn.Module):
+    def __init__(self):
+        super(Network, self).__init__()
+        self.filter = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5),
+                                    nn.ReLU(inplace=True),
+                                    nn.BatchNorm2d(32),
+                                    nn.MaxPool2d(2),
+                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
+                                    nn.ReLU(inplace=True),
+                                    nn.BatchNorm2d(64),
+                                    nn.MaxPool2d(2))
+        self.linear = nn.Sequential(nn.Linear(5*5*64, 500),
+                                    nn.BatchNorm1d(500),
+                                    nn.ReLU(inplace=True),
+                                    nn.Linear(500, 10))
+
+    def forward(self, x):
+        bs = x.shape[0]
+        return self.linear(self.filter(x).view(bs, -1))
+
+train_ds = MNIST(root='data/',
+                 download=True,
+                 train=True,
+                 transform=transforms.Compose([transforms.ToTensor()]))
+test_ds = MNIST(root='data/',
+                download=False,
+                train=False,
+                transform=transforms.Compose([transforms.ToTensor()]))
+train_dl = DataLoader(train_ds, batch_size=args.batch_size)
+test_dl = DataLoader(test_ds, batch_size=args.val_batch_size)
+
+model = Network()
+
+trainer = SupervisedTrainer(model=model,
+                            optimizer='sgd',
+                            criterion='cross_entropy',
+                            logging_frecuency=args.logging_frecuency,
+                            acc_meters={'acc': 'categorical_accuracy_percentage'},
+                            callbacks=[Logger(),
+                                       CSVLogger(output='training_stats.csv')
+                                      ])
+if args.use_cuda:
+    trainer.cuda()
+
+trainer.train(dataloader=train_dl,
+              valid_dataloader=test_dl,
+              epochs=args.epochs)
+
+```
+
 ### Trainers ###
 
 * `BatchTrainer`: Abstract class for all trainers that works with batched inputs
