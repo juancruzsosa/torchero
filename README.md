@@ -53,25 +53,25 @@ test_ds = MNIST(root='data/',
                 download=False,
                 train=False,
                 transform=transforms.Compose([transforms.ToTensor()]))
-train_dl = DataLoader(train_ds, batch_size=args.batch_size)
-test_dl = DataLoader(test_ds, batch_size=args.val_batch_size)
+train_dl = DataLoader(train_ds, batch_size=50)
+test_dl = DataLoader(test_ds, batch_size=50)
 
 model = Network()
 
 trainer = SupervisedTrainer(model=model,
                             optimizer='sgd',
                             criterion='cross_entropy',
-                            logging_frecuency=args.logging_frecuency,
                             acc_meters={'acc': 'categorical_accuracy_percentage'},
                             callbacks=[Logger(),
                                        CSVLogger(output='training_stats.csv')
                                       ])
-if args.use_cuda:
-    trainer.cuda()
+
+# If you want to use cuda uncomment the next line
+# trainer.cuda()
 
 trainer.train(dataloader=train_dl,
               valid_dataloader=test_dl,
-              epochs=args.epochs)
+              epochs=2)
 
 ```
 
