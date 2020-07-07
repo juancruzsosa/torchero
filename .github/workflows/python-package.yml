@@ -25,11 +25,14 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip codecov
+        python -m pip install --upgrade pip codecov xmlrunner
         pip install -r requirements.txt
+        mkdir -p junit
     - name: Run unittests
       run: |
-        coverage run --source torchero -m unittest discover
+        coverage run --source torchero -m run_tests
+      env:
+        XML_RESULT: junit/unittests-results-${{ matrix.python-version }}.xml
     - name: Export coverage report
       run: |
         coverage xml
@@ -42,3 +45,10 @@ jobs:
         env_vars: OS,PYTHON
         name: codecov
         fail_ci_if_error: true
+    - name: Upload test results
+      uses: actions/upload-artifact@v1
+      with:
+        name: unittests-results-${{ matrix.python-version }}
+        path: junit/unittests-results-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
