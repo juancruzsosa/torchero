@@ -8,6 +8,22 @@
 * Training/validation statistics monitors
 * Cross fold validation iterators for splitting validation data from train data
 
+## Installation ##
+
+### From PyPI ###
+
+```bash
+pip install torchero
+```
+
+### From Source Code ###
+
+```bash
+git clone https://github.com/juancruzsosa/torchero
+cd torchero
+python setup.py install
+```
+
 ## Example ##
 
 ### Training with MNIST 
