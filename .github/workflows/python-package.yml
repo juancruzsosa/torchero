@@ -29,7 +29,9 @@ jobs:
         pip install -r requirements.txt
     - name: Run unittests
       run: |
-        coverage run --source torchero -m unittest discover
+        coverage run --source torchero -m run_tests
+      env:
+        XML_RESULT: unittests-results-${{ matrix.python-version }}
     - name: Export coverage report
       run: |
         coverage xml
@@ -42,3 +44,10 @@ jobs:
         env_vars: OS,PYTHON
         name: codecov
         fail_ci_if_error: true
+    - name: Upload test results
+      uses: actions/upload-artifact@v1
+      with:
+        name: unittests-results-${{ matrix.python-version }}
+        path: junit/unittests-results-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
