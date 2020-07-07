@@ -1,5 +1,7 @@
 # Torchero - A training framework for pytorch #
 
+[![codecov](https://codecov.io/gh/juancruzsosa/torchero/branch/master/graph/badge.svg)](https://codecov.io/gh/juancruzsosa/torchero)
+
 ## Features ##
 
 * Train/validate models for given number of epochs
