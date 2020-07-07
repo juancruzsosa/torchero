@@ -1,9 +1,9 @@
 # Torchero - A training framework for pytorch #
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/juancruzsosa/torchero/Python%20package)
 [![codecov](https://codecov.io/gh/juancruzsosa/torchero/branch/master/graph/badge.svg)](https://codecov.io/gh/juancruzsosa/torchero)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/torchero?label=python&logo=python)
 [![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 
 ## Features ##
 
