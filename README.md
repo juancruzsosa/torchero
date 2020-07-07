@@ -2,7 +2,8 @@
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/juancruzsosa/torchero/Python%20package)
 [![codecov](https://codecov.io/gh/juancruzsosa/torchero/branch/master/graph/badge.svg)](https://codecov.io/gh/juancruzsosa/torchero)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/torchero?label=python&logo=python)
+[![PyPI](https://img.shields.io/pypi/v/torchero)](https://pypi.org/project/torchero/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/torchero?label=python&logo=python)](https://www.python.org/downloads/)
 [![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features ##
