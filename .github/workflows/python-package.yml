@@ -27,11 +27,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip codecov xmlrunner
         pip install -r requirements.txt
+        mkdir -p junit
     - name: Run unittests
       run: |
         coverage run --source torchero -m run_tests
       env:
-        XML_RESULT: unittests-results-${{ matrix.python-version }}
+        XML_RESULT: junit/unittests-results-${{ matrix.python-version }}.xml
     - name: Export coverage report
       run: |
         coverage xml
