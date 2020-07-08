@@ -1,11 +1,17 @@
 import os
+from enum import Enum
+
 from .base import Callback
+
+class LogLevel(Enum):
+    EPOCH = 1
+    STEP = 0
 
 class CSVLogger(Callback):
     """ Export training statistics to csv file
     """
 
-    def __init__(self, output, append=False, columns=None):
+    def __init__(self, output, append=False, columns=None, level='epoch'):
         """ Constructor
 
         Arguemnts:
@@ -17,10 +23,20 @@ class CSVLogger(Callback):
         self.output = output
         self.append = append
         self.columns = columns
+        if level == 'epoch':
+            self.level = LogLevel.EPOCH
+        elif level == 'step':
+            self.level = LogLevel.STEP
+        else:
+            raise ValueError("level parameter should be either 'epoch' or 'step'")
+
 
     def on_train_begin(self):
         if self.columns is None:
-            self.columns = ['epoch', 'step'] + self.trainer.meters_names()
+            extra_cols = ['epoch']
+            if self.level is LogLevel.STEP:
+                extra_cols.append('step')
+            self.columns = extra_cols + self.trainer.meters_names()
 
         if os.path.isfile(self.output) and self.append:
             new_file = True
@@ -34,15 +50,26 @@ class CSVLogger(Callback):
         if not new_file:
             self.file_handle.write(','.join(self.columns))
 
-    def on_log(self):
+    def _write_line(self):
+        if len(self.trainer.metrics) == 0:
+            return
+
         stats = self.trainer.metrics
-        stats.update({'epoch': self.trainer.epochs_trained,
-                      'step': self.trainer.steps_trained})
+        stats['epoch'] = self.trainer.epochs_trained
+        stats['step'] = self.trainer.steps_trained
 
         new_row = (stats.get(column, '') for column in self.columns)
 
         self.file_handle.write(os.linesep + ','.join(map(str, new_row)))
         self.file_handle.flush()
+
+    def on_log(self):
+        if self.level is LogLevel.STEP:
+            self._write_line()
+
+    def on_epoch_end(self):
+        if self.level is LogLevel.EPOCH:
+            self._write_line()
 
     def on_train_end(self):
         self.file_handle.close()
