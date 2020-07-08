@@ -17,7 +17,8 @@ setup(name='torchero',
           'torch',
           'pyyaml',
           'tqdm',
-          'requests'
+          'requests',
+          'matplotlib'
       ],
       classifiers=[
           "Programming Language :: Python :: 3",
