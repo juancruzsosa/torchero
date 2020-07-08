@@ -18,7 +18,8 @@ setup(name='torchero',
           'pyyaml',
           'tqdm',
           'requests',
-          'matplotlib'
+          'matplotlib',
+          'Pillow'
       ],
       classifiers=[
           "Programming Language :: Python :: 3",
