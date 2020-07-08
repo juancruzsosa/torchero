@@ -43,6 +43,7 @@ class CSVExporterTests(unittest.TestCase):
         os.makedirs(self.base_tree)
 
         self.stats_filename = os.path.join(self.base_tree, 'stats.csv')
+        self.stats_filename_epoch = os.path.join(self.base_tree, 'stats_epoch.csv')
 
     def load_model(self):
         self.model = DummyModel()
@@ -62,14 +63,20 @@ class CSVExporterTests(unittest.TestCase):
     def csv_logger(self, append=False, columns=None):
         return CSVLogger(output=self.stats_filename, append=append, columns=columns, level='step')
 
+    def csv_epoch_logger(self, append=False, columns=None):
+        return CSVLogger(output=self.stats_filename_epoch, append=append, columns=columns)
+
     def test_csv_exporter_print_header_at_begining_of_training(self):
         self.load_empty_dataset()
 
-        callback = self.csv_logger(append=False)
+        callback_1 = self.csv_logger(append=False)
+        callback_2 = self.csv_epoch_logger(append=False)
+
         self.assertFalse(os.path.exists(self.stats_filename))
+        self.assertFalse(os.path.exists(self.stats_filename_epoch))
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback],
+                              callbacks=[callback_1, callback_2],
                               train_meters={'c' : Averager()},
                               logging_frecuency=5,
                               update_batch_fn=self.update_batch)
@@ -81,14 +88,21 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(len(lines), 1)
             self.assertEqual(lines[0], 'epoch,step,c')
 
+        with open(self.stats_filename_epoch, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 1)
+            self.assertEqual(lines[0], 'epoch,c')
+
     def test_csv_exporter_stats_write_stats_to_csv_after_every_log(self):
         self.load_arange_dataset()
 
-        callback = self.csv_logger(append=False)
+        callback_1 = self.csv_logger(append=False)
+        callback_2 = self.csv_epoch_logger(append=False)
         self.assertFalse(os.path.exists(self.stats_filename))
+        self.assertFalse(os.path.exists(self.stats_filename_epoch))
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback],
+                              callbacks=[callback_1, callback_2],
                               logging_frecuency=5,
                               train_meters={'c': Averager()},
                               update_batch_fn=self.update_batch)
@@ -101,16 +115,23 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(lines[1], '0,5,2.0\n')
             self.assertEqual(lines[2], '0,10,7.0')
 
+        with open(self.stats_filename_epoch, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 2)
+            self.assertEqual(lines[0], 'epoch,c\n')
+            self.assertEqual(lines[1], '1,7.0')
+
 
 
     def test_export_stats_can_append_stats_with_matching_cols_to_previous_training(self):
         self.load_arange_dataset()
 
-        callback = self.csv_logger(append=True)
+        callback_1 = self.csv_logger(append=True)
+        callback_2 = self.csv_epoch_logger(append=True)
         self.assertFalse(os.path.exists(self.stats_filename))
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback],
+                              callbacks=[callback_1, callback_2],
                               logging_frecuency=5,
                               train_meters={'c': Averager()},
                               update_batch_fn=self.update_batch)
@@ -126,6 +147,13 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(lines[2], '0,10,7.0\n')
             self.assertEqual(lines[3], '1,15,2.0\n')
             self.assertEqual(lines[4], '1,20,7.0')
+
+        with open(self.stats_filename_epoch, 'r') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[0], 'epoch,c\n')
+            self.assertEqual(lines[1], '1,7.0\n')
+            self.assertEqual(lines[2], '2,7.0')
 
     def test_csv_exporter_exports_only_selected_columns(self):
         self.load_arange_dataset()
@@ -164,27 +192,6 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(lines[0], 'epoch,v,c\n')
             self.assertEqual(lines[1], '0,,2.0\n')
             self.assertEqual(lines[2], '0,,7.0')
-
-    def test_csv_exporter_overwrite_entire_file_if_append_is_false(self):
-        self.load_arange_dataset()
-
-        callback = self.csv_logger(append=False)
-
-        trainer = TestTrainer(model=self.model,
-                              callbacks=[callback],
-                              logging_frecuency=5)
-
-        trainer.train(self.train_dl, epochs=1)
-        trainer.train(self.train_dl, epochs=2)
-
-        with open(self.stats_filename, 'r') as f:
-            lines = f.readlines()
-            self.assertEqual(len(lines), 5)
-            self.assertEqual(lines[0], 'epoch,step\n')
-            self.assertEqual(lines[1], '1,15\n')
-            self.assertEqual(lines[2], '1,20\n')
-            self.assertEqual(lines[3], '2,25\n')
-            self.assertEqual(lines[4], '2,30')
 
     def tearDown(self):
         shutil.rmtree(self.base_tree)
