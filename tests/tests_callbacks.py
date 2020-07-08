@@ -60,7 +60,7 @@ class CSVExporterTests(unittest.TestCase):
         trainer.train_meters['c'].measure(x.data[0][0])
 
     def csv_logger(self, append=False, columns=None):
-        return CSVLogger(output=self.stats_filename, append=append, columns=columns)
+        return CSVLogger(output=self.stats_filename, append=append, columns=columns, level='step')
 
     def test_csv_exporter_print_header_at_begining_of_training(self):
         self.load_empty_dataset()
