@@ -1,1 +1,1 @@
-from .plot_dataset import plot_imagegrid_dataset
+from .plot_dataset import show_image, show_imagegrid_dataset

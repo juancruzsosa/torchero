@@ -23,7 +23,7 @@ def show_image(ax, img, image_attr={'cmap': plt.cm.Greys_r}):
     ax.set_xticks([])
     ax.set_yticks([])
 
-def plot_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsize=None, fontsize=20, image_attr={'cmap': plt.cm.Greys_r}):
+def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsize=None, fontsize=20, image_attr={'cmap': plt.cm.Greys_r}):
     if isinstance(classes,str):
         if classes != 'auto':
             raise TypeError("Bad parameter classes. classes mut be 'auto', None, or an array with classes names")
