@@ -8,7 +8,9 @@ from torch import randperm
 from matplotlib import pyplot as plt
 from PIL.Image import Image
 
-def show_image(ax, img, image_attr={'cmap': plt.cm.Greys_r}):
+def show_image(img, ax, image_attr={'cmap': plt.cm.Greys_r}):
+    if ax is None:
+        ax = plt.gca()
     if isinstance(img, torch.Tensor):
         if img.ndim not in (2, 3):
             raise TypeError("Dataset images must have shape (3, HEIGHT, WIDTH) or (HEIGHT, WIDTH)")
@@ -18,6 +20,9 @@ def show_image(ax, img, image_attr={'cmap': plt.cm.Greys_r}):
         if img.ndim == 3 and img.shape[0] == 1:
             img = img.squeeze(0)
         if img.ndim == 3:
+            min_c = img.view(3, -1).min(axis=1).values.unsqueeze(-1).unsqueeze(-1)
+            max_c = img.view(3, -1).max(axis=1).values.unsqueeze(-1).unsqueeze(-1)
+            img = (img - min_c)/(max_c-min_c)
             img = img.permute(1, 2, 0)
     ax.imshow(img, **image_attr)
     ax.set_xticks([])
@@ -57,7 +62,7 @@ def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsiz
         fig, axs = plt.subplots(figsize=figsize, nrows=len(classes), ncols=num)
         for i, (class_name, class_images) in enumerate(sorted(images_per_class.items(), key=lambda x: x[0])):
             for j, img in enumerate(class_images):
-                show_image(axs[i][j], img, image_attr)
+                show_image(img, axs[i][j], image_attr)
             axs[i][0].set_ylabel(class_name, fontsize=fontsize)
     elif isinstance(sample, (Image, torch.Tensor, np.ndarray)):
         num = min(len(indices), num)
@@ -69,4 +74,4 @@ def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsiz
         fig, axs = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
         axs = axs.flatten()
         for i, ind in enumerate(indices):
-            show_image(axs[i], dataset[ind], image_attr)
+            show_image(dataset[ind], axs[i], image_attr)
