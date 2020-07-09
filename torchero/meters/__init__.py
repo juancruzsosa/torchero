@@ -4,7 +4,14 @@ from .batch import BatchMeter
 from .nullmeter import NullMeter
 from .categorical_accuracy import CategoricalAccuracy
 from .binary_scores import BinaryAccuracy, \
-                           BinaryWithLogitsAccuracy
+                           BinaryWithLogitsAccuracy, \
+                           Recall, \
+                           Precision, \
+                           Specificity, \
+                           NPV, \
+                           FBetaScore, \
+                           F1Score, \
+                           F2Score
 
 from .mse import MSE, RMSE, MSLE, RMSLE
 from .averager import Averager

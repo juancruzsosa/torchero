@@ -57,3 +57,124 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
         return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output),
                                                                  target)
 
+class TPMeter(BaseMeter):
+    """ Meter to calculate true positives, true negatives, false positives,
+    false negatives
+    """
+    def __init__(self, threshold=0.5):
+        super(TPMeter, self).__init__()
+        self.threshold = threshold
+        self.reset()
+
+    def reset(self):
+        self.tp = 0
+        self.tn = 0
+        self.fp = 0
+        self.fn = 0
+
+    def check_tensors(self, a, b):
+        if not torch.is_tensor(a) or not torch.is_tensor(b):
+            raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
+
+        if not (a.shape == b.shape):
+            raise ValueError(self.INVALID_DIMENSION_MESSAGE)
+
+        if not ((b == 0) | (b == 1)).all():
+            raise ValueError(self.INVALID_TENSOR_CONTENT_MESSAGE)
+
+    def measure(self, output, target):
+        self.check_tensors(output, target)
+        predictions = output >= self.threshold
+        self.tp += (output & target).sum().item()
+        self.fp += (output & (target^1)).sum().item()
+        self.fn += ((output^1) & target).sum().item()
+        self.tn += ((output^1) & (target^1)).sum().item()
+
+    def value(self):
+        return (self.tp, self.tn, self.fp, self.fn)
+
+class Recall(TPMeter):
+    """ Meter to calculate the recall score where
+
+    recall = tp / (tp + fn)
+
+    The best value is 1 and the worst value is 0.
+    """
+    def value(self):
+        return self.tp/(self.tp + self.fn)
+
+class Precision(TPMeter):
+    """ Meter to calculate the precision score where
+
+    precision = tp / (tp + fp)
+
+    The best value is 1 and the worst value is 0.
+    """
+    def value(self):
+        return self.tp/(self.tp + self.fp)
+
+class Specificity(TPMeter):
+    """ Meter to calculate the specificity score where
+
+    specificity = tn / (tn + fp)
+
+    The best value is 0 and the worst value is 1.
+    """
+    def value(self):
+        return self.tn/(self.tn + self.fp)
+
+class NPV(TPMeter):
+    """ Meter to calculate the negative predictive value score (npv) where
+
+    npv = tn / (tn + fp)
+
+    The best value is 0 and the worst value is 1.
+    """
+    def value(self):
+        return self.tn/(self.tn + self.fn)
+
+class FBetaScore(TPMeter):
+    """ Meter to calculate the f-beta score where
+
+    f(beta) = (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall')
+
+    The best value is 1 and the worst value is 0.
+    """
+    def __init__(self, beta, threshold=0.5):
+        super(FBetaScore, self).__init__(threshold=threshold)
+        self.beta = beta
+
+    def value(self):
+        recall = self.tp/(self.tp + self.fn)
+        precision = self.tp/(self.tp + self.fp)
+        return (1 + self.beta**2) * precision * recall / ((self.beta **2) * precision + recall)
+
+class F1Score(FBetaScore):
+    """ Meter to calculate the f1 score where
+
+    f1 = 2 * (precision * recall) / (precision + recall)
+
+    The best value is 1 and the worst value is 0.
+    """
+    def __init__(self, threshold=0.5):
+        super(F1Score, self).__init__(threshold=threshold, beta=1)
+
+class F2Score(FBetaScore):
+    """ Meter to calculate the f1 score where
+
+    f2 = 5 * (precision * recall) / (4 * precision + recall)
+
+    The best value is 1 and the worst value is 0.
+    """
+    def __init__(self, threshold=0.5):
+        super(F2Score, self).__init__(threshold=threshold, beta=2)
+
+class FHalfScore(FBetaScore):
+    """ Meter to calculate the f0.5 score where
+
+    f0.5 = 1.25 * (precision * recall) / (0.25 * precision + recall)
+
+    The best value is 1 and the worst value is 0.
+    """
+    def __init__(self, threshold=0.5):
+        super(FHalfScore, self).__init__(threshold=threshold, beta=0.5)
