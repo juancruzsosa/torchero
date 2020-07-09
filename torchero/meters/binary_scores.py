@@ -61,6 +61,10 @@ class TPMeter(BaseMeter):
     """ Meter to calculate true positives, true negatives, false positives,
     false negatives
     """
+    INVALID_DIMENSION_MESSAGE = 'Expected both tensors have same dimension'
+    INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
+    INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
+
     def __init__(self, threshold=0.5):
         super(TPMeter, self).__init__()
         self.threshold = threshold
