@@ -4,6 +4,9 @@ from .meters import LossMeter
 from .utils.defaults import get_optimizer_by_name, get_loss_by_name
 
 class SupervisedValidator(BatchValidator):
+    """ Class for evaluating torch models on validation
+    datasets
+    """
     def __init__(self, model, meters):
         super(SupervisedValidator, self).__init__(model, meters)
 
@@ -15,9 +18,8 @@ class SupervisedValidator(BatchValidator):
 
 
 class SupervisedTrainer(BatchTrainer):
-    """ Supervised trainer
+    """ Class for training torch models on labeled data
     """
-
     def create_validator(self):
         return SupervisedValidator(self.model, self.val_meters)
 
