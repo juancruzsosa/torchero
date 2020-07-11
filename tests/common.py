@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.optim import SGD
 from torchero.base import BatchTrainer, BatchValidator
-from torchero.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping
+from torchero.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping, ProgbarLogger
 from torchero import meters
 from torchero.meters import Averager, MSE, RMSE, CategoricalAccuracy
 from torch.utils.data import DataLoader, TensorDataset

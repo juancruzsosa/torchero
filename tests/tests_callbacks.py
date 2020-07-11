@@ -196,6 +196,33 @@ class CSVExporterTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.base_tree)
 
+class ProgbarTests(unittest.TestCase):
+    # TODO: Don't rely in internal implentation to test the progress bar
+    def setUp(self):
+        self.model = nn.Linear(1, 1)
+        self.callback = ProgbarLogger()
+
+        def update_batch(trainer, x):
+            trainer.train_meters['t_c'].measure(x.data[0][0])
+
+        def validate_batch(validator, x):
+            validator.meters['v_c'].measure(x.data[0][0])
+
+        self.trainer = TestTrainer(model=self.model,
+                              logging_frecuency=5,
+                              train_meters={'t_c' : Averager()},
+                              val_meters={'v_c' : Averager()},
+                              update_batch_fn=update_batch,
+                              callbacks=[self.callback],
+                              valid_batch_fn=validate_batch)
+
+    def test_progbar(self):
+        X = torch.Tensor([1, 0.5, -0.5, -1]).view(-1, 1)
+        train_dl = DataLoader(X, shuffle=False, batch_size=1)
+        self.trainer.train(train_dl, epochs=2)
+        self.assertEqual(self.callback.epoch_tqdm.unit, 'epoch')
+        self.assertEqual(self.callback.epoch_tqdm.total, 2)
+
 
 class CheckpointTests(unittest.TestCase):
     def setUp(self):
