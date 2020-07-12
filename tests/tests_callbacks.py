@@ -660,6 +660,10 @@ class EarlyStoppingTests(unittest.TestCase):
     def test_mode_auto_infer_mode(self):
         self.load_ones_dataset(1)
         callback = self.early_callback(monitor='v', mode='auto', patience=0, min_delta=1)
+        self.assertEqual(callback.monitor, 'v')
+        self.assertEqual(callback.mode, 'auto')
+        self.assertEqual(callback.patience, 0)
+        self.assertEqual(callback.min_delta, 1)
         measures = []
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],
