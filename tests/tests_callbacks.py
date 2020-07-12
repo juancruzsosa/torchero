@@ -66,6 +66,14 @@ class CSVExporterTests(unittest.TestCase):
     def csv_epoch_logger(self, append=False, columns=None):
         return CSVLogger(output=self.stats_filename_epoch, append=append, columns=columns)
 
+    def test_unknown_level_parameter_raises_error(self):
+        try:
+            logger = CSVLogger(self.stats_filename, level='xxx')
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), CSVLogger.UNRECOGNIZED_LEVEL.format(level=repr('xxx')))
+            self.assertFalse(os.path.exists(self.stats_filename))
+
     def test_csv_exporter_print_header_at_begining_of_training(self):
         self.load_empty_dataset()
 

@@ -10,6 +10,8 @@ class LogLevel(Enum):
 class CSVLogger(Callback):
     """ Export training statistics to csv file
     """
+    UNRECOGNIZED_LEVEL = "Unrecognized level {level}. Level parameter should be either 'epoch' or 'step'"
+
 
     def __init__(self, output, append=False, columns=None, level='epoch'):
         """ Constructor
@@ -28,7 +30,7 @@ class CSVLogger(Callback):
         elif level == 'step':
             self.level = LogLevel.STEP
         else:
-            raise ValueError("level parameter should be either 'epoch' or 'step'")
+            raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
 
 
     def on_train_begin(self):
