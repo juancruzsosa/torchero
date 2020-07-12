@@ -2,6 +2,7 @@ import torch
 from abc import abstractmethod, ABCMeta
 import copy
 
+
 class BaseMeter(object, metaclass=ABCMeta):
     """ Interface for all meters.
     All meters should subclass this class

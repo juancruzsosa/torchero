@@ -4,6 +4,7 @@ from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import LossMeter
 from .utils.defaults import get_optimizer_by_name, get_loss_by_name
 
+
 class SupervisedValidator(BatchValidator):
     """ Class for evaluating torch models on validation
     datasets
@@ -55,7 +56,8 @@ class SupervisedTrainer(BatchTrainer):
             prefixes (tuple, list):
                 Prefixes of train and val metrics
             validation_granularity (ValidationGranularity):
-                Change validation criterion (after every log vs after every epoch)
+                Change validation criterion (after every log vs after every
+                epoch)
         """
         if isinstance(criterion, str):
             criterion = get_loss_by_name(criterion)

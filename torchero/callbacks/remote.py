@@ -1,12 +1,12 @@
 import json
 from .base import Callback
-from torchero.utils.format import format_metric
 import warnings
 
 try:
     import requests
 except ImportError:
     requests = None
+
 
 class RemoteMonitor(Callback):
     """ Keras RemoteMonitor clone to stream events to a server.
@@ -24,7 +24,8 @@ class RemoteMonitor(Callback):
             root (str): Root server url
             path (str): Relative path to root to post events
             field (str): Json field of post data
-            send_as_json (bool): If false sends data as plain json. Otherwise sends as json.
+            send_as_json (bool): If false sends data as plain json. Otherwise
+            sends as json.
             headers (str): Http headers
             monitors (list): List of monitors names to include in sended data.
         """
@@ -59,5 +60,6 @@ class RemoteMonitor(Callback):
                 requests.post(self.root + self.path,
                               {self.field: json.dumps(metrics)},
                               headers=self.headers)
-        except Exception as e:
-            warnings.warn("Could not reach {}".format(self.root), RuntimeWarning)
+        except Exception:
+            warnings.warn("Could not reach {}".format(self.root),
+                          RuntimeWarning)

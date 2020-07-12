@@ -2,15 +2,18 @@ import torch
 from .datasets import SubsetDataset
 import math
 
+
 class CrossFoldValidation(object):
     """
     Iterator through cross-fold-validation folds
     """
 
-    INVALID_VALID_SIZE_MESSAGE = ('Invalid `valid_size`: `valid_size` must lay '
-                                  'between 0.0 and 1.0')
-    TRAIN_AND_VALID_DATASET_SIZE_MESSAGE = ('Train and valid dataset must have '
-                                            'same size')
+    INVALID_VALID_SIZE_MESSAGE = (
+        'Invalid `valid_size`: `valid_size` must lay between 0.0 and 1.0'
+    )
+    TRAIN_AND_VALID_DATASET_SIZE_MESSAGE = (
+        'Train and valid dataset must have same size'
+    )
 
     def __init__(self, dataset, valid_dataset=None, valid_size=0.2):
         """ Constructor
@@ -60,6 +63,8 @@ class CrossFoldValidation(object):
 
             yield train_dataset, valid_dataset
 
+
 def train_test_split(dataset, valid_size=0.2):
-    train_dataset, valid_dataset = next(iter(CrossFoldValidation(dataset, valid_size=valid_size)))
+    cv = CrossFoldValidation(dataset, valid_size=valid_size)
+    train_dataset, valid_dataset = next(iter(cv))
     return train_dataset, valid_dataset

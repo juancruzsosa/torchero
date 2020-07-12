@@ -3,8 +3,11 @@ from abc import abstractmethod
 from .base import BaseMeter
 from .aggregators.batch import Average
 
+
 class BatchMeter(BaseMeter):
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
+    INVALID_INPUT_TYPE_MESSAGE = (
+        'Expected types (Tensor, LongTensor) as inputs'
+    )
 
     def __init__(self, aggregator=None, transform=None):
         """ Constructor

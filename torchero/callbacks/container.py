@@ -1,6 +1,7 @@
 from collections import deque
 from .base import Callback
 
+
 class CallbackContainer(Callback):
     """ Callback to group multiple callback
     """

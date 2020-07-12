@@ -1,8 +1,10 @@
 from .supervised_trainer import SupervisedTrainer, SupervisedValidator
 
+
 class AutoencoderValidator(SupervisedValidator):
     def validate_batch(self, x):
         super(AutoencoderValidator, self).validate_batch(x, x)
+
 
 class AutoencoderTrainer(SupervisedTrainer):
     """ Autoencoder trainer

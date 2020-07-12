@@ -1,6 +1,3 @@
-import torch
-
-
 class CudaMixin(object):
     def __init__(self):
         self._use_cuda = False

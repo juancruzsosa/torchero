@@ -2,6 +2,7 @@ import torch
 from .base import BaseMeter
 from .exceptions import ZeroMeasurementsError
 
+
 class Averager(BaseMeter):
     """ Meter that returns the average over all measured values
     """

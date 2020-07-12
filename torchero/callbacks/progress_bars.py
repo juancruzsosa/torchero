@@ -1,5 +1,4 @@
 from .base import Callback
-from .container import CallbackContainer
 from torchero.utils.format import format_metric
 
 try:
@@ -48,7 +47,6 @@ class ProgbarLogger(Callback):
                               ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
-
 
     def on_log(self):
         monitors = self.monitors

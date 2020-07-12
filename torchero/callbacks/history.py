@@ -3,6 +3,7 @@ from collections import defaultdict
 from operator import itemgetter
 from .base import Callback
 
+
 class History(Callback):
     """ Callback that record history of all training/validation metrics
     """
@@ -12,8 +13,9 @@ class History(Callback):
 
     def on_log(self):
         self.registry.append(self.trainer.epochs_trained,
-                            self.trainer.steps_trained,
-                            self.trainer.metrics)
+                             self.trainer.steps_trained,
+                             self.trainer.metrics)
+
 
 class HistoryManager(Callback):
     def __init__(self):
@@ -29,7 +31,7 @@ class HistoryManager(Callback):
         return len(self.records)
 
     def append(self, epoch, step, metrics):
-        self.records.append({'epoch' : epoch,
+        self.records.append({'epoch': epoch,
                              'step': step,
                              **metrics})
 
@@ -74,9 +76,9 @@ class HistoryManager(Callback):
                 values[epoch] = record[monitor]
 
         ax.plot(list(values.keys()),
-                 list(values.values()),
-                 label=monitor,
-                 marker='x')
+                list(values.values()),
+                label=monitor,
+                marker='x')
         ax.legend()
 
     def __str__(self):
