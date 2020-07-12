@@ -34,7 +34,9 @@ def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsiz
             raise TypeError("Bad parameter classes. classes mut be 'auto', None, or an array with classes names")
         if hasattr(dataset, 'classes'):
             classes = dataset.classes
-    
+        else:
+            classes = None
+
     if shuffle:
         indices = torch.randperm(len(dataset))
     else:
@@ -45,10 +47,11 @@ def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsiz
         images_per_class = defaultdict(list)
         for i in indices:
             image, class_id = dataset[i]
+
             if classes is not None:
                 class_name = classes[class_id]
             else:
-                class_name = class_id
+                class_name = str(class_id)
 
             if len(images_per_class[class_name]) < num:
                 images_per_class[class_name].append(image)
@@ -57,13 +60,15 @@ def show_imagegrid_dataset(dataset, num=10, shuffle=True, classes='auto', figsiz
                 (all(len(class_images) == num for class_images in images_per_class.values()))):
                 break
 
+        classes = list(images_per_class.keys())
+
         if figsize is None:
             figsize = (2 * num, 2 * len(classes))
         fig, axs = plt.subplots(figsize=figsize, nrows=len(classes), ncols=num)
         for i, (class_name, class_images) in enumerate(sorted(images_per_class.items(), key=lambda x: x[0])):
             for j, img in enumerate(class_images):
                 show_image(img, axs[i][j], image_attr)
-            axs[i][0].set_ylabel(class_name, fontsize=fontsize)
+            axs[i][0].set_ylabel(str(class_name), fontsize=fontsize)
     elif isinstance(sample, (Image, torch.Tensor, np.ndarray)):
         num = min(len(indices), num)
         indices = indices[:num]
