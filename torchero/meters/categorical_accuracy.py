@@ -4,6 +4,7 @@ from .batch import BatchMeter
 class CategoricalAccuracy(BatchMeter):
     """ Meter for accuracy categorical on categorical targets
     """
+    name = 'acc'
     DEFAULT_MODE = 'max'
     INVALID_BATCH_DIMENSION_MESSAGE = ('Expected both tensors have at less two '
                                        'dimension and same shape')

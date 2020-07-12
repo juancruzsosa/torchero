@@ -6,6 +6,7 @@ from .base import BaseMeter
 class BinaryAccuracy(BatchMeter):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
     """
+    name = "acc"
     INVALID_DIMENSION_MESSAGE = 'Expected both tensors have same dimension'
     INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
     INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
