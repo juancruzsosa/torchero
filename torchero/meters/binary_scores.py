@@ -65,9 +65,13 @@ class TPMeter(BaseMeter):
     INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
     INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
 
-    def __init__(self, threshold=0.5):
+    def __init__(self, threshold=0.5, with_logits=False, activation=None):
         super(TPMeter, self).__init__()
         self.threshold = threshold
+        if with_logits and activation is None:
+            self.activation = nn.Sigmoid()
+        self.with_logits = with_logits
+        self.activation = activation
         self.reset()
 
     def reset(self):
@@ -88,12 +92,14 @@ class TPMeter(BaseMeter):
 
     def measure(self, output, target):
         self.check_tensors(output, target)
-        predictions = (output >= self.threshold).long()
         target = target.long()
-        self.tp += (output & target).sum().item()
-        self.fp += (output & (target^1)).sum().item()
-        self.fn += ((output^1) & target).sum().item()
-        self.tn += ((output^1) & (target^1)).sum().item()
+        if self.activation is not None:
+            output = self.activation(output)
+        predictions = (output >= self.threshold).long()
+        self.tp += (predictions & target).sum().item()
+        self.fp += (predictions & (target^1)).sum().item()
+        self.fn += ((predictions^1) & target).sum().item()
+        self.tn += ((predictions^1) & (target^1)).sum().item()
 
     def value(self):
         return (self.tp, self.tn, self.fp, self.fn)
