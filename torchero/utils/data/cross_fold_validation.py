@@ -59,3 +59,7 @@ class CrossFoldValidation(object):
                                           indices=valid_indices)
 
             yield train_dataset, valid_dataset
+
+def train_test_split(dataset, valid_size=0.2):
+    train_dataset, valid_dataset = next(iter(CrossFoldValidation(dataset, valid_size=valid_size)))
+    return train_dataset, valid_dataset
