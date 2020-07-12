@@ -136,6 +136,7 @@ trainer.train(dataloader=train_dl,
 ### Cross validation ###
 
 * `utils.data.CrossFoldValidation`: Itererator through cross-fold-validation folds
+* `utils.data.train_test_split`: Split dataset into train and test datasets
 
 ### Datasets ###
 
