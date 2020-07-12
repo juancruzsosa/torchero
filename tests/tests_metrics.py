@@ -91,6 +91,15 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureAlmostEqual(meter_minimum, [(a, t3)], 0)
         self.assertMeasureAlmostEqual(meter_minimum, [(a, t4)], 0)
 
+    def test_cannot_measure_with_other_type_than_tensors(self):
+        meter = meters.CategoricalAccuracy()
+
+        try:
+            meter.measure([0.9, 0.1], [1])
+            self.fail()
+        except TypeError as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
+
     def test_cannot_measure_with_1d_tensors(self):
         a = torch.Tensor([0.1])
         t = torch.LongTensor([0])

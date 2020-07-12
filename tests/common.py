@@ -27,6 +27,16 @@ class DummyModel(nn.Module):
     def forward(self, x):
         return x
 
+class BinaryNetwork(nn.Module):
+    def __init__(self):
+        super(BinaryNetwork, self).__init__()
+        self.linear = nn.Linear(2, 1)
+
+    def forward(self, x):
+        x = self.linear(x)
+        x = x.view(-1)
+        return x
+
 class TestValidator(BatchValidator):
     def __init__(self, model, meters, trainer=None):
         super(TestValidator, self).__init__(model, meters)

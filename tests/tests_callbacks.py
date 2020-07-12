@@ -110,10 +110,11 @@ class CSVExporterTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.stats_filename_epoch))
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback_1, callback_2],
                               logging_frecuency=5,
                               train_meters={'c': Averager()},
                               update_batch_fn=self.update_batch)
+        trainer.add_callback(callback_1)
+        trainer.add_callback(callback_2)
         trainer.train(self.train_dl, epochs=1)
 
         with open(self.stats_filename, 'r') as f:
