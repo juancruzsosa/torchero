@@ -106,7 +106,10 @@ class Recall(TPMeter):
     The best value is 1 and the worst value is 0.
     """
     def value(self):
-        return self.tp/(self.tp + self.fn)
+        if (self.tp + self.fn == 0):
+            return 0
+        else:
+            return self.tp/(self.tp + self.fn)
 
 class Precision(TPMeter):
     """ Meter to calculate the precision score where
@@ -116,7 +119,10 @@ class Precision(TPMeter):
     The best value is 1 and the worst value is 0.
     """
     def value(self):
-        return self.tp/(self.tp + self.fp)
+        if (self.tp + self.fp == 0):
+            return 0
+        else:
+            return self.tp/(self.tp + self.fp)
 
 class Specificity(TPMeter):
     """ Meter to calculate the specificity score where
