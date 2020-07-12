@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.optim import SGD
 from torchero.base import BatchTrainer, BatchValidator
-from torchero.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping
+from torchero.callbacks import Callback, History, CSVLogger, ModelCheckpoint, MeterNotFound, EarlyStopping, ProgbarLogger
 from torchero import meters
 from torchero.meters import Averager, MSE, RMSE, CategoricalAccuracy
 from torch.utils.data import DataLoader, TensorDataset
@@ -25,6 +25,16 @@ class DummyModel(nn.Module):
         self.is_cuda = False
 
     def forward(self, x):
+        return x
+
+class BinaryNetwork(nn.Module):
+    def __init__(self):
+        super(BinaryNetwork, self).__init__()
+        self.linear = nn.Linear(2, 1)
+
+    def forward(self, x):
+        x = self.linear(x)
+        x = x.view(-1)
         return x
 
 class TestValidator(BatchValidator):

@@ -1,9 +1,13 @@
 import torch
+from torch import nn
 from .base import BatchTrainer, BatchValidator, ValidationGranularity
 from .meters import LossMeter
 from .utils.defaults import get_optimizer_by_name, get_loss_by_name
 
 class SupervisedValidator(BatchValidator):
+    """ Class for evaluating torch models on validation
+    datasets
+    """
     def __init__(self, model, meters):
         super(SupervisedValidator, self).__init__(model, meters)
 
@@ -15,9 +19,8 @@ class SupervisedValidator(BatchValidator):
 
 
 class SupervisedTrainer(BatchTrainer):
-    """ Supervised trainer
+    """ Class for training torch models on labeled data
     """
-
     def create_validator(self):
         return SupervisedValidator(self.model, self.val_meters)
 
@@ -76,6 +79,8 @@ class SupervisedTrainer(BatchTrainer):
     def update_batch(self, x, y):
         self.optimizer.zero_grad()
         output = self.model(x)
+        if isinstance(self.criterion, (nn.BCEWithLogitsLoss, nn.BCELoss)):
+            y = y.double()
         loss = self.criterion(output, y)
         loss.backward()
         self.optimizer.step()

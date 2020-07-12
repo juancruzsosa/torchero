@@ -1,7 +1,7 @@
 import torch
 import torchero
 from .common import *
-from torchero.utils.data import CrossFoldValidation
+from torchero.utils.data import CrossFoldValidation, train_test_split
 from torchero.utils.data.datasets import UnsuperviseDataset, \
                                              ShrinkDataset
 
@@ -81,6 +81,12 @@ class TestsDataUtils(unittest.TestCase):
             self.fail()
         except Exception as e:
             self.assertEqual(str(e), CrossFoldValidation.INVALID_VALID_SIZE_MESSAGE)
+
+    def test_train_test_split(self):
+        dataset = [1, 2, 3, 4]
+        train_ds, val_ds = train_test_split(dataset=dataset, valid_size=0.5)
+        self.assertDatasetEquals(train_ds, [3, 1])
+        self.assertDatasetEquals(val_ds, [2, 4])
 
     def test_split_when_valid_size_is_a_half_returns_datasets_of_same_size(self):
         train_dataset = [1, 2, 3, 4]

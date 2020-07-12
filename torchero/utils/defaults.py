@@ -65,7 +65,20 @@ meters_by_name = {'mse': meters.MSE,
           'binary_with_logits_accuracy_percentage': lambda: meters.BinaryWithLogitsAccuracy() * 100,
           'confusion_matrix': meters.ConfusionMatrix,
           'confusion_matrix_percentage': lambda: meters.ConfusionMatrix() * 100,
-          'balanced_accuracy': meters.BalancedAccuracy
+          'balanced_accuracy': meters.BalancedAccuracy,
+          'recall': meters.Recall,
+          'precision': meters.Precision,
+          'f1': meters.F1Score,
+          'f2': meters.F2Score,
+          'specificity': meters.F2Score,
+          'npv': meters.NPV,
+          'recall_wl': lambda: meters.Recall(with_logits=True),
+          'precision_wl': lambda: meters.Precision(with_logits=True),
+          'f1_wl': lambda: meters.F1Score(with_logits=True),
+          'f2_wl': lambda: meters.F2Score(with_logits=True),
+          'specificity_wl': lambda: meters.F2Score(with_logits=True),
+          'npv_wl': lambda: meters.NPV(with_logits=True)
+
 }
 
 def get_meters_by_name(name):
@@ -76,13 +89,17 @@ def get_meters_by_name(name):
     return meters_by_name[name]()
 
 def parse_meters(meters):
-    def to_small_case(name):
-        s = ''
-        for i in range(len(name)-1):
-            s += name[i].lower()
-            if name[i].islower() and not name[i+1].islower():
-                s += '_'
-        s += name[-1].lower()
+    def to_small_case(obj):
+        if hasattr(obj, 'name'):
+            s = str(obj.name)
+        else:
+            name = obj.__class__.__name__
+            s = ''
+            for i in range(len(name)-1):
+                s += name[i].lower()
+                if name[i].islower() and not name[i+1].islower():
+                    s += '_'
+            s += name[-1].lower()
         return s
 
     def parse(obj):
@@ -93,9 +110,8 @@ def parse_meters(meters):
 
     def parse_name(obj):
         if isinstance(obj, str):
-            return obj
-        else:
-            return to_small_case(obj.__class__.__name__)
+            obj = get_meters_by_name(obj)
+        return to_small_case(obj)
 
     if isinstance(meters, dict):
         return {k: parse(v) for k, v in meters.items()}

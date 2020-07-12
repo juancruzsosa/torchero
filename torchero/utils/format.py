@@ -9,7 +9,8 @@ def format_metric(value):
     elif isinstance(value, str):
         return str(value)
     elif isinstance(value, dict):
-        return repr({k: format_metric(v) for k, v in value.items()})
+        items = ('{}: {}'.format(repr(k), format_metric(v)) for k, v in value.items())
+        return '{' + ', '.join(items) + '}'
     elif isinstance(value, list) or isinstance(value, tuple):
         return '[{}]'.format(', '.join(map(format_metric, value)))
     elif torch.is_tensor(value):

@@ -83,6 +83,33 @@ class TrainerTests(unittest.TestCase):
         self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
         self.assertAlmostEqual(trainer.history[1]['val_acc'], math.sqrt(sum((self.w*i)**2 for i in range(0,10))/10))
 
+class BinaryClassificationTrainerTest(unittest.TestCase):
+    def setUp(self):
+        self.model = BinaryNetwork()
+        self.train_ds = TensorDataset(torch.Tensor([[0, 0], [0, 1], [1, 1]]).float(), torch.LongTensor([0, 1, 1]))
+        self.val_ds = TensorDataset(torch.Tensor([[1, 0]]).float(), torch.LongTensor([1]))
+        self.train_dl = DataLoader(self.train_ds, batch_size=1)
+        self.val_dl = DataLoader(self.val_ds, batch_size=1)
+
+    def test_train_with_binary_cross_entropy(self):
+        trainer = SupervisedTrainer(model=self.model,
+                                    criterion='binary_cross_entropy_wl',
+                                    optimizer='adam',
+                                    acc_meters=['binary_with_logits_accuracy', 'precision_wl', 'recall_wl', 'f1_wl'])
+        trainer.train(self.train_dl, valid_dataloader=self.val_dl, epochs=1)
+        self.assertEqual(trainer.epochs_trained, 1)
+        self.assertIn('train_acc', trainer.metrics.keys())
+        self.assertIn('val_acc', trainer.metrics.keys())
+        self.assertIn('train_precision', trainer.metrics.keys())
+        self.assertIn('val_precision', trainer.metrics.keys())
+        self.assertIn('train_recall', trainer.metrics.keys())
+        self.assertIn('val_recall', trainer.metrics.keys())
+        self.assertIn('train_f1', trainer.metrics.keys())
+        self.assertIn('val_f1', trainer.metrics.keys())
+        self.assertNotIn('train_precision_wl', trainer.metrics.keys())
+        self.assertNotIn('train_recall_wl', trainer.metrics.keys())
+        self.assertNotIn('train_f1_wl', trainer.metrics.keys())
+
 class UnsupervisedTrainerTests(unittest.TestCase):
     def setUp(self):
         self.w = 4

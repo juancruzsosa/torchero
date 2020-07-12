@@ -91,6 +91,15 @@ class AccuracyMetricsTests(BaseMetricsTests):
         self.assertMeasureAlmostEqual(meter_minimum, [(a, t3)], 0)
         self.assertMeasureAlmostEqual(meter_minimum, [(a, t4)], 0)
 
+    def test_cannot_measure_with_other_type_than_tensors(self):
+        meter = meters.CategoricalAccuracy()
+
+        try:
+            meter.measure([0.9, 0.1], [1])
+            self.fail()
+        except TypeError as e:
+            self.assertEqual(str(e), meter.INVALID_INPUT_TYPE_MESSAGE)
+
     def test_cannot_measure_with_1d_tensors(self):
         a = torch.Tensor([0.1])
         t = torch.LongTensor([0])
@@ -490,3 +499,44 @@ class BalancedAccuracyTests(BaseMetricsTests):
                                                             [0, 1, 0],  # 1
                                                             [0, 0, 1]]), # 2
                                                torch.LongTensor([0,1,0,2]))], (1/2+1/1+1/1)/3)
+
+class BinaryScores(BaseMetricsTests):
+    def setUp(self):
+        self.batch_1 = [(torch.LongTensor([1,1,1,0,0,1]),
+                         torch.LongTensor([1,0,1,0,1,0]))]
+        self.batch_2 = [(# Batch 1
+                         torch.LongTensor([1,1,1]),
+                         torch.LongTensor([1,0,1])),
+                         ## Batch 2
+                        (torch.LongTensor([0,0,1]),
+                         torch.LongTensor([0,1,0]))]
+
+    def test_1_batch_precision(self):
+        meter = meters.Precision()
+        self.assertMeasureAlmostEqual(meter, self.batch_1, 2/4)
+
+    def test_1_batch_recall(self):
+        meter = meters.Recall()
+        self.assertMeasureAlmostEqual(meter, self.batch_1, 2/3)
+
+    def test_2_batch_recall(self):
+        meter = meters.Recall()
+        meter.measure(*self.batch_2[0])
+        self.assertAlmostEqual(meter.value(), 2/2)
+        meter.measure(*self.batch_2[1])
+        self.assertAlmostEqual(meter.value(), 2/3)
+        meter.reset()
+        meter.measure(*self.batch_2[1])
+        self.assertAlmostEqual(meter.value(), 0)
+
+    def test_1_batch_specifity(self):
+        meter = meters.Specificity()
+        self.assertMeasureAlmostEqual(meter, self.batch_1, 1/3)
+
+    def test_1_batch_npv(self):
+        meter = meters.NPV()
+        self.assertMeasureAlmostEqual(meter, self.batch_1, 1/2)
+
+    def test_1_batch_f1_score(self):
+        meter = meters.F1Score()
+        self.assertMeasureAlmostEqual(meter, self.batch_1, 2 * (2/4 * 2/3) / (2/4 + 2/3))

@@ -66,6 +66,14 @@ class CSVExporterTests(unittest.TestCase):
     def csv_epoch_logger(self, append=False, columns=None):
         return CSVLogger(output=self.stats_filename_epoch, append=append, columns=columns)
 
+    def test_unknown_level_parameter_raises_error(self):
+        try:
+            logger = CSVLogger(self.stats_filename, level='xxx')
+            self.fail()
+        except ValueError as e:
+            self.assertEqual(str(e), CSVLogger.UNRECOGNIZED_LEVEL.format(level=repr('xxx')))
+            self.assertFalse(os.path.exists(self.stats_filename))
+
     def test_csv_exporter_print_header_at_begining_of_training(self):
         self.load_empty_dataset()
 
@@ -102,10 +110,11 @@ class CSVExporterTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.stats_filename_epoch))
 
         trainer = TestTrainer(model=self.model,
-                              callbacks=[callback_1, callback_2],
                               logging_frecuency=5,
                               train_meters={'c': Averager()},
                               update_batch_fn=self.update_batch)
+        trainer.add_callback(callback_1)
+        trainer.add_callback(callback_2)
         trainer.train(self.train_dl, epochs=1)
 
         with open(self.stats_filename, 'r') as f:
@@ -195,6 +204,33 @@ class CSVExporterTests(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.base_tree)
+
+class ProgbarTests(unittest.TestCase):
+    # TODO: Don't rely in internal implentation to test the progress bar
+    def setUp(self):
+        self.model = nn.Linear(1, 1)
+        self.callback = ProgbarLogger()
+
+        def update_batch(trainer, x):
+            trainer.train_meters['t_c'].measure(x.data[0][0])
+
+        def validate_batch(validator, x):
+            validator.meters['v_c'].measure(x.data[0][0])
+
+        self.trainer = TestTrainer(model=self.model,
+                              logging_frecuency=5,
+                              train_meters={'t_c' : Averager()},
+                              val_meters={'v_c' : Averager()},
+                              update_batch_fn=update_batch,
+                              callbacks=[self.callback],
+                              valid_batch_fn=validate_batch)
+
+    def test_progbar(self):
+        X = torch.Tensor([1, 0.5, -0.5, -1]).view(-1, 1)
+        train_dl = DataLoader(X, shuffle=False, batch_size=1)
+        self.trainer.train(train_dl, epochs=2)
+        self.assertEqual(self.callback.epoch_tqdm.unit, 'epoch')
+        self.assertEqual(self.callback.epoch_tqdm.total, 2)
 
 
 class CheckpointTests(unittest.TestCase):
@@ -625,6 +661,10 @@ class EarlyStoppingTests(unittest.TestCase):
     def test_mode_auto_infer_mode(self):
         self.load_ones_dataset(1)
         callback = self.early_callback(monitor='v', mode='auto', patience=0, min_delta=1)
+        self.assertEqual(callback.monitor, 'v')
+        self.assertEqual(callback.mode, 'auto')
+        self.assertEqual(callback.patience, 0)
+        self.assertEqual(callback.min_delta, 1)
         measures = []
         trainer = TestTrainer(model=self.model,
                               callbacks=[callback],

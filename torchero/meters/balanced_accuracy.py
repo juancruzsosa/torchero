@@ -5,6 +5,7 @@ from collections import Counter
 class BalancedAccuracy(BaseMeter):
     """ Meter for accuracy categorical on categorical targets
     """
+    name = 'balanced_acc'
     DEFAULT_MODE = 'max'
 
     def __init__(self):
