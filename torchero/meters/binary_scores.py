@@ -88,7 +88,8 @@ class TPMeter(BaseMeter):
 
     def measure(self, output, target):
         self.check_tensors(output, target)
-        predictions = output >= self.threshold
+        predictions = (output >= self.threshold).long()
+        target = target.long()
         self.tp += (output & target).sum().item()
         self.fp += (output & (target^1)).sum().item()
         self.fn += ((output^1) & target).sum().item()
