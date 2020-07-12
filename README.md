@@ -126,6 +126,12 @@ trainer.train(dataloader=train_dl,
 * `meters.MSLE`: Mean Squared Log Error meter
 * `meters.RMSE`: Rooted Mean Squared Error meter
 * `meters.RMSLE`: Rooted Mean Squared Log Error meter
+* `meters.Precision`: Precision meter
+* `meters.Recall`: Precision meter
+* `meters.Specificity`: Precision meter
+* `meters.NPV`:  Negative predictive value meter
+* `meters.F1Score`: F1 Score meter
+* `meters.F2Score`: F2 Score meter
 
 ### Cross validation ###
 
