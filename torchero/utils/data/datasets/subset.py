@@ -18,9 +18,17 @@ class SubsetDataset(Dataset):
     def __len__(self):
         return len(self._indices)
 
+    def __getattr__(self, attr):
+        return getattr(self._dataset, attr)
+
     def __getitem__(self, idx):
         return self._dataset[self._indices[idx]]
 
+    def __str__(self):
+        return str(self._dataset)
+
+    def __repr__(self):
+        return "{} of {} samples of \n {}".format(self.__class__.__name__, len(self), repr(self._dataset))
 
 class ShrinkDataset(SubsetDataset):
     """ Dataset that shrink dataset

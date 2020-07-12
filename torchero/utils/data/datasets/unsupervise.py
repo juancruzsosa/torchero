@@ -24,3 +24,12 @@ class UnsuperviseDataset(Dataset):
 
     def __len__(self):
         return len(self._dataset)
+
+    def __getattr__(self, attr):
+        return getattr(self._dataset, attr)
+
+    def __str__(self):
+        return str(self._dataset)
+
+    def __repr__(self):
+        return "{} of \n {}".format(self.__class__.__name__, repr(self._dataset))
