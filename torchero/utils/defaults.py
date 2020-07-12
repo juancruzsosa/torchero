@@ -65,7 +65,20 @@ meters_by_name = {'mse': meters.MSE,
           'binary_with_logits_accuracy_percentage': lambda: meters.BinaryWithLogitsAccuracy() * 100,
           'confusion_matrix': meters.ConfusionMatrix,
           'confusion_matrix_percentage': lambda: meters.ConfusionMatrix() * 100,
-          'balanced_accuracy': meters.BalancedAccuracy
+          'balanced_accuracy': meters.BalancedAccuracy,
+          'recall': meters.Recall,
+          'precision': meters.Precision,
+          'f1': meters.F1Score,
+          'f2': meters.F2Score,
+          'specificity': meters.F2Score,
+          'npv': meters.NPV,
+          'recall_wl': lambda: meters.Recall(with_logits=True),
+          'precision_wl': lambda: meters.Precision(with_logits=True),
+          'f1_wl': lambda: meters.F1Score(with_logits=True),
+          'f2_wl': lambda: meters.F2Score(with_logits=True),
+          'specificity_wl': lambda: meters.F2Score(with_logits=True),
+          'npv_wl': lambda: meters.NPV(with_logits=True)
+
 }
 
 def get_meters_by_name(name):
