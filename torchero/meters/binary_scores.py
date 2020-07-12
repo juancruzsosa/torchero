@@ -102,6 +102,32 @@ class TPMeter(BaseMeter):
         self.fn += ((predictions^1) & target).sum().item()
         self.tn += ((predictions^1) & (target^1)).sum().item()
 
+    @property
+    def recall(self):
+        if self.tp == 0 and self.fn == 0:
+            return 0
+        else:
+            return self.tp/(self.tp + self.fn)
+
+    @property
+    def precision(self):
+        if self.tp == 0 and self.fp == 0:
+            return 0
+        else:
+            return self.tp/(self.tp + self.fp)
+
+    @property
+    def specificity(self):
+        return self.tn/(self.tn + self.fp)
+
+    def f_beta(self, beta):
+        recall = self.recall
+        precision = self.precision
+        if precision == 0 and recall == 0:
+            return 0
+        else:
+            return (1 + beta**2) * precision * recall / ((beta **2) * precision + recall)
+
     def value(self):
         return (self.tp, self.tn, self.fp, self.fn)
 
@@ -113,10 +139,7 @@ class Recall(TPMeter):
     The best value is 1 and the worst value is 0.
     """
     def value(self):
-        if (self.tp + self.fn == 0):
-            return 0
-        else:
-            return self.tp/(self.tp + self.fn)
+        return self.recall
 
 class Precision(TPMeter):
     """ Meter to calculate the precision score where
@@ -126,10 +149,7 @@ class Precision(TPMeter):
     The best value is 1 and the worst value is 0.
     """
     def value(self):
-        if (self.tp + self.fp == 0):
-            return 0
-        else:
-            return self.tp/(self.tp + self.fp)
+        return self.precision
 
 class Specificity(TPMeter):
     """ Meter to calculate the specificity score where
@@ -139,7 +159,7 @@ class Specificity(TPMeter):
     The best value is 0 and the worst value is 1.
     """
     def value(self):
-        return self.tn/(self.tn + self.fp)
+        return self.specificity
 
 class NPV(TPMeter):
     """ Meter to calculate the negative predictive value score (npv) where
@@ -158,14 +178,12 @@ class FBetaScore(TPMeter):
 
     The best value is 1 and the worst value is 0.
     """
-    def __init__(self, beta, threshold=0.5):
-        super(FBetaScore, self).__init__(threshold=threshold)
+    def __init__(self, beta, threshold=0.5, with_logits=False):
+        super(FBetaScore, self).__init__(threshold=threshold, with_logits=with_logits)
         self.beta = beta
 
     def value(self):
-        recall = self.tp/(self.tp + self.fn)
-        precision = self.tp/(self.tp + self.fp)
-        return (1 + self.beta**2) * precision * recall / ((self.beta **2) * precision + recall)
+        return self.f_beta(self.beta)
 
 class F1Score(FBetaScore):
     """ Meter to calculate the f1 score where
@@ -174,8 +192,9 @@ class F1Score(FBetaScore):
 
     The best value is 1 and the worst value is 0.
     """
-    def __init__(self, threshold=0.5):
-        super(F1Score, self).__init__(threshold=threshold, beta=1)
+    name = "f1"
+    def __init__(self, threshold=0.5, with_logits=False):
+        super(F1Score, self).__init__(threshold=threshold, beta=1, with_logits=with_logits)
 
 class F2Score(FBetaScore):
     """ Meter to calculate the f1 score where
@@ -184,8 +203,9 @@ class F2Score(FBetaScore):
 
     The best value is 1 and the worst value is 0.
     """
-    def __init__(self, threshold=0.5):
-        super(F2Score, self).__init__(threshold=threshold, beta=2)
+    name = "f2"
+    def __init__(self, threshold=0.5, with_logits=False):
+        super(F2Score, self).__init__(threshold=threshold, beta=2, with_logits=with_logits)
 
 class FHalfScore(FBetaScore):
     """ Meter to calculate the f0.5 score where
@@ -194,5 +214,6 @@ class FHalfScore(FBetaScore):
 
     The best value is 1 and the worst value is 0.
     """
-    def __init__(self, threshold=0.5):
-        super(FHalfScore, self).__init__(threshold=threshold, beta=0.5)
+    name = "fh"
+    def __init__(self, threshold=0.5, with_logits=False):
+        super(FHalfScore, self).__init__(threshold=threshold, beta=0.5, with_logits=with_logits)
