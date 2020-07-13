@@ -1,4 +1,4 @@
-from .base import Callback
+from torchero.callbacks.base import Callback
 from torchero.utils.defaults import get_default_mode
 
 

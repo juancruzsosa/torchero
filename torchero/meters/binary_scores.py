@@ -1,7 +1,8 @@
 import torch
 from torch import nn
-from .batch import BatchMeter
-from .base import BaseMeter
+
+from torchero.meters.base import BaseMeter
+from torchero.meters.batch import BatchMeter
 
 
 class BinaryAccuracy(BatchMeter):

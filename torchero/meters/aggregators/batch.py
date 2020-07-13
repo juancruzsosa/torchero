@@ -1,5 +1,6 @@
 import torch
-from .base import Aggregator
+
+from torchero.meters.aggregators.base import Aggregator
 
 
 class BatchAggregator(Aggregator):

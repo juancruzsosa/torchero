@@ -1,7 +1,9 @@
-import torch
 import math
-from .batch import BatchMeter
-from .aggregators.batch import Average
+
+import torch
+
+from torchero.meters.aggregators.batch import Average
+from torchero.meters.batch import BatchMeter
 
 
 class MSE(BatchMeter):

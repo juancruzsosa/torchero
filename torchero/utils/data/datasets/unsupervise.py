@@ -1,4 +1,4 @@
-from . import Dataset
+from torchero.utils.data.datasets import Dataset
 
 
 class UnsuperviseDataset(Dataset):

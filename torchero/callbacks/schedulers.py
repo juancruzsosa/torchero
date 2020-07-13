@@ -1,7 +1,9 @@
-from .base import Callback
-from torch.optim import lr_scheduler
 from abc import abstractmethod
-from .monitor import LRMonitor
+
+from torch.optim import lr_scheduler
+
+from torchero.callbacks.base import Callback
+from torchero.callbacks.monitor import LRMonitor
 
 
 class OptimizerScheduler(Callback):

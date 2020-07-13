@@ -1,8 +1,9 @@
 import torch
 from torch import nn
-from .base import BatchTrainer, BatchValidator, ValidationGranularity
-from .meters import LossMeter
-from .utils.defaults import get_optimizer_by_name, get_loss_by_name
+
+from torchero.base import BatchTrainer, BatchValidator, ValidationGranularity
+from torchero.meters import LossMeter
+from torchero.utils.defaults import get_loss_by_name, get_optimizer_by_name
 
 
 class SupervisedValidator(BatchValidator):

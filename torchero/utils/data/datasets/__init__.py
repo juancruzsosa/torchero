@@ -1,3 +1,3 @@
 from torch.utils.data import TensorDataset, ConcatDataset, Dataset
-from .subset import *
-from .unsupervise import *
+from torchero.utils.data.datasets.subset import *
+from torchero.utils.data.datasets.unsupervise import *

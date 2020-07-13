@@ -1,13 +1,14 @@
-import torch
 from abc import ABCMeta, abstractmethod
-
-from torchero.utils.mixins import CudaMixin
-from .callbacks import Callback, CallbackContainer, History
-from .meters import ZeroMeasurementsError
 from enum import Enum
 from itertools import chain
+
+import torch
 from torch.autograd import Variable
-from .utils.defaults import parse_meters
+
+from torchero.callbacks import Callback, CallbackContainer, History
+from torchero.meters import ZeroMeasurementsError
+from torchero.utils.defaults import parse_meters
+from torchero.utils.mixins import CudaMixin
 
 
 class ValidationGranularity(Enum):

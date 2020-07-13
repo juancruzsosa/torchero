@@ -1,4 +1,4 @@
-from .supervised_trainer import SupervisedTrainer, SupervisedValidator
+from torchero.supervised_trainer import SupervisedTrainer, SupervisedValidator
 
 
 class AutoencoderValidator(SupervisedValidator):

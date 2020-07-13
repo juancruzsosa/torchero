@@ -1,7 +1,8 @@
 import os
 from collections import defaultdict
 from operator import itemgetter
-from .base import Callback
+
+from torchero.callbacks.base import Callback
 
 
 class History(Callback):

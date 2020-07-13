@@ -1,7 +1,9 @@
-import torch
 from abc import abstractmethod
-from .base import BaseMeter
-from .aggregators.batch import Average
+
+import torch
+
+from torchero.meters.aggregators.batch import Average
+from torchero.meters.base import BaseMeter
 
 
 class BatchMeter(BaseMeter):

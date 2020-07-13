@@ -1,6 +1,8 @@
-import torch
-from .base import BaseMeter
 from collections import Counter
+
+import torch
+
+from torchero.meters.base import BaseMeter
 
 
 class BalancedAccuracy(BaseMeter):

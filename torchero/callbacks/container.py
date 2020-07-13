@@ -1,5 +1,6 @@
 from collections import deque
-from .base import Callback
+
+from torchero.callbacks.base import Callback
 
 
 class CallbackContainer(Callback):

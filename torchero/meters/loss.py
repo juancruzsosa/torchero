@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
-from .averager import Averager
+
+from torchero.meters.averager import Averager
 
 
 class LossMeter(Averager):

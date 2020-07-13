@@ -3,8 +3,8 @@ from collections import defaultdict
 
 import torch
 import numpy as np
-from matplotlib import pyplot as plt
 from PIL.Image import Image
+from matplotlib import pyplot as plt
 
 
 def show_image(img, ax, image_attr={'cmap': plt.cm.Greys_r}):

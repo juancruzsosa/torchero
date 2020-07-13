@@ -1,6 +1,7 @@
 import json
-from .base import Callback
 import warnings
+
+from torchero.callbacks.base import Callback
 
 try:
     import requests

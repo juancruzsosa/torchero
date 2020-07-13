@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from .base import Callback
+from torchero.callbacks.base import Callback
 
 
 class LogLevel(Enum):

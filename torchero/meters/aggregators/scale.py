@@ -1,4 +1,4 @@
-from .base import Aggregator
+from torchero.meters.aggregators.base import Aggregator
 
 
 class Scale(Aggregator):

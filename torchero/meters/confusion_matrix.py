@@ -1,6 +1,8 @@
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
+
 import torch
-from .base import BaseMeter
+
+from torchero.meters.base import BaseMeter
 
 
 class ConfusionMatrixController(object, metaclass=ABCMeta):

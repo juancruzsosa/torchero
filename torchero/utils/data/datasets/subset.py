@@ -1,5 +1,6 @@
 import torch
-from . import Dataset
+
+from torchero.utils.data.datasets import Dataset
 
 
 class SubsetDataset(Dataset):

@@ -1,6 +1,8 @@
-import torch
-from .datasets import SubsetDataset
 import math
+
+import torch
+
+from torchero.utils.data.datasets import SubsetDataset
 
 
 class CrossFoldValidation(object):
