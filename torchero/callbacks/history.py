@@ -1,8 +1,8 @@
 import os
 from collections import defaultdict
 from operator import itemgetter
-
 from torchero.callbacks.base import Callback
+from collections import Iterable
 
 
 class History(Callback):
@@ -65,21 +65,29 @@ class HistoryManager(Callback):
             from_epoch (int): Starting epoch in the plot
         """
         import matplotlib.pyplot as plt
+        if isinstance(monitor, str):
+            monitors = [monitor]
+        elif isinstance(monitor, Iterable):
+            monitors = list(monitor)
+        else:
+            raise TypeError("Monitor parameter should be either a string or a list of strings")
+
 
         if ax is None:
             ax = plt.gca()
 
-        values = defaultdict(float)
+        for monitor in monitors:
+            values = defaultdict(float)
 
-        for record in self.records:
-            epoch = record['epoch']
-            if monitor in record and epoch >= from_epoch:
-                values[epoch] = record[monitor]
+            for record in self.records:
+                epoch = record['epoch']
+                if monitor in record and epoch >= from_epoch:
+                    values[epoch] = record[monitor]
 
-        ax.plot(list(values.keys()),
-                list(values.values()),
-                label=monitor,
-                marker='x')
+            ax.plot(list(values.keys()),
+                    list(values.values()),
+                    label=monitor,
+                    marker='x')
         ax.legend()
 
     def __str__(self):
