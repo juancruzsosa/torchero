@@ -37,5 +37,5 @@ class FormatMetricTest(unittest.TestCase):
         self.assertEqual(format_metric((torch.tensor(2), torch.tensor(3))), "[2, 3]")
 
     def test_format_dict(self):
-        self.assertEqual(format_metric({'a': 1, 'b': 2}), "{'a': 1, 'b': 2}")
-        self.assertEqual(format_metric({'a': torch.tensor(1), 'b': torch.tensor(2)}), "{'a': 1, 'b': 2}")
+        self.assertIn(format_metric({'a': 1, 'b': 2}), ["{'a': 1, 'b': 2}", "{'b': 2, 'a': 1}"])
+        self.assertIn(format_metric({'a': torch.tensor(1), 'b': torch.tensor(2)}), ["{'a': 1, 'b': 2}", "{'b': 2, 'a': 1}"])
