@@ -23,7 +23,7 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
         for i, j in zip(a, b):
             self.matrix[i][j] += 1
 
-    def plot(self, ax=None, classes=None):
+    def plot(self, ax=None, classes=None, xlabel="Predicted label", ylabel="True label", title="Confusion Matrix"):
         try:
             from matplotlib import pyplot as plt
         except ImportError:
@@ -37,6 +37,9 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
         ax.set_xticks(range(len(classes)))
         ax.set_yticks(range(len(classes)))
 
+        ax.xaxis.set_ticks_position('top')
+        ax.xaxis.set_label_position('top')
+
         for i in range(self.matrix.shape[0]):
             for j in range(self.matrix.shape[1]):
                 value = self.matrix[i, j].item()
@@ -47,13 +50,18 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
                 text = ax.text(j, i, value,
                                ha="center", va="center", color="w")
 
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        if title is not None:
+            ax.set_title(title)
+
         if classes is not None:
             ax.set_xticklabels(classes)
             ax.set_yticklabels(classes)
-            plt.setp(ax.get_xticklabels(),
-                     rotation=45,
-                     ha="right",
-                     rotation_mode="anchor")
 
 
 class FixedConfusionMatrixController(ConfusionMatrixController):
