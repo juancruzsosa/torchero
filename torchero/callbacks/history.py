@@ -89,6 +89,8 @@ class HistoryManager(Callback):
                     label=monitor,
                     marker='x')
         ax.legend()
+        ax.grid(axis='both')
+        ax.set_xlabel("epochs")
 
         if title is not None:
             ax.set_title(str(title))
