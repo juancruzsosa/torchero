@@ -23,8 +23,8 @@ class SupervisedValidator(BatchValidator):
 class SupervisedTrainer(BatchTrainer):
     """ Class for training torch models on labeled data
     """
-    def create_validator(self):
-        return SupervisedValidator(self.model, self.val_meters)
+    def create_validator(self, metrics):
+        return SupervisedValidator(self.model, metrics)
 
     def __init__(self,
                  model,

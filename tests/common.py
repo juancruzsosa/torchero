@@ -47,8 +47,8 @@ class TestValidator(BatchValidator):
             self.trainer.valid_batch_fn(self, *args, **kwargs)
 
 class TestTrainer(BatchTrainer):
-    def create_validator(self):
-        return TestValidator(self.model, self.val_meters, self)
+    def create_validator(self, meters):
+        return TestValidator(self.model, meters, self)
 
     def __init__(self, *args, **kwargs):
         self.update_batch_fn = None

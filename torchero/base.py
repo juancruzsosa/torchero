@@ -139,7 +139,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         return {prefix + name: value for name, value in d.items()}
 
     @abstractmethod
-    def create_validator(self):
+    def create_validator(self, metrics):
         # return BatchValidator(self.model, self.val_meters)
         pass
 
@@ -199,13 +199,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         else:
             val_meters = parse_meters(val_meters)
 
-        self.train_meters = self.prepend_name_dict(prefixes[0], train_meters)
-        self.val_meters = self.prepend_name_dict(prefixes[1], val_meters)
+        self.train_meters = train_meters
+        self.validator = self.create_validator(val_meters)
 
         self._raised_stop_training = False
 
         self._history_callback = History()
-        self.validator = self.create_validator()
 
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
@@ -237,12 +236,12 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     def meters_names(self):
         """ Returns the meters names
         """
-        return sorted(chain(self.train_meters.keys(),
-                            self.validator.meters_names()))
+        return sorted(self.meters.keys())
 
     @property
     def meters(self):
-        return {**self.train_meters, **self.validator.meters}
+        return {**self.prepend_name_dict(self._prefixes[0], self.train_meters),
+                **self.prepend_name_dict(self._prefixes[1], self.validator.meters)}
 
     @property
     def metrics(self):
@@ -252,7 +251,8 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
             dict: Dictionary of metric name and value, one for each
             `meters` that made at least one measure
         """
-        return {**self._train_metrics, **self._val_metrics}
+        return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics),
+                **self.prepend_name_dict(self._prefixes[1], self._val_metrics)}
 
     def _compile_train_metrics(self):
         self._train_metrics = {}
@@ -385,11 +385,15 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     def _validate(self):
         self._val_metrics = self.validator.validate(self.valid_dataloader)
 
+    @property
+    def val_meters(self):
+        return self.validator.meters
+
+
     def stop_training(self):
         self._raised_stop_training = True
 
     def add_named_train_meter(self, name, meter):
-        name = self._prefixes[0] + name
         if name in self.train_meters:
             raise Exception(self.METER_ALREADY_EXISTS_MESSAGE
                                 .format(name=name))
@@ -397,7 +401,6 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         self.train_meters[name] = meter
 
     def add_named_val_meter(self, name, meter):
-        name = self._prefixes[1] + name
         self.validator.add_named_meter(name, meter)
 
     def add_callback(self, callback):
