@@ -3,6 +3,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import torchero
 from torchero import SupervisedTrainer, AutoencoderTrainer
 from torchero.base import ValidationGranularity
+from torchero.meters import LossMeter
 from .common import *
 
 def sign(x):
@@ -30,6 +31,20 @@ class TrainerTests(unittest.TestCase):
 
     def test_train_val_loss_are_calculated_after_every_log_event(self):
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
+        train_meters = trainer.train_meters
+        val_meters = trainer.val_meters
+        meters = trainer.meters
+
+        self.assertListEqual(sorted(train_meters.keys()), ['loss'])
+        self.assertListEqual(sorted(meters.keys()), ['train_loss', 'val_loss'])
+
+        self.assertIsInstance(meters['train_loss'], LossMeter)
+        self.assertIsInstance(meters['val_loss'], LossMeter)
+        self.assertEqual(meters['train_loss'].criterion, self.criterion)
+        self.assertEqual(meters['val_loss'].criterion, self.criterion)
+        self.assertIs(train_meters['loss'], meters['train_loss'])
+        self.assertIs(val_meters['loss'], meters['val_loss'])
+
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         self.assertEqual(len(trainer.history), 2)
@@ -58,6 +73,19 @@ class TrainerTests(unittest.TestCase):
     def test_trainer_with_acc_meter_argument_measure_train_and_valid_accuracy_with_same_metric(self):
         acc_meter = MSE()
         trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meters={'acc': acc_meter}, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
+
+        train_meters = trainer.train_meters
+        val_meters = trainer.val_meters
+        meters = trainer.meters
+
+        self.assertListEqual(sorted(meters.keys()), ['train_acc', 'train_loss', 'val_acc', 'val_loss'])
+        self.assertListEqual(sorted(train_meters.keys()), ['acc', 'loss'])
+        self.assertListEqual(sorted(val_meters.keys()), ['acc', 'loss'])
+        self.assertIsInstance(meters['train_acc'], MSE)
+        self.assertIsInstance(meters['val_acc'], MSE)
+        self.assertIs(meters['train_acc'], train_meters['acc'])
+        self.assertIs(meters['val_acc'], val_meters['acc'])
+
         trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
 
         for i in range(2):
@@ -109,6 +137,12 @@ class BinaryClassificationTrainerTest(unittest.TestCase):
         self.assertNotIn('train_precision_wl', trainer.metrics.keys())
         self.assertNotIn('train_recall_wl', trainer.metrics.keys())
         self.assertNotIn('train_f1_wl', trainer.metrics.keys())
+        metrics = trainer.evaluate(self.val_dl)
+        self.assertIn('loss', metrics)
+        self.assertIn('acc', metrics)
+        self.assertIn('precision', metrics)
+        self.assertIn('recall', metrics)
+        self.assertIn('f1', metrics)
 
 class UnsupervisedTrainerTests(unittest.TestCase):
     def setUp(self):
