@@ -323,7 +323,7 @@ class ConfusionMatrixTests(BaseMetricsTests):
         return self.assertEqual(a.tolist(), b.tolist())
 
     def assertMeasureEqual(self, meter, batchs, measure):
-        self.assertTensorsEqual(self.measure_once(meter, batchs), measure)
+        self.assertTensorsEqual(self.measure_once(meter, batchs).matrix, measure)
 
     def test_can_not_create_meter_with_negative_classes(self):
         try:
@@ -412,7 +412,7 @@ class ConfusionMatrixTests(BaseMetricsTests):
             self.assertEqual(str(e), meter.INVALID_LABELS_MESSAGE)
 
     def test_meter_returns_zero_before_measurements(self):
-        self.assertTensorsEqual(meters.ConfusionMatrix(nr_classes=2).value(), torch.zeros(2, 2))
+        self.assertTensorsEqual(meters.ConfusionMatrix(nr_classes=2).value().matrix, torch.zeros(2, 2))
 
     def test_confusion_matrix_with_two_classes_count_one_each_class(self):
         meter = meters.ConfusionMatrix(nr_classes=2)

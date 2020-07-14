@@ -6,6 +6,10 @@ from torchero.meters.base import BaseMeter
 
 
 class ConfusionMatrixController(object, metaclass=ABCMeta):
+    def __init__(self, normalize=False):
+        self.normalize = normalize
+        self.reset()
+
     @property
     @abstractmethod
     def matrix(self):
@@ -19,18 +23,53 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
         for i, j in zip(a, b):
             self.matrix[i][j] += 1
 
+    def plot(self, ax=None, classes=None):
+        try:
+            from matplotlib import pyplot as plt
+        except ImportError:
+            raise ImportError(
+                "Matplotlib is required in order to plot confusion matrix"
+            )
+
+        if ax is None:
+            ax = plt.gca()
+        ax.imshow(self.matrix)
+        ax.set_xticks(range(len(classes)))
+        ax.set_yticks(range(len(classes)))
+
+        for i in range(self.matrix.shape[0]):
+            for j in range(self.matrix.shape[1]):
+                value = self.matrix[i, j].item()
+                if self.normalize:
+                    value = '{:.2f}'.format(value)
+                else:
+                    value = '{}'.format(int(value))
+                text = ax.text(j, i, value,
+                               ha="center", va="center", color="w")
+
+        if classes is not None:
+            ax.set_xticklabels(classes)
+            ax.set_yticklabels(classes)
+            plt.setp(ax.get_xticklabels(),
+                     rotation=45,
+                     ha="right",
+                     rotation_mode="anchor")
+
 
 class FixedConfusionMatrixController(ConfusionMatrixController):
-    def __init__(self, nr_classes):
+    def __init__(self, nr_classes, normalize=False):
         if not isinstance(nr_classes, int) or nr_classes == 0:
             raise Exception(ConfusionMatrix.INVALID_NR_OF_CLASSES_MESSAGE
                                            .format(nr_classes=nr_classes))
         self._nr_classes = nr_classes
-        super(FixedConfusionMatrixController, self).__init__()
+        super(FixedConfusionMatrixController, self).__init__(normalize=normalize)
 
     @property
     def matrix(self):
-        return self._matrix
+        if self.normalize:
+            return self._matrix / self._matrix.sum(dim=0)
+        else:
+            return self._matrix
 
     def reset(self):
         self._matrix = torch.zeros(self._nr_classes, self._nr_classes)
@@ -45,12 +84,12 @@ class FixedConfusionMatrixController(ConfusionMatrixController):
 
 
 class ResizableConfusionMatrixController(ConfusionMatrixController):
-    def __init__(self):
-        self.reset()
-
     @property
     def matrix(self):
-        return self._matrix
+        if self.normalize:
+            return self._matrix / self._matrix.sum(dim=0)
+        else:
+            return self._matrix
 
     def reset(self):
         self._matrix = torch.zeros(1, 1)
@@ -72,7 +111,6 @@ class ResizableConfusionMatrixController(ConfusionMatrixController):
 
         super(ResizableConfusionMatrixController, self).increment(a, b)
 
-
 class ConfusionMatrix(BaseMeter):
     INVALID_NR_OF_CLASSES_MESSAGE = (
         'Expected number of classes to be greater than one. Got {nr_classes}'
@@ -92,13 +130,12 @@ class ConfusionMatrix(BaseMeter):
 
     def __init__(self, nr_classes='auto', normalize=False):
         if isinstance(nr_classes, str) and nr_classes == 'auto':
-            self.matrix_controller = ResizableConfusionMatrixController()
+            self.matrix_controller = ResizableConfusionMatrixController(normalize=normalize)
         elif isinstance(nr_classes, int) and nr_classes > 0:
-            self.matrix_controller = FixedConfusionMatrixController(nr_classes)
+            self.matrix_controller = FixedConfusionMatrixController(nr_classes, normalize=normalize)
         else:
             raise ValueError(self.INVALID_NR_OF_CLASSES_MESSAGE
                                  .format(nr_classes=nr_classes))
-        self.normalize = normalize
         self.reset()
 
     def reset(self):
@@ -129,23 +166,4 @@ class ConfusionMatrix(BaseMeter):
         self.matrix_controller.increment(a, b)
 
     def value(self):
-        result = self.matrix_controller.matrix.clone()
-        if self.normalize:
-            result /= result.sum(dim=0)
-        return result
-
-    def plot(self, ax=None, classes=None):
-        try:
-            from matplotlib import pyplot as plt
-        except ImportError:
-            raise ImportError(
-                "Matplotlib is required in order to plot confusion matrix"
-            )
-
-        if ax is None:
-            ax = plt.gca()
-        ax.imshow(self.value())
-
-        if classes is not None:
-            ax.set_xticks(classes, rotation=90)
-            ax.set_yticks(classes)
+        return self.matrix_controller
