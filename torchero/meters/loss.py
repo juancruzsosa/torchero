@@ -1,10 +1,13 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
-from .averager import Averager
+
+from torchero.meters.averager import Averager
+
 
 class LossMeter(Averager):
     DEFAULT_MODE = 'min'
+
     def __init__(self, criterion):
         super(Averager, self).__init__()
         self.criterion = criterion

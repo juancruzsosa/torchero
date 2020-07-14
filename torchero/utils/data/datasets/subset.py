@@ -1,5 +1,7 @@
 import torch
-from . import Dataset
+
+from torchero.utils.data.datasets import Dataset
+
 
 class SubsetDataset(Dataset):
     """ Dataset that is a subset from another Dataset
@@ -28,7 +30,10 @@ class SubsetDataset(Dataset):
         return str(self._dataset)
 
     def __repr__(self):
-        return "{} of {} samples of \n {}".format(self.__class__.__name__, len(self), repr(self._dataset))
+        return "{} of {} samples of \n {}".format(self.__class__.__name__,
+                                                  len(self),
+                                                  repr(self._dataset))
+
 
 class ShrinkDataset(SubsetDataset):
     """ Dataset that shrink dataset

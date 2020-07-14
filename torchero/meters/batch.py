@@ -1,10 +1,15 @@
-import torch
 from abc import abstractmethod
-from .base import BaseMeter
-from .aggregators.batch import Average
+
+import torch
+
+from torchero.meters.aggregators.batch import Average
+from torchero.meters.base import BaseMeter
+
 
 class BatchMeter(BaseMeter):
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected types (Tensor, LongTensor) as inputs'
+    INVALID_INPUT_TYPE_MESSAGE = (
+        'Expected types (Tensor, LongTensor) as inputs'
+    )
 
     def __init__(self, aggregator=None, transform=None):
         """ Constructor

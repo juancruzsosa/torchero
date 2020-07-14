@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from ..exceptions import ZeroMeasurementsError
+
+from torchero.meters.exceptions import ZeroMeasurementsError
+
 
 class Aggregator(object, metaclass=ABCMeta):
     """ Base class for all aggregators

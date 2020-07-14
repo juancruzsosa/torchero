@@ -1,17 +1,22 @@
 import os
-import tempfile
-import shutil
-import yaml
+
 import torch
-from .base import Callback
-from .exceptions import MeterNotFound
+import yaml
+
+from torchero.callbacks.base import Callback
+from torchero.callbacks.exceptions import MeterNotFound
 from torchero.utils.defaults import get_default_mode
+
 
 class ModelCheckpoint(Callback):
     """ Callback for checkpoint a model if it get betters in a given metric
     """
-    UNRECOGNIZED_MODE = "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
-    INVALID_MODE_INFERENCE_MESSAGE = "Could not infer mode from meter {meter}"
+    UNRECOGNIZED_MODE = (
+        "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
+    )
+    INVALID_MODE_INFERENCE_MESSAGE = (
+        "Could not infer mode from meter {meter}"
+    )
 
     def __init__(self, path, monitor, mode='auto'):
         """ Constructor
@@ -20,8 +25,9 @@ class ModelCheckpoint(Callback):
             path (str): Path for the checkpoint file
             monitor (str): Metric name to monitor
             temp_dir (str): Temporary folder path.
-            mode (str): One of 'max', 'min', 'auto'. Alters the checkpoint criterion
-            to be based on maximum or minimum monitor quantity (respectively).
+            mode (str): One of 'max', 'min', 'auto'. Alters the checkpoint
+            criterion to be based on maximum or minimum monitor quantity
+            (respectively).
         """
         if mode not in ('max', 'min', 'auto'):
             raise Exception(self.UNRECOGNIZED_MODE.format(mode))
@@ -45,7 +51,8 @@ class ModelCheckpoint(Callback):
         if self._mode.lower() == 'auto':
             self._mode = get_default_mode(self.trainer.meters[self.monitor_name])
             if self._mode == '':
-                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE.format(meter=self.monitor_name))
+                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE
+                                    .format(meter=self.monitor_name))
 
         self.is_better = self.criterion(self._mode)
 

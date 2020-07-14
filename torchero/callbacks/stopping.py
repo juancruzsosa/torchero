@@ -1,11 +1,16 @@
-from .base import Callback
+from torchero.callbacks.base import Callback
 from torchero.utils.defaults import get_default_mode
+
 
 class EarlyStopping(Callback):
     """ Callback for stop training when monitored metric not improve in time
     """
-    UNRECOGNIZED_MODE_MESSAGE = "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
-    INVALID_MODE_INFERENCE_MESSAGE = "Could not infer mode from meter {meter}"
+    UNRECOGNIZED_MODE_MESSAGE = (
+        "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
+    )
+    INVALID_MODE_INFERENCE_MESSAGE = (
+        "Could not infer mode from meter {meter}"
+    )
 
     def __init__(self, monitor, min_delta=0, patience=0, mode='auto'):
         """ Constructor
@@ -13,9 +18,10 @@ class EarlyStopping(Callback):
         Arguments:
             monitor(str): Metric name to monitor
             min_delta(float): Minimum margin if not improvement
-            patience(int): Number of steps of not improvement after stop training
-            mode(str): One of 'max', 'min', 'auto'. Alters the improvement criterion
-            to be based on maximum or minimum monitor quantity
+            patience(int): Number of steps of not improvement after stop
+            training
+            mode(str): One of 'max', 'min', 'auto'. Alters the improvement
+            criterion to be based on maximum or minimum monitor quantity
         """
         super(EarlyStopping, self).__init__()
 
@@ -35,7 +41,8 @@ class EarlyStopping(Callback):
         if self._mode.lower() == 'auto':
             self._mode = get_default_mode(self.trainer.meters[self.monitor])
             if self._mode == '':
-                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE.format(meter=self.monitor))
+                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE
+                                    .format(meter=self.monitor))
 
         self._has_improved = criterion_by_mode[self._mode]
 
@@ -52,7 +59,8 @@ class EarlyStopping(Callback):
     def on_log(self):
         monitor_value = self.trainer.metrics[self.monitor]
 
-        if self._last_best_monitor_value is not None and not self._has_improved(monitor_value):
+        if (self._last_best_monitor_value is not None and
+                not self._has_improved(monitor_value)):
             self._round += 1
         else:
             self._round = 0
@@ -60,7 +68,8 @@ class EarlyStopping(Callback):
         if self._round > self._patience:
             self.trainer.stop_training()
 
-        self._last_best_monitor_value = self._last_best_monitor_value or monitor_value
+        self._last_best_monitor_value = (self._last_best_monitor_value or
+                                         monitor_value)
 
     @property
     def mode(self):

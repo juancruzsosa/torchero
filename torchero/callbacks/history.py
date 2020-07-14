@@ -1,7 +1,9 @@
 import os
 from collections import defaultdict
 from operator import itemgetter
-from .base import Callback
+from torchero.callbacks.base import Callback
+from collections import Iterable
+
 
 class History(Callback):
     """ Callback that record history of all training/validation metrics
@@ -12,8 +14,9 @@ class History(Callback):
 
     def on_log(self):
         self.registry.append(self.trainer.epochs_trained,
-                            self.trainer.steps_trained,
-                            self.trainer.metrics)
+                             self.trainer.steps_trained,
+                             self.trainer.metrics)
+
 
 class HistoryManager(Callback):
     def __init__(self):
@@ -29,7 +32,7 @@ class HistoryManager(Callback):
         return len(self.records)
 
     def append(self, epoch, step, metrics):
-        self.records.append({'epoch' : epoch,
+        self.records.append({'epoch': epoch,
                              'step': step,
                              **metrics})
 
@@ -54,7 +57,7 @@ class HistoryManager(Callback):
         ax.plot(list(x), list(y), label=monitor)
         ax.legend()
 
-    def epoch_plot(self, monitor, from_epoch=0, ax=None):
+    def epoch_plot(self, monitor, from_epoch=0, ax=None, title=None):
         """ Plot monitor history values across epochs
 
         Arguments:
@@ -62,22 +65,35 @@ class HistoryManager(Callback):
             from_epoch (int): Starting epoch in the plot
         """
         import matplotlib.pyplot as plt
+        if isinstance(monitor, str):
+            monitors = [monitor]
+        elif isinstance(monitor, Iterable):
+            monitors = list(monitor)
+        else:
+            raise TypeError("Monitor parameter should be either a string or a list of strings")
+
 
         if ax is None:
             ax = plt.gca()
 
-        values = defaultdict(float)
+        for monitor in monitors:
+            values = defaultdict(float)
 
-        for record in self.records:
-            epoch = record['epoch']
-            if monitor in record and epoch >= from_epoch:
-                values[epoch] = record[monitor]
+            for record in self.records:
+                epoch = record['epoch']
+                if monitor in record and epoch >= from_epoch:
+                    values[epoch] = record[monitor]
 
-        ax.plot(list(values.keys()),
-                 list(values.values()),
-                 label=monitor,
-                 marker='x')
+            ax.plot(list(values.keys()),
+                    list(values.values()),
+                    label=monitor,
+                    marker='x')
         ax.legend()
+        ax.grid(axis='both')
+        ax.set_xlabel("epochs")
+
+        if title is not None:
+            ax.set_title(str(title))
 
     def __str__(self):
         return str(os.linesep.join(map(str, self.records)))

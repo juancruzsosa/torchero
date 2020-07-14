@@ -1,6 +1,8 @@
-import torch
-from abc import abstractmethod, ABCMeta
 import copy
+from abc import ABCMeta, abstractmethod
+
+import torch
+
 
 class BaseMeter(object, metaclass=ABCMeta):
     """ Interface for all meters.

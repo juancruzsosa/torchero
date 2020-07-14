@@ -1,15 +1,23 @@
 import torch
 from torch import nn
-from .batch import BatchMeter
-from .base import BaseMeter
+
+from torchero.meters.base import BaseMeter
+from torchero.meters.batch import BatchMeter
+
 
 class BinaryAccuracy(BatchMeter):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
     """
     name = "acc"
-    INVALID_DIMENSION_MESSAGE = 'Expected both tensors have same dimension'
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
-    INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
+    INVALID_DIMENSION_MESSAGE = (
+        'Expected both tensors have same dimension'
+    )
+    INVALID_INPUT_TYPE_MESSAGE = (
+        'Expected Tensors as inputs'
+    )
+    INVALID_TENSOR_CONTENT_MESSAGE = (
+        'Expected binary target tensors (1 or 0 in each component)'
+    )
 
     def __init__(self, threshold=0.5, aggregator=None):
         """ Constructor
@@ -44,6 +52,7 @@ class BinaryAccuracy(BatchMeter):
         if not ((b == 0) | (b == 1)).all():
             raise ValueError(self.INVALID_TENSOR_CONTENT_MESSAGE)
 
+
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
     """
@@ -55,16 +64,24 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
             self.activation = nn.Sigmoid()
 
     def _get_result(self, output, target):
-        return super(BinaryWithLogitsAccuracy, self)._get_result(self.activation(output),
+        output = self.activation(output)
+        return super(BinaryWithLogitsAccuracy, self)._get_result(output,
                                                                  target)
+
 
 class TPMeter(BaseMeter):
     """ Meter to calculate true positives, true negatives, false positives,
     false negatives
     """
-    INVALID_DIMENSION_MESSAGE = 'Expected both tensors have same dimension'
-    INVALID_INPUT_TYPE_MESSAGE = 'Expected Tensors as inputs'
-    INVALID_TENSOR_CONTENT_MESSAGE = 'Expected binary target tensors (1 or 0 in each component)'
+    INVALID_DIMENSION_MESSAGE = (
+        'Expected both tensors have same dimension'
+    )
+    INVALID_INPUT_TYPE_MESSAGE = (
+        'Expected Tensors as inputs'
+    )
+    INVALID_TENSOR_CONTENT_MESSAGE = (
+        'Expected binary target tensors (1 or 0 in each component)'
+    )
 
     def __init__(self, threshold=0.5, with_logits=False, activation=None):
         super(TPMeter, self).__init__()
@@ -98,9 +115,9 @@ class TPMeter(BaseMeter):
             output = self.activation(output)
         predictions = (output >= self.threshold).long()
         self.tp += (predictions & target).sum().item()
-        self.fp += (predictions & (target^1)).sum().item()
-        self.fn += ((predictions^1) & target).sum().item()
-        self.tn += ((predictions^1) & (target^1)).sum().item()
+        self.fp += (predictions & (target ^ 1)).sum().item()
+        self.fn += ((predictions ^ 1) & target).sum().item()
+        self.tn += ((predictions ^ 1) & (target ^ 1)).sum().item()
 
     @property
     def recall(self):
@@ -126,10 +143,13 @@ class TPMeter(BaseMeter):
         if precision == 0 and recall == 0:
             return 0
         else:
-            return (1 + beta**2) * precision * recall / ((beta **2) * precision + recall)
+            num = (1 + beta**2) * precision * recall
+            den = (beta ** 2) * precision + recall
+            return num / den
 
     def value(self):
         return (self.tp, self.tn, self.fp, self.fn)
+
 
 class Recall(TPMeter):
     """ Meter to calculate the recall score where
@@ -141,6 +161,7 @@ class Recall(TPMeter):
     def value(self):
         return self.recall
 
+
 class Precision(TPMeter):
     """ Meter to calculate the precision score where
 
@@ -150,6 +171,7 @@ class Precision(TPMeter):
     """
     def value(self):
         return self.precision
+
 
 class Specificity(TPMeter):
     """ Meter to calculate the specificity score where
@@ -161,6 +183,7 @@ class Specificity(TPMeter):
     def value(self):
         return self.specificity
 
+
 class NPV(TPMeter):
     """ Meter to calculate the negative predictive value score (npv) where
 
@@ -171,19 +194,23 @@ class NPV(TPMeter):
     def value(self):
         return self.tn/(self.tn + self.fn)
 
+
 class FBetaScore(TPMeter):
     """ Meter to calculate the f-beta score where
 
-    f(beta) = (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall')
+    f(beta) = (1 + beta**2) * (precision * recall) /
+                (beta**2 * precision + recall')
 
     The best value is 1 and the worst value is 0.
     """
     def __init__(self, beta, threshold=0.5, with_logits=False):
-        super(FBetaScore, self).__init__(threshold=threshold, with_logits=with_logits)
+        super(FBetaScore, self).__init__(threshold=threshold,
+                                         with_logits=with_logits)
         self.beta = beta
 
     def value(self):
         return self.f_beta(self.beta)
+
 
 class F1Score(FBetaScore):
     """ Meter to calculate the f1 score where
@@ -193,8 +220,12 @@ class F1Score(FBetaScore):
     The best value is 1 and the worst value is 0.
     """
     name = "f1"
+
     def __init__(self, threshold=0.5, with_logits=False):
-        super(F1Score, self).__init__(threshold=threshold, beta=1, with_logits=with_logits)
+        super(F1Score, self).__init__(threshold=threshold,
+                                      beta=1,
+                                      with_logits=with_logits)
+
 
 class F2Score(FBetaScore):
     """ Meter to calculate the f1 score where
@@ -204,8 +235,12 @@ class F2Score(FBetaScore):
     The best value is 1 and the worst value is 0.
     """
     name = "f2"
+
     def __init__(self, threshold=0.5, with_logits=False):
-        super(F2Score, self).__init__(threshold=threshold, beta=2, with_logits=with_logits)
+        super(F2Score, self).__init__(threshold=threshold,
+                                      beta=2,
+                                      with_logits=with_logits)
+
 
 class FHalfScore(FBetaScore):
     """ Meter to calculate the f0.5 score where
@@ -215,5 +250,8 @@ class FHalfScore(FBetaScore):
     The best value is 1 and the worst value is 0.
     """
     name = "fh"
+
     def __init__(self, threshold=0.5, with_logits=False):
-        super(FHalfScore, self).__init__(threshold=threshold, beta=0.5, with_logits=with_logits)
+        super(FHalfScore, self).__init__(threshold=threshold,
+                                         beta=0.5,
+                                         with_logits=with_logits)

@@ -1,8 +1,10 @@
 import torch
 from torch import nn
-from .base import BatchTrainer, BatchValidator, ValidationGranularity
-from .meters import LossMeter
-from .utils.defaults import get_optimizer_by_name, get_loss_by_name
+
+from torchero.base import BatchTrainer, BatchValidator, ValidationGranularity
+from torchero.meters import LossMeter
+from torchero.utils.defaults import get_loss_by_name, get_optimizer_by_name
+
 
 class SupervisedValidator(BatchValidator):
     """ Class for evaluating torch models on validation
@@ -21,8 +23,8 @@ class SupervisedValidator(BatchValidator):
 class SupervisedTrainer(BatchTrainer):
     """ Class for training torch models on labeled data
     """
-    def create_validator(self):
-        return SupervisedValidator(self.model, self.val_meters)
+    def create_validator(self, metrics):
+        return SupervisedValidator(self.model, metrics)
 
     def __init__(self,
                  model,
@@ -55,7 +57,8 @@ class SupervisedTrainer(BatchTrainer):
             prefixes (tuple, list):
                 Prefixes of train and val metrics
             validation_granularity (ValidationGranularity):
-                Change validation criterion (after every log vs after every epoch)
+                Change validation criterion (after every log vs after every
+                epoch)
         """
         if isinstance(criterion, str):
             criterion = get_loss_by_name(criterion)

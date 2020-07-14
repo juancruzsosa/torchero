@@ -1,4 +1,5 @@
-from .base import Callback
+from torchero.callbacks.base import Callback
+
 
 class Monitor(Callback):
     def __init__(self, property_name, property_fn):
@@ -8,6 +9,7 @@ class Monitor(Callback):
 
     def on_log(self):
         self.trainer._train_metrics[self._property_name] = self._property_fn()
+
 
 class OptimizerMonitor(Monitor):
     def __init__(self, property_name, property_fn, optimizer=None):
@@ -20,6 +22,7 @@ class OptimizerMonitor(Monitor):
         elif self._optimizer is None:
             self._optimizer = trainer.optimizer
         super(OptimizerMonitor, self).accept(trainer)
+
 
 class LRMonitor(OptimizerMonitor):
     def __init__(self, optimizer=None):

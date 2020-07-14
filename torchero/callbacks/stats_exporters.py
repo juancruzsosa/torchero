@@ -1,17 +1,21 @@
 import os
 from enum import Enum
 
-from .base import Callback
+from torchero.callbacks.base import Callback
+
 
 class LogLevel(Enum):
     EPOCH = 1
     STEP = 0
 
+
 class CSVLogger(Callback):
     """ Export training statistics to csv file
     """
-    UNRECOGNIZED_LEVEL = "Unrecognized level {level}. Level parameter should be either 'epoch' or 'step'"
-
+    UNRECOGNIZED_LEVEL = (
+        "Unrecognized level {level}. Level parameter should be either 'epoch' "
+        "or 'step'"
+    )
 
     def __init__(self, output, append=False, columns=None, level='epoch'):
         """ Constructor
@@ -32,7 +36,6 @@ class CSVLogger(Callback):
         else:
             raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
 
-
     def on_train_begin(self):
         if self.columns is None:
             extra_cols = ['epoch']
@@ -44,7 +47,7 @@ class CSVLogger(Callback):
             new_file = True
             mode = 'a+'
         else:
-            new_file= False
+            new_file = False
             mode = 'w+'
 
         self.file_handle = open(self.output, mode)

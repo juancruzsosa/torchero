@@ -1,5 +1,6 @@
-from .base import Callback
+from torchero.callbacks.base import Callback
 from torchero.utils.format import format_metric
+
 
 class Logger(Callback):
     def __init__(self, separator=',\t', monitors=None):
@@ -15,7 +16,8 @@ class Logger(Callback):
                    for name in monitors
                    if name in self.trainer.metrics}
 
-        meters = self.separator.join(map(lambda x: '{}: {}'.format(*x), metrics.items()))
+        meters = self.separator.join(map(lambda x: '{}: {}'.format(*x),
+                                         metrics.items()))
         print("epoch: {trainer.epoch}/{trainer.total_epochs}{separator}"
               "step: {trainer.step}/{trainer.total_steps}{separator}"
               "{meters}".format(trainer=self.trainer,

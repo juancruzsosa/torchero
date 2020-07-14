@@ -1,4 +1,4 @@
-from . import Dataset
+from torchero.utils.data.datasets import Dataset
 
 
 class UnsuperviseDataset(Dataset):
@@ -32,4 +32,5 @@ class UnsuperviseDataset(Dataset):
         return str(self._dataset)
 
     def __repr__(self):
-        return "{} of \n {}".format(self.__class__.__name__, repr(self._dataset))
+        return "{} of \n {}".format(self.__class__.__name__,
+                                    repr(self._dataset))

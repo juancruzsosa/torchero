@@ -1,6 +1,9 @@
-import torch
-from .base import BaseMeter
 from collections import Counter
+
+import torch
+
+from torchero.meters.base import BaseMeter
+
 
 class BalancedAccuracy(BaseMeter):
     """ Meter for accuracy categorical on categorical targets
@@ -21,7 +24,7 @@ class BalancedAccuracy(BaseMeter):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
 
         if (not isinstance(b, torch.LongTensor) and
-            not isinstance(b, torch.cuda.LongTensor)):
+                not isinstance(b, torch.cuda.LongTensor)):
             raise TypeError(self.INVALID_INPUT_TYPE_MESSAGE)
 
         if len(a.size()) != 2 or len(b.size()) != 1 or len(b) != a.size()[0]:
@@ -37,7 +40,9 @@ class BalancedAccuracy(BaseMeter):
             raise Exception(self.INVALID_LENGTHS_MESSAGE)
 
         self.totals_counter.update(b.cpu().tolist())
-        self.match_counter.update(b[b==a].cpu().tolist())
+        self.match_counter.update(b[b == a].cpu().tolist())
 
     def value(self):
-        return torch.Tensor([self.match_counter.get(c, 0)/self.totals_counter[c] for c in self.totals_counter.keys()]).mean().item()
+        arr = [self.match_counter.get(c, 0)/self.totals_counter[c]
+               for c in self.totals_counter.keys()]
+        return torch.Tensor(arr).mean().item()

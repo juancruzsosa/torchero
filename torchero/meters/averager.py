@@ -1,6 +1,8 @@
 import torch
-from .base import BaseMeter
-from .exceptions import ZeroMeasurementsError
+
+from torchero.meters.base import BaseMeter
+from torchero.meters.exceptions import ZeroMeasurementsError
+
 
 class Averager(BaseMeter):
     """ Meter that returns the average over all measured values
