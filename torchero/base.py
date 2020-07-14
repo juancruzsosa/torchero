@@ -389,6 +389,17 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     def val_meters(self):
         return self.validator.meters
 
+    def evaluate(self, dataloader, metrics=None):
+        if metrics is not None:
+            metrics = parse_meters(metrics)
+        else:
+            metrics = self.val_meters
+        validator = self.create_validator(metrics)
+        if next(self.model.parameters()).is_cuda:
+            validator.cuda()
+        results = validator.validate(dataloader)
+        self.model.train(mode=False)
+        return results
 
     def stop_training(self):
         self._raised_stop_training = True
