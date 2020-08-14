@@ -1,10 +1,61 @@
 import math
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import torch
 import numpy as np
 from PIL.Image import Image
 from matplotlib import pyplot as plt
+
+def get_imagegrid(dataset,
+                  num=10,
+                  shuffle=True):
+    if shuffle:
+        indices = torch.randperm(len(dataset))
+    else:
+        indices = torch.arange(0, len(dataset))
+    return [dataset[i] for i in indices[:num]]
+
+def get_labeled_imagegrid(dataset,
+                          num=10,
+                          shuffle=True,
+                          classes='auto'):
+    if isinstance(classes, str):
+        if classes != 'auto':
+            raise TypeError(
+                "Bad parameter classes. classes mut be 'auto', None, or an "
+                "array with classes names"
+            )
+        if hasattr(dataset, 'classes'):
+            classes = dataset.classes
+        else:
+            classes = None
+
+    if shuffle:
+        indices = torch.randperm(len(dataset))
+    else:
+        indices = torch.arange(0, len(dataset))
+
+    images_per_class = defaultdict(list)
+    for i in indices:
+        image, class_id = dataset[i]
+
+        if classes is not None:
+            class_name = classes[class_id]
+        else:
+            class_name = str(class_id)
+
+        if len(images_per_class[class_name]) < num:
+            images_per_class[class_name].append(image)
+
+        if ((classes is None or (len(classes) == len(images_per_class))) and
+            (all(len(class_images) == num for class_images in images_per_class.values()))):
+            break
+
+    sorted_images_per_class = OrderedDict(sorted(images_per_class.items(),
+                                          key=lambda x: x[0]))
+
+    return sorted_images_per_class
+
 
 
 def show_image(img, ax, image_attr={'cmap': plt.cm.Greys_r}):
@@ -49,61 +100,32 @@ def show_imagegrid_dataset(dataset,
                            figsize=None,
                            fontsize=20,
                            image_attr={'cmap': plt.cm.Greys_r}):
-    if isinstance(classes, str):
-        if classes != 'auto':
-            raise TypeError(
-                "Bad parameter classes. classes mut be 'auto', None, or an "
-                "array with classes names"
-            )
-        if hasattr(dataset, 'classes'):
-            classes = dataset.classes
-        else:
-            classes = None
-
-    if shuffle:
-        indices = torch.randperm(len(dataset))
-    else:
-        indices = torch.arange(0, len(dataset))
-
-    sample = dataset[indices[0]]
+    sample = dataset[0]
     if isinstance(sample, tuple) and len(sample) == 2:
-        images_per_class = defaultdict(list)
-        for i in indices:
-            image, class_id = dataset[i]
-
-            if classes is not None:
-                class_name = classes[class_id]
-            else:
-                class_name = str(class_id)
-
-            if len(images_per_class[class_name]) < num:
-                images_per_class[class_name].append(image)
-
-            if ((classes is None or (len(classes) == len(images_per_class))) and
-                (all(len(class_images) == num for class_images in images_per_class.values()))):
-                break
-
+        images_per_class = get_labeled_imagegrid(dataset,
+                                                 num=num,
+                                                 shuffle=shuffle,
+                                                 classes=classes)
         classes = list(images_per_class.keys())
 
         if figsize is None:
             figsize = (2 * num, 2 * len(classes))
         fig, axs = plt.subplots(figsize=figsize, nrows=len(classes), ncols=num)
 
-        sorted_images_per_class = sorted(images_per_class.items(),
-                                         key=lambda x: x[0])
-
-        for i, (class_name, class_images) in enumerate(sorted_images_per_class):
+        for i, (class_name, class_images) in enumerate(images_per_class.items()):
             for j, img in enumerate(class_images):
                 show_image(img, axs[i][j], image_attr)
             axs[i][0].set_ylabel(str(class_name), fontsize=fontsize)
     elif isinstance(sample, (Image, torch.Tensor, np.ndarray)):
-        num = min(len(indices), num)
-        indices = indices[:num]
+        image_list = get_imagegrid(dataset,
+                                   num=num,
+                                   shuffle=shuffle)
+        num = min(len(image_list), num)
         nrows = math.ceil(math.sqrt(num))
-        ncols = math.ceil(len(indices) / nrows)
+        ncols = math.ceil(num / nrows)
         if figsize is None:
             figsize = (2 * nrows, 2 * ncols)
         fig, axs = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
         axs = axs.flatten()
-        for i, ind in enumerate(indices):
-            show_image(dataset[ind], axs[i], image_attr)
+        for i, img in enumerate(image_list):
+            show_image(img, axs[i], image_attr)
