@@ -254,6 +254,14 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics),
                 **self.prepend_name_dict(self._prefixes[1], self._val_metrics)}
 
+    @property
+    def train_metrics(self):
+        return dict(self._train_metrics)
+
+    @property
+    def val_metrics(self):
+        return dict(self._val_metrics)
+
     def _compile_train_metrics(self):
         self._train_metrics = {}
 
