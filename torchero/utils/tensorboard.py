@@ -7,6 +7,35 @@ from torchvision import transforms
 
 from torchero.utils.vision import get_imagegrid, get_labeled_imagegrid
 
+def write_image(img, writer, tag, global_step=0):
+    if isinstance(img, torch.Tensor):
+        if img.ndim not in (2, 3):
+            raise TypeError(
+                "Dataset images must have shape (3, HEIGHT, WIDTH) or "
+                "(HEIGHT, WIDTH)"
+            )
+        if (img.ndim == 3) and (img.shape[0] not in (1, 3)):
+            raise TypeError(
+                "Invalid image shape: {}. Dataset images must have shape "
+                "(3, HEIGHT, WIDTH) or (HEIGHT, WIDTH)"
+                .format(img.shape)
+            )
+        if img.ndim == 3 and img.shape[0] == 1:
+            img = img.squeeze(0)
+        if img.ndim == 3:
+            min_c = (img.view(3, -1)
+                        .min(axis=1)
+                        .values
+                        .unsqueeze(-1)
+                        .unsqueeze(-1))
+            max_c = (img.view(3, -1)
+                        .max(axis=1)
+                        .values
+                        .unsqueeze(-1)
+                        .unsqueeze(-1))
+            img = (img - min_c)/(max_c-min_c)
+    writer.add_image(tag, img, global_step=global_step)
+
 to_pil_image = transforms.ToPILImage()
 
 def prepare_images(ims, imsize='auto'):
