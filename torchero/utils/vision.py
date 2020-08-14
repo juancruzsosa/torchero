@@ -100,6 +100,28 @@ def show_imagegrid_dataset(dataset,
                            figsize=None,
                            fontsize=20,
                            image_attr={'cmap': plt.cm.Greys_r}):
+    """ Plot a image grids of the dataset. If dataset is labeld it will
+    generate one row of images per class and if it's unlabeled it will generate
+    a bidimentional (almost square) grid of images sampled from dataset
+
+
+    Parameters:
+        num (str):
+            Number of images per grid
+        shuffle (bool):
+            True to sample the images randomly, false for sequential sampling
+        class (str, or list):
+            If 'auto' is passed, it willl use the class names
+            from dataset `classes` attribute (or use the class number if the
+            dataset has such property). If a list is passed then the name the
+        figsize (tuple):
+            If None infers the matplotlib figure size from the number of columns and rows,
+            if not none then the tuple for the matplotlib figuresize.
+        fontfize (float):
+            Text font size
+        image_attr (str):
+            Matplotlib image attributes for all images
+    """
     sample = dataset[0]
     if isinstance(sample, tuple) and len(sample) == 2:
         images_per_class = get_labeled_imagegrid(dataset,

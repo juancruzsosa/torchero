@@ -8,6 +8,18 @@ from torchvision import transforms
 from torchero.utils.vision import get_imagegrid, get_labeled_imagegrid
 
 def write_image(img, writer, tag, global_step=0):
+    """ Add image data to summary.
+
+    Parameters:
+        img (torch.Tensor):
+            Image to write in CHW format
+        writer (SummaryWriter):
+            Instance of `torch.utils.tensorboard.SummaryWriter
+        tag (str):
+            Data identifier
+        global_step (int):
+            Global step value to record
+    """
     if isinstance(img, torch.Tensor):
         if img.ndim not in (2, 3):
             raise TypeError(
@@ -64,6 +76,31 @@ def write_imagegrid_dataset(writer,
                             classes='auto',
                             global_step=0,
                             imsize='auto'):
+    """ Add the dataset image grids into TensorBoard Image dashboard.
+    If dataset is labeld it will generate one Grid per class
+
+    Parameters:
+        writer (SummaryWriter):
+            Instance of `torch.utils.tensorboard.SummaryWriter
+        tag (str):
+            Tag prefix for each class
+        dataset (torch.utils.data.Dataset):
+            Dataset to be written
+        num (str):
+            Number of images per grid
+        shuffle (bool):
+            True to sample the images randomly, false for sequential sampling
+        class (str, or list):
+            If 'auto' is passed, it willl use the class names
+            from dataset `classes` attribute (or use the class number if the
+            dataset has such property). If a list is passed then the name the
+        global_step (int):
+            Global step value to record
+        imsize (str, tuple, or float):
+            'auto' to automatically detect the image
+        size of each image in the grid. A float to use for both width and height,
+        a tuple with (width, height) to resize images to (width, height)
+    """
     sample = dataset[0]
     if isinstance(sample, tuple) and len(sample) == 2:
         images_per_class = get_labeled_imagegrid(dataset,
