@@ -82,3 +82,7 @@ def write_imagegrid_dataset(writer,
         image_list = prepare_images(image_list, imsize=imsize)
         writer.add_images(tag, image_list, global_step=global_step)
         writer.flush()
+
+def write_model(writer, model, input=None):
+    writer.add_graph(model, input_to_model=input)
+    writer.flush()
