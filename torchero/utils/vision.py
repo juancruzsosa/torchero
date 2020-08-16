@@ -6,6 +6,35 @@ import numpy as np
 from PIL.Image import Image
 from matplotlib import pyplot as plt
 
+def normalize_tensor_image(img):
+    if img.ndim not in (2, 3):
+        raise TypeError(
+            "Dataset images must have shape (3, HEIGHT, WIDTH) or "
+            "(HEIGHT, WIDTH)"
+        )
+    if (img.ndim == 3) and (img.shape[0] not in (1, 3)):
+        raise TypeError(
+            "Invalid image shape: {}. Dataset images must have shape "
+            "(3, HEIGHT, WIDTH) or (HEIGHT, WIDTH)"
+            .format(img.shape)
+        )
+    if img.ndim == 3 and img.shape[0] == 1:
+        img = img.squeeze(0)
+    if img.ndim == 3:
+        min_c = (img.view(3, -1)
+                    .min(axis=1)
+                    .values
+                    .unsqueeze(-1)
+                    .unsqueeze(-1))
+        max_c = (img.view(3, -1)
+                    .max(axis=1)
+                    .values
+                    .unsqueeze(-1)
+                    .unsqueeze(-1))
+        img = (img - min_c)/(max_c-min_c)
+    return img
+
+
 def get_imagegrid(dataset,
                   num=10,
                   shuffle=True):
@@ -62,32 +91,8 @@ def show_image(img, ax, image_attr={'cmap': plt.cm.Greys_r}):
     if ax is None:
         ax = plt.gca()
     if isinstance(img, torch.Tensor):
-        if img.ndim not in (2, 3):
-            raise TypeError(
-                "Dataset images must have shape (3, HEIGHT, WIDTH) or "
-                "(HEIGHT, WIDTH)"
-            )
-        if (img.ndim == 3) and (img.shape[0] not in (1, 3)):
-            raise TypeError(
-                "Invalid image shape: {}. Dataset images must have shape "
-                "(3, HEIGHT, WIDTH) or (HEIGHT, WIDTH)"
-                .format(img.shape)
-            )
-        if img.ndim == 3 and img.shape[0] == 1:
-            img = img.squeeze(0)
-        if img.ndim == 3:
-            min_c = (img.view(3, -1)
-                        .min(axis=1)
-                        .values
-                        .unsqueeze(-1)
-                        .unsqueeze(-1))
-            max_c = (img.view(3, -1)
-                        .max(axis=1)
-                        .values
-                        .unsqueeze(-1)
-                        .unsqueeze(-1))
-            img = (img - min_c)/(max_c-min_c)
-            img = img.permute(1, 2, 0)
+        img = normalize_tensor_image(img)
+        img = img.permute(1, 2, 0)
     ax.imshow(img, **image_attr)
     ax.set_xticks([])
     ax.set_yticks([])

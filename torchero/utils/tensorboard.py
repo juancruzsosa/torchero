@@ -5,7 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from PIL.Image import Image
 from torchvision import transforms
 
-from torchero.utils.vision import get_imagegrid, get_labeled_imagegrid
+from torchero.utils.vision import get_imagegrid, get_labeled_imagegrid, normalize_tensor_image
 
 def write_image(img, writer, tag, global_step=0):
     """ Add image data to summary.
@@ -52,7 +52,7 @@ to_pil_image = transforms.ToPILImage()
 
 def prepare_images(ims, imsize='auto'):
     if isinstance(ims[0], torch.Tensor):
-        ims = [to_pil_image(im) for im in ims]
+        ims = [to_pil_image(normalize_tensor_image(im)) for im in ims]
 
     if imsize == 'auto':
         widths, heights = zip(*map(lambda x: x.size, ims))
