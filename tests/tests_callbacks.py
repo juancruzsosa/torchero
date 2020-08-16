@@ -1,15 +1,16 @@
 import shutil
 from .common import *
+import pandas as pd
 
 
 class HistoryCallbackTests(unittest.TestCase):
-    def test_history_callback_register_every_training_stat(self):
+    def setUp(self):
         self.model = DummyModel()
         train_dataset = torch.arange(10).view(-1, 1)
         valid_dataset = torch.arange(10).view(-1, 1)
 
-        train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
-        valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
+        self.train_dl = DataLoader(train_dataset, shuffle=False, batch_size=1)
+        self.valid_dl = DataLoader(valid_dataset, shuffle=False, batch_size=1)
 
         def update_batch(trainer, x):
             trainer.train_meters['t_c'].measure(x.data[0][0])
@@ -17,23 +18,26 @@ class HistoryCallbackTests(unittest.TestCase):
         def validate_batch(validator, x):
             validator.meters['v_c'].measure(x.data[0][0])
 
-        trainer = TestTrainer(model=self.model,
-                              logging_frecuency=5,
-                              train_meters={'t_c' : Averager()},
-                              val_meters={'v_c' : Averager()},
-                              update_batch_fn=update_batch,
-                              valid_batch_fn=validate_batch)
-        self.assertEqual(trainer.metrics, {})
+        self.trainer = TestTrainer(model=self.model,
+                                   logging_frecuency=5,
+                                   train_meters={'t_c' : Averager()},
+                                   val_meters={'v_c' : Averager()},
+                                   update_batch_fn=update_batch,
+                                   valid_batch_fn=validate_batch)
 
-        self.assertEqual(set(trainer.meters_names()), set(['t_c', 'v_c']))
+    def test_history_callback_register_every_training_stat(self):
+        self.assertEqual(self.trainer.metrics, {})
 
-        trainer.train(train_dl, valid_dataloader=valid_dl, epochs=1)
+        self.assertEqual(set(self.trainer.meters_names()), set(['t_c', 'v_c']))
+
+        self.trainer.train(self.train_dl, valid_dataloader=self.valid_dl, epochs=1)
 
         expected_registry = [{'epoch': 0, 'step': 5, 't_c': 2.0, 'v_c': 4.5},
                              {'epoch': 0, 'step': 10, 't_c': 7.0, 'v_c': 4.5}]
 
-        self.assertEqual(list(trainer.history), expected_registry)
-        self.assertEqual(trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
+        self.assertEqual(list(self.trainer.history), expected_registry)
+        self.assertEqual(self.trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
+
 
 
 class CSVExporterTests(unittest.TestCase):
