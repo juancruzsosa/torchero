@@ -3,7 +3,7 @@ from collections import defaultdict
 from operator import itemgetter
 from torchero.callbacks.base import Callback
 from collections import Iterable
-
+from torchero.utils.plots import smooth_curve
 
 class History(Callback):
     """ Callback that record history of all training/validation metrics
@@ -90,14 +90,15 @@ class HistoryManager(Callback):
         ax.plot(list(x), list(y), label=monitor)
         ax.legend()
 
-    def epoch_plot(self, monitor, from_epoch=0, ax=None, title=None):
+    def epoch_plot(self, monitor, from_epoch=0, ax=None, title=None, smooth=0):
         """ Plot monitor history values across epochs
 
         Arguments:
-            monitor (str): Monitor to plot
+            monitor (list, str): Monitor to plot or list of monitor to plot
             from_epoch (int): Starting epoch in the plot
         """
         import matplotlib.pyplot as plt
+
         if isinstance(monitor, str):
             monitors = [monitor]
         elif isinstance(monitor, Iterable):
@@ -109,7 +110,9 @@ class HistoryManager(Callback):
         if ax is None:
             ax = plt.gca()
 
-        for monitor in monitors:
+        cmap = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+        for plot_num, monitor in enumerate(monitors):
             values = defaultdict(float)
 
             for record in self.records:
@@ -117,10 +120,13 @@ class HistoryManager(Callback):
                 if monitor in record and epoch >= from_epoch:
                     values[epoch] = record[monitor]
 
-            ax.plot(list(values.keys()),
-                    list(values.values()),
-                    label=monitor,
-                    marker='x')
+            x = list(values.keys())
+            y = list(values.values())
+            if smooth > 0:
+                ax.plot(x, y, alpha=0.2, color=cmap[plot_num])
+                y = smooth_curve(y, alpha=1-smooth)
+
+            ax.plot(x, y, label=monitor, color=cmap[plot_num])
         ax.legend()
         ax.grid(axis='both')
         ax.set_xlabel("epochs")
