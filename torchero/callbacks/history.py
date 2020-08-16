@@ -96,6 +96,11 @@ class HistoryManager(Callback):
         Arguments:
             monitor (list, str): Monitor to plot or list of monitor to plot
             from_epoch (int): Starting epoch in the plot
+            ax (``matplotlib.axes.Axes``): Matplotlib axis to use for the plot.
+            If None is passed uses the default axis
+            title (str): Title for the plot or None for no title
+            smooth (str): Smooth factor for the line plot.
+            For smoothing it uses the Exponentially Weighted Average technique.
         """
         import matplotlib.pyplot as plt
 
