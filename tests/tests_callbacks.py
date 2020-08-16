@@ -38,6 +38,29 @@ class HistoryCallbackTests(unittest.TestCase):
         self.assertEqual(list(self.trainer.history), expected_registry)
         self.assertEqual(self.trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
 
+    def test_export_to_dataframe(self):
+        self.trainer.train(self.train_dl, valid_dataloader=self.valid_dl, epochs=2)
+
+        try:
+            self.trainer.history.to_dataframe(level='xxx')
+            self.fail()
+        except Exception as e:
+            self.assertIsInstance(e, ValueError)
+            self.assertEqual(str(e), self.trainer.history.UNRECOGNIZED_LEVEL_MESSAGE.format(level=repr('xxx')))
+
+        df_history = self.trainer.history.to_dataframe(level='step')
+        self.assertIsInstance(df_history, pd.DataFrame)
+        df_expected = pd.DataFrame({'epoch': [0, 0, 1, 1],
+                                    'step':  [5, 10, 15, 20],
+                                    't_c':   [2.0, 7.0, 2.0, 7.0],
+                                    'v_c':   [4.5, 4.5, 4.5, 4.5]})
+        pd.testing.assert_frame_equal(df_history, df_expected)
+
+        df_history = self.trainer.history.to_dataframe(level='epoch')
+        df_expected = pd.DataFrame({'epoch': [0, 1],
+                                    't_c':   [7.0, 7.0],
+                                    'v_c':   [4.5, 4.5]})
+        pd.testing.assert_frame_equal(df_history, df_expected)
 
 
 class CSVExporterTests(unittest.TestCase):

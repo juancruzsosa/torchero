@@ -19,6 +19,11 @@ class History(Callback):
 
 
 class HistoryManager(Callback):
+    UNRECOGNIZED_LEVEL_MESSAGE = (
+        "Unrecognized level {level}. Level parameter should be either 'epoch' "
+        "or 'step'"
+    )
+
     def __init__(self):
         self.records = []
 
@@ -35,6 +40,34 @@ class HistoryManager(Callback):
         self.records.append({'epoch': epoch,
                              'step': step,
                              **metrics})
+
+    def to_dataframe(self, level='epoch'):
+        """ Returns the metrics history as a DataFrame format
+
+        Parameters:
+            level (str): It could either 'epoch' or 'step'. 
+            'epoch' returns only the metrics of each epoch
+            whereas 'step' returns from all steps
+
+        Returns:
+            A pandas DataFrame with column epoch, step (only if level='step')
+            and a column for each metric
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise Exception("Install pandas (pip install pandas) to export to history to dataframe")
+
+        df = (pd.DataFrame.from_records(self.records)
+                .sort_values(['epoch', 'step']))
+        if level == 'step':
+            return df
+        elif level == 'epoch':
+            return (df.drop_duplicates(['epoch'], keep='last')
+                      .drop(columns=['step'])
+                      .reset_index(drop=True))
+        else:
+            raise ValueError(self.UNRECOGNIZED_LEVEL_MESSAGE.format(level=repr(level)))
 
     def step_plot(self, monitor, from_step=1, ax=None):
         """ Plot monitor history values across trained iterations
