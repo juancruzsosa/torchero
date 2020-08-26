@@ -92,7 +92,8 @@ def show_image(img, ax, image_attr={'cmap': plt.cm.Greys_r}):
         ax = plt.gca()
     if isinstance(img, torch.Tensor):
         img = normalize_tensor_image(img)
-        img = img.permute(1, 2, 0)
+        if img.ndim == 3:
+            img = img.permute(1, 2, 0)
     ax.imshow(img, **image_attr)
     ax.set_xticks([])
     ax.set_yticks([])
