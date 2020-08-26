@@ -8,8 +8,32 @@
 Welcome to torchero's documentation!
 ====================================
 
-**Torchero** is a library that works on top of *PyTorch* framework and was
-intended to facilitate training of Neural Networks.
+.. image:: https://img.shields.io/github/workflow/status/juancruzsosa/torchero/Python%20package?logo=github
+    :target: https://github.com/juancruzsosa/torchero/actions
+    :alt: GitHub Workflow Status
+
+.. image:: https://codecov.io/gh/juancruzsosa/torchero/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/juancruzsosa/torchero
+    :alt: Code Coverage
+
+.. image:: https://img.shields.io/pypi/v/torchero?logo=pypi
+    :target: https://pypi.org/project/torchero/
+    :alt: PyPI
+
+.. image:: https://img.shields.io/pypi/pyversions/torchero?label=python&logo=python
+    :target: https://www.python.org/downloads/
+    :alt: Python Version: 3
+
+.. image:: https://img.shields.io/badge/License-MIT-yellow.svg
+    :target: https://opensource.org/licenses/MIT
+    :alt: License: MIT
+
+.. image:: https://readthedocs.org/projects/torchero/badge/?version=latest
+    :target: https://torchero.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+**Torchero** is a library that works on top of *PyTorch* framework intended to
+facilitate training of Neural Networks.
 
 Features
 --------
