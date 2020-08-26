@@ -41,9 +41,9 @@ Features
 It provides tools and utilities to
 
 - Setup a training process in few lines of code.
-- Comes prebuilt with several of metrics to monitor the training performance and display them in a handy progress bar.
+- Comes pre-built with several of metrics to monitor the training performance and display them in a handy progress bar.
 - If it's required, it integrates with *TensorBoard* to visualize those metrics in an online manner with a minimal setup.
-- Adaptability to add functionality vía Callbacks.
+- Adaptability to add functionality via Callbacks.
 
 .. toctree::
    :maxdepth: 2
@@ -91,7 +91,7 @@ Quickstart
 Loading the Data
 ----------------
 
-First we need to import torchvision libraries to load the dataset
+First we need to import ``torchvision`` libraries to load the dataset
 
 .. code-block:: python
 
@@ -109,8 +109,8 @@ Now we can import the train and the test dataset
 .. image:: /img/quickstart/install_mnist.png
 
 | To visualize the train dataset we can use show_imagegrid_dataset from utils
-| subpackage. We can do the same for the test set. This could be helpfull to see
-| if just with a quick look we can see if the test dataset is representative with
+| subpackage. We can do the same for the test set. This could be helpful to see
+| just with a quick look if the test dataset is representative with
 | respect to the train dataset.
 
 .. code-block:: python
