@@ -31,5 +31,5 @@ setup(name='torchero',
       ],
       extras_require = {
           'export to dataframe':  ["pandas"],
-      }
+      },
       zip_safe=False)
