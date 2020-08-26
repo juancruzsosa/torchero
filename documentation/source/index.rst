@@ -32,7 +32,7 @@ Welcome to torchero's documentation!
     :target: https://torchero.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-**Torchero** is a library that works on top of *PyTorch* framework intended to
+**Torchero** is a library that works on top of *PyTorch* framework built for
 facilitate training of Neural Networks.
 
 Features
