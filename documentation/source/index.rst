@@ -32,18 +32,18 @@ Welcome to torchero's documentation!
     :target: https://torchero.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-**Torchero** is a library that works on top of *PyTorch* framework built for
-facilitate training of Neural Networks.
+**Torchero** is a library that works on top of the *PyTorch* framework built to
+facilitate the training of Neural Networks.
 
 Features
 --------
 
-It provides tools and utilities to
+It provides tools and utilities to:
 
-- Setup a training process in few lines of code.
-- Comes pre-built with several of metrics to monitor the training performance and display them in a handy progress bar.
-- If it's required, it integrates with *TensorBoard* to visualize those metrics in an online manner with a minimal setup.
-- Adaptability to add functionality via Callbacks.
+- Set up a training process in a few lines of code.
+- Monitor the training performance by checking several prebuilt metrics on a handy progress bar.
+- Integrate a dashboard with *TensorBoard* to visualize those metrics in an online manner with a minimal setup.
+- Add custom functionality via Callbacks.
 
 .. toctree::
    :maxdepth: 2
@@ -91,7 +91,7 @@ Quickstart
 Loading the Data
 ----------------
 
-First we need to import ``torchvision`` libraries to load the dataset
+First, we need to import ``torchvision`` libraries to load the dataset
 
 .. code-block:: python
 
@@ -99,7 +99,7 @@ First we need to import ``torchvision`` libraries to load the dataset
     from torchvision import transforms # To convert to Images to Tensors
 
 
-Now we can import the train and the test dataset
+Now we can import the train and the test datasets.
 
 .. code-block:: python
 
@@ -108,10 +108,9 @@ Now we can import the train and the test dataset
 
 .. image:: /img/quickstart/install_mnist.png
 
-| To visualize the train dataset we can use show_imagegrid_dataset from utils
-| subpackage. We can do the same for the test set. This could be helpful to see
-| just with a quick look if the test dataset is representative with
-| respect to the train dataset.
+| To visualize the training dataset we can use show_imagegrid_dataset from utils
+| subpackage. We can do the same for the testing set. This could be helpful to compare in no time
+| the training dataset with the testing one.
 
 .. code-block:: python
 
@@ -123,9 +122,9 @@ Now we can import the train and the test dataset
 
 .. image:: /img/quickstart/mnist_train_data.png
 
-| Then we need to setup one DataLoader for train dataset and another one for
-| test dataset. This component is responsible to fetch the training and test
-| data in form of batches. For the batch size parameter we can use 32.
+| Then we need to set up one DataLoader for the training dataset and another one for
+| the testing one. This component is responsible for fetching the training and testing
+| data in the form of batches. For the batch size parameter we can use 32.
 
 .. code-block:: python
 
@@ -156,21 +155,21 @@ Model definition
 Training
 --------
 
-The SupervisedTrainer is the responsible to train our network. We need to construct it with at least 3 things
+The SupervisedTrainer is responsible for the training of our network. We need to construct it with at least 3 things
 
-- The Model instance (we have already do that)
+- The Model instance (we have already done that)
 - The Optimizer. Here we can choose ``'adam'`` (there are other multiple choices like ``'sdg'``, ``'asgd'``, ``'adagrad'``, ``'adamax'``, ``'lbfgfs'``, etc.)
 - The Criterion (or loss). Given the fact that this is a classification problem we can use ``'cross_entropy'``
 
-Some additional things we can pass it to the trainer
-are
+Some additional things that can be pass to the trainer
+are:
 
 - A list or dictionary of metrics. For this example we are going to choose ``'categorical_accuracy_percentage'``
-- A list of callbacks. For this list we will choose
+- A list of callbacks. For this list, we will choose
 
-  - ``ProgbarLogger``: To report a Progress Bar to see the status while Training. It's important to note here that if you are running the code over a Jupyter notebook you may want to set `notebook` parameter to true to display the progress bar in HTML format.
+  - ``ProgbarLogger``: To report a Progress Bar to see the status while Training. Here, it's important to notice that if you are running the code over a Jupyter notebook you may want to set the `notebook` parameter to `true` in order to display the progress bar in HTML format.
   - ``ModelCheckpoint``: To save our model if this one improves in `categorical_accuracy_percentage`
-  - ``CSVLogger``: To save the table of metrics to be able to share it or load it from other program if we want
+  - ``CSVLogger``: To save the table of metrics for it to be later shared or load it from another program if we want.
 
 .. code-block:: python
 
