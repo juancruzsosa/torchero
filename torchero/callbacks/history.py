@@ -15,7 +15,8 @@ class History(Callback):
     def on_log(self):
         self.registry.append(self.trainer.epochs_trained,
                              self.trainer.steps_trained,
-                             self.trainer.metrics)
+                             self.trainer.metrics,
+                             self.trainer.hparams)
 
 
 class HistoryManager(Callback):
@@ -36,10 +37,11 @@ class HistoryManager(Callback):
     def __len__(self):
         return len(self.records)
 
-    def append(self, epoch, step, metrics):
+    def append(self, epoch, step, metrics, hparams):
         self.records.append({'epoch': epoch,
                              'step': step,
-                             **metrics})
+                             **metrics,
+                             **hparams})
 
     def to_dataframe(self, level='epoch'):
         """ Returns the metrics history as a DataFrame format

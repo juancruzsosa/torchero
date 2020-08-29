@@ -14,13 +14,15 @@ class ProgbarLogger(Callback):
         training/validation metrics
     """
 
-    def __init__(self, ascii=False, notebook=False, monitors=None):
+    def __init__(self, ascii=False, notebook=False, monitors=None, hparams=None):
         """ Constructor
 
         Arguments:
 
             ascii (`bool`): if true display progress bar in ASCII mode.
             notebook (`bool`): Make outputs compatible for python notebooks
+            monitor (list of str): List of monitors to show after every status update
+            hparams (list of str): List of hyperparameters names to show after every status update
         """
         self.ascii = ascii
         if notebook:
@@ -28,6 +30,7 @@ class ProgbarLogger(Callback):
         else:
             self.tqdm = tqdm.tqdm
         self.monitors = monitors
+        self.hparams = hparams
 
         self.step_tqdms = []
         self.step_bars = []
@@ -53,12 +56,21 @@ class ProgbarLogger(Callback):
         if self.monitors is None:
             monitors = self.trainer.metrics.keys()
 
+
+        hparams = self.hparams
+        if self.hparams is None:
+            hparams = self.trainer.hparams.keys()
+
         metrics = {name: format_metric(self.trainer.metrics[name])
                    for name in monitors
                    if name in self.trainer.metrics}
+        hparams = {name: format_metric(self.trainer.hparams[name])
+                   for name in hparams
+                   if name in self.trainer.hparams}
+
 
         step_bar = self.step_bars[-1]
-        step_bar.set_postfix(**metrics),
+        step_bar.set_postfix(**metrics, **hparams)
         step_bar.update(self.trainer.steps_trained - self.last_step)
         self.last_step = self.trainer.steps_trained
 

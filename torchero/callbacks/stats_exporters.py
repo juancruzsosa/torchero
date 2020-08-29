@@ -17,18 +17,20 @@ class CSVLogger(Callback):
         "or 'step'"
     )
 
-    def __init__(self, output, append=False, columns=None, level='epoch'):
+    def __init__(self, output, append=False, columns=None, hparams_columns=None, level='epoch'):
         """ Constructor
 
         Arguemnts:
             output (str): Name of csv file to export
             append (bool): Append to file instead of overwriting it
             columns (list): List of columns name to export. If is none select
+            hparams_columns (list): List of hyperparams to export
             to display all columns (default)
         """
         self.output = output
         self.append = append
         self.columns = columns
+        self.hparams_columns = hparams_columns
         if level == 'epoch':
             self.level = LogLevel.EPOCH
         elif level == 'step':
@@ -43,6 +45,9 @@ class CSVLogger(Callback):
                 extra_cols.append('step')
             self.columns = extra_cols + self.trainer.meters_names()
 
+        if self.hparams_columns is None:
+            self.hparams_columns = list(self.trainer.hparams.keys())
+
         if os.path.isfile(self.output) and self.append:
             new_file = True
             mode = 'a+'
@@ -53,7 +58,7 @@ class CSVLogger(Callback):
         self.file_handle = open(self.output, mode)
 
         if not new_file:
-            self.file_handle.write(','.join(self.columns))
+            self.file_handle.write(','.join(self.columns + self.hparams_columns))
 
     def _write_line(self):
         if len(self.trainer.metrics) == 0:
@@ -63,7 +68,10 @@ class CSVLogger(Callback):
         stats['epoch'] = self.trainer.epochs_trained
         stats['step'] = self.trainer.steps_trained
 
-        new_row = (stats.get(column, '') for column in self.columns)
+        hparams = self.trainer.hparams
+
+        new_row = [stats.get(column, '') for column in self.columns]
+        new_row.extend([hparams.get(column, '') for column in self.hparams_columns])
 
         self.file_handle.write(os.linesep + ','.join(map(str, new_row)))
         self.file_handle.flush()

@@ -33,6 +33,7 @@ class SupervisedTrainer(BatchTrainer):
                  callbacks=[],
                  acc_meters={},
                  val_acc_meters=None,
+                 hparams={},
                  logging_frecuency=1,
                  prefixes=('train_', 'val_'),
                  validation_granularity=ValidationGranularity.AT_EPOCH):
@@ -52,6 +53,10 @@ class SupervisedTrainer(BatchTrainer):
                 Training accuracy meters by meter name
             val_acc_meters (dictionary of :class:`torchero.meters.Meter'):
                 Validation accuracy meter by meter name
+            hparams (dict of hyperparameters):
+                Dictionary <name,hparam> of hyperparameters. Each value
+                can be a fixed value, a lambda function with only parameter to pass the trainer,
+                or a instance of `torchero.hparams.OptimP`
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
             prefixes (tuple, list):
@@ -71,6 +76,7 @@ class SupervisedTrainer(BatchTrainer):
         super(SupervisedTrainer, self).__init__(model=model,
                                                 train_meters=acc_meters,
                                                 val_meters=val_acc_meters,
+                                                hparams=hparams,
                                                 callbacks=callbacks,
                                                 logging_frecuency=logging_frecuency,
                                                 prefixes=prefixes,

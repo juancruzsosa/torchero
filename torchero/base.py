@@ -1,10 +1,12 @@
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from itertools import chain
+from collections.abc import MutableMapping
 
 import torch
 from torch.autograd import Variable
 
+import torchero.hparams
 from torchero.callbacks import Callback, CallbackContainer, History
 from torchero.meters import ZeroMeasurementsError
 from torchero.utils.defaults import parse_meters
@@ -25,6 +27,77 @@ class _OnEpochValidScheduler(Callback):
     def on_log(self):
         if self.trainer.step == self.trainer.total_steps-1:
             self.trainer._validate()
+
+class ParamsDict(MutableMapping):
+    """ Container for hyperparameters dictionary
+    """
+    def __init__(self, mapping=(), **kwargs):
+        """ Constructor
+
+        Arguments:
+            mapping (dict or list of key-val tuples):
+                Build from existent mapping
+        """
+        self._hparams = dict(mapping, **kwargs)
+
+    def __getitem__(self, key):
+        """ Retrives the value of the given hyperparameter
+
+        Arguments:
+            key (str): Hyperparameter name
+
+        Returns:
+            The value of the hyperparameter ``key``
+            if it exists, otherwise raises a KeyError
+        """
+        return self._hparams[key].value
+
+    def __delitem__(self, key):
+        """ Removes a hyperparameter from the dict
+
+        Arguments:
+            key (str): Hyperparameter name to delete
+        """
+        del self._hparams[key]
+
+    def __setitem__(self, key, value):
+        """ Sets the value of a hyperparameter to a new value
+
+        Arguments:
+            key (str): Hyperparameter name
+            value: New value for the hyperparameter
+        """
+        self._hparams[key].value = value
+
+    def __iter__(self):
+        """ Same as keys() method
+        """
+        return self.keys()
+
+    def keys(self):
+        """ Returns an iterator for the hyperparameters names
+        """
+        return iter(self._hparams.keys())
+
+    def values(self):
+        """ Returns an iterator for the hyperparameters values
+        """
+        yield from map(lambda x: x.value, self._hparams.values())
+
+    def items(self):
+        """ Returns an iterator of (hyp. name, hyp. value) items
+        """
+        yield from map(lambda x: (x[0], x[1].value), self._hparams.items())
+
+    def __len__(self):
+        """ Returns the numbers of hyperparameters
+        """
+        return len(self._hparams)
+
+    def __repr__(self):
+        return "{}({})".format(self.__class__.__name__,
+                               ", ".join(map(lambda x: "{}={}".format(x[0], repr(x[1])), self)))
+
 
 
 class BatchValidator(CudaMixin, metaclass=ABCMeta):
@@ -147,6 +220,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                  model,
                  callbacks=[],
                  train_meters={}, val_meters={},
+                 hparams={},
                  logging_frecuency=1,
                  prefixes=('', ''),
                  validation_granularity=ValidationGranularity.AT_EPOCH):
@@ -157,10 +231,14 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                 Module to train
             callbacks (:class:`torchero.callbacks.Callback`):
                 Pluggable callbacks for epoch/batch events.
-            train_meters (list of :class: `torchero.meters.Meter'):
+            train_meters (list or dict of :class: `torchero.meters.Meter'):
                 Training meters
-            val_meters (list of :class: `torchero.meters.Meter'):
+            val_meters (list dict of :class: `torchero.meters.Meter'):
                 Validation meters
+            hparams (dict of hyperparameters):
+                Dictionary <name,hparam> of hyperparameters. Each value
+                can be a fixed value, a lambda function with only parameter to pass the trainer,
+                or a instance of `torchero.hparams.OptimP`
             logging_frecuency (int):
                 Frecuency of log to monitor train/validation
             prefixes (tuple, list):
@@ -200,6 +278,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
             val_meters = parse_meters(val_meters)
 
         self.train_meters = train_meters
+        self._hparams = self._create_hparams(dict(hparams))
         self.validator = self.create_validator(val_meters)
 
         self._raised_stop_training = False
@@ -395,7 +474,15 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     @property
     def val_meters(self):
+        """ Returns the list of Meters for the validation set
+        """
         return self.validator.meters
+
+    @property
+    def hparams(self):
+        """ Returns a dictionary of <hyper-parameter name, hyper-parameter value
+        """
+        return self._hparams
 
     def evaluate(self, dataloader, metrics=None):
         if metrics is not None:
@@ -424,3 +511,16 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     def add_callback(self, callback):
         self._callbacks.add(callback)
+
+    def _create_hparams(self, hparams):
+        result = {}
+        for param_name, obj in hparams.items():
+            if isinstance(obj, torchero.hparams.P):
+                result[param_name] = obj
+            elif hasattr(obj, '__call__'):
+                result[param_name] = torchero.hparams.LambdaP(obj)
+            else:
+                result[param_name] = torchero.hparams.FixedP(obj)
+            result[param_name].accept(self)
+        result = ParamsDict(result)
+        return result
