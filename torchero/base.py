@@ -405,10 +405,8 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
                 self.step % self.logging_frecuency == 0)
 
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
+        self.reset_meters()
         for self.step, batch in enumerate(train_dataloader):
-            if self.log_started():
-                self.reset_meters()
-
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
                 batch = (batch, )
