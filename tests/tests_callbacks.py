@@ -33,10 +33,10 @@ class HistoryCallbackTests(unittest.TestCase):
         self.trainer.train(self.train_dl, valid_dataloader=self.valid_dl, epochs=1)
 
         expected_registry = [{'epoch': 0, 'step': 5, 't_c': 2.0, 'v_c': 4.5},
-                             {'epoch': 0, 'step': 10, 't_c': 7.0, 'v_c': 4.5}]
+                             {'epoch': 0, 'step': 10, 't_c': 4.5, 'v_c': 4.5}]
 
         self.assertEqual(list(self.trainer.history), expected_registry)
-        self.assertEqual(self.trainer.metrics, {'t_c': 7.0, 'v_c': 4.5})
+        self.assertEqual(self.trainer.metrics, {'t_c': 4.5, 'v_c': 4.5})
 
     def test_export_to_dataframe(self):
         self.trainer.train(self.train_dl, valid_dataloader=self.valid_dl, epochs=2)
@@ -52,13 +52,13 @@ class HistoryCallbackTests(unittest.TestCase):
         self.assertIsInstance(df_history, pd.DataFrame)
         df_expected = pd.DataFrame({'epoch': [0, 0, 1, 1],
                                     'step':  [5, 10, 15, 20],
-                                    't_c':   [2.0, 7.0, 2.0, 7.0],
+                                    't_c':   [2.0, 4.5, 2.0, 4.5],
                                     'v_c':   [4.5, 4.5, 4.5, 4.5]})
         pd.testing.assert_frame_equal(df_history, df_expected)
 
         df_history = self.trainer.history.to_dataframe(level='epoch')
         df_expected = pd.DataFrame({'epoch': [0, 1],
-                                    't_c':   [7.0, 7.0],
+                                    't_c':   [4.5, 4.5],
                                     'v_c':   [4.5, 4.5]})
         pd.testing.assert_frame_equal(df_history, df_expected)
 
@@ -149,13 +149,13 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(len(lines), 3)
             self.assertEqual(lines[0], 'epoch,step,c\n')
             self.assertEqual(lines[1], '0,5,2.0\n')
-            self.assertEqual(lines[2], '0,10,7.0')
+            self.assertEqual(lines[2], '0,10,4.5')
 
         with open(self.stats_filename_epoch, 'r') as f:
             lines = f.readlines()
             self.assertEqual(len(lines), 2)
             self.assertEqual(lines[0], 'epoch,c\n')
-            self.assertEqual(lines[1], '1,7.0')
+            self.assertEqual(lines[1], '1,4.5')
 
 
 
@@ -180,16 +180,16 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(len(lines), 5)
             self.assertEqual(lines[0], 'epoch,step,c\n')
             self.assertEqual(lines[1], '0,5,2.0\n')
-            self.assertEqual(lines[2], '0,10,7.0\n')
+            self.assertEqual(lines[2], '0,10,4.5\n')
             self.assertEqual(lines[3], '1,15,2.0\n')
-            self.assertEqual(lines[4], '1,20,7.0')
+            self.assertEqual(lines[4], '1,20,4.5')
 
         with open(self.stats_filename_epoch, 'r') as f:
             lines = f.readlines()
             self.assertEqual(len(lines), 3)
             self.assertEqual(lines[0], 'epoch,c\n')
-            self.assertEqual(lines[1], '1,7.0\n')
-            self.assertEqual(lines[2], '2,7.0')
+            self.assertEqual(lines[1], '1,4.5\n')
+            self.assertEqual(lines[2], '2,4.5')
 
     def test_csv_exporter_exports_only_selected_columns(self):
         self.load_arange_dataset()
@@ -227,7 +227,7 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(len(lines), 3)
             self.assertEqual(lines[0], 'epoch,v,c\n')
             self.assertEqual(lines[1], '0,,2.0\n')
-            self.assertEqual(lines[2], '0,,7.0')
+            self.assertEqual(lines[2], '0,,4.5')
 
     def tearDown(self):
         shutil.rmtree(self.base_tree)

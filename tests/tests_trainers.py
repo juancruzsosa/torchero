@@ -29,46 +29,6 @@ class TrainerTests(unittest.TestCase):
                                                 torch.zeros(end-start, 1).float())
         self.validation_dataloader = DataLoader(self.validation_dataset, batch_size=batch_size)
 
-    def test_train_val_loss_are_calculated_after_every_log_event(self):
-        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
-        train_meters = trainer.train_meters
-        val_meters = trainer.val_meters
-        meters = trainer.meters
-
-        self.assertListEqual(sorted(train_meters.keys()), ['loss'])
-        self.assertListEqual(sorted(meters.keys()), ['train_loss', 'val_loss'])
-
-        self.assertIsInstance(meters['train_loss'], LossMeter)
-        self.assertIsInstance(meters['val_loss'], LossMeter)
-        self.assertEqual(meters['train_loss'].criterion, self.criterion)
-        self.assertEqual(meters['val_loss'].criterion, self.criterion)
-        self.assertIs(train_meters['loss'], meters['train_loss'])
-        self.assertIs(val_meters['loss'], meters['val_loss'])
-
-        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=1)
-
-        self.assertEqual(len(trainer.history), 2)
-
-        for i in range(2):
-            keys = ('epoch', 'step', 'train_loss', 'val_loss')
-            self.assertEqual(len(trainer.history[i]), len(keys))
-            for name in keys:
-                self.assertIn(name, trainer.history[i].keys())
-
-        self.assertEqual(trainer.history[0]['epoch'], 0)
-        self.assertEqual(trainer.history[0]['step'], 1)
-        # first train batch loss is calculated before weights update
-        self.assertAlmostEqual(trainer.history[0]['train_loss'], sum(abs(self.w*i) for i in range(1, 3))/2)
-        # Validation loss is calculated over the entire valid dataset after weights update
-        self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
-        self.assertAlmostEqual(trainer.history[0]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)
-
-        self.assertEqual(trainer.history[1]['epoch'], 0)
-        self.assertEqual(trainer.history[1]['step'], 2)
-        self.assertAlmostEqual(trainer.history[1]['train_loss'], sum(abs(self.w*i) for i in range(3, 5))/2)
-        self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
-        self.assertAlmostEqual(trainer.history[1]['val_loss'], sum(abs(self.w*i) for i in range(0,10))/10)
-        self.assertAlmostEqual(self.model.weight.data[0][0], self.w)
 
     def test_trainer_with_acc_meter_argument_measure_train_and_valid_accuracy_with_same_metric(self):
         acc_meter = MSE()
@@ -93,10 +53,12 @@ class TrainerTests(unittest.TestCase):
             for name in keys:
                 self.assertIn(name, trainer.history[i].keys())
 
-        self.assertAlmostEqual(trainer.history[0]['train_acc'], sum((self.w*i)**2 for i in range(1, 3))/2)
+        first_loss = sum((self.w*i)**2 for i in range(1, 3))
+        self.assertAlmostEqual(trainer.history[0]['train_acc'], first_loss/2)
         self.w -= (sign(self.w*1-0)*1 + sign(self.w*2-0)*2)/2.0
         self.assertAlmostEqual(trainer.history[0]['val_acc'], sum((self.w*i)**2 for i in range(0,10))/10)
-        self.assertAlmostEqual(trainer.history[1]['train_acc'], sum((self.w*i)**2 for i in range(3, 5))/2)
+        second_loss = sum((self.w*i)**2 for i in range(3, 5))
+        self.assertAlmostEqual(trainer.history[1]['train_acc'], (first_loss + second_loss)/4)
         self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
         self.assertAlmostEqual(trainer.history[1]['val_acc'], sum((self.w*i)**2 for i in range(0,10))/10)
 
@@ -177,14 +139,16 @@ class UnsupervisedTrainerTests(unittest.TestCase):
         self.assertEqual(trainer.history[0]['epoch'], 0)
         self.assertEqual(trainer.history[0]['step'], 1)
         # first train batch loss is calculated before weights update
-        self.assertAlmostEqual(trainer.history[0]['train_loss'], sum(abs(self.w*i -  i) for i in range(1, 3))/2)
+        first_loss = sum(abs(self.w*i -  i) for i in range(1, 3))
+        self.assertAlmostEqual(trainer.history[0]['train_loss'], first_loss/2)
         # Validation loss is calculated over the entire valid dataset after weights update
         self.w -= (sign(self.w*1-1)*1 + sign(self.w*2-2)*2)/2.0
         self.assertAlmostEqual(trainer.history[0]['val_loss'], sum(abs(self.w*i - i) for i in range(0,10))/10)
 
+        second_loss = sum(abs(self.w*i -  i) for i in range(3, 5))
         self.assertEqual(trainer.history[1]['epoch'], 0)
         self.assertEqual(trainer.history[1]['step'], 2)
-        self.assertAlmostEqual(trainer.history[1]['train_loss'], sum(abs(self.w*i - i) for i in range(3, 5))/2)
+        self.assertAlmostEqual(trainer.history[1]['train_loss'], (first_loss + second_loss)/4)
         self.w -= (sign(self.w*3-3)*3 + sign(self.w*4-4)*4)/2.0
         self.assertAlmostEqual(trainer.history[1]['val_loss'], sum(abs(self.w*i - i) for i in range(0,10))/10)
         self.assertAlmostEqual(self.model.weight.data[0][0], self.w)
