@@ -33,10 +33,13 @@ class DeviceMixin(object):
         Arguments:
             device (str or torch.device): torch.device or Cuda device name
         """
-        device = torch.device(device)
-        if (device.type == 'cuda') and (not torch.cuda.is_available()):
-            raise RuntimeError("no CUDA-capable device is detected")
-        self._device = device
+        if device is None:
+            self._device = None
+        else:
+            device = torch.device(device)
+            if (device.type == 'cuda') and (not torch.cuda.is_available()):
+                raise RuntimeError("no CUDA-capable device is detected")
+            self._device = device
 
     def cpu(self):
         """ Turn model to cpu

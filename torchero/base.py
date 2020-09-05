@@ -362,6 +362,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         else:
             metrics = self.val_meters
         validator = self.create_validator(metrics)
+        validator.to(self._device)
         results = validator.validate(dataloader)
         self.model.train(mode=False)
         return results
