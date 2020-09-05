@@ -90,7 +90,17 @@ meters_by_name = {
     'f1_wl': lambda: meters.F1Score(with_logits=True),
     'f2_wl': lambda: meters.F2Score(with_logits=True),
     'specificity_wl': lambda: meters.F2Score(with_logits=True),
-    'npv_wl': lambda: meters.NPV(with_logits=True)
+    'npv_wl': lambda: meters.NPV(with_logits=True),
+
+    'batches/s': lambda: meters.BatchSpeed(time_unit='second'),
+    'it/s': lambda: meters.IterSpeed(time_unit='second'),
+    'sec/batch': lambda: meters.BatchPace(time_unit='second'),
+    'sec/it': lambda: meters.IterPace(time_unit='second'),
+
+    'batches/min': lambda: meters.BatchSpeed(time_unit='minute'),
+    'it/min': lambda: meters.IterSpeed(time_unit='minute'),
+    'min/batch': lambda: meters.BatchPace(time_unit='minute'),
+    'min/it': lambda: meters.IterPace(time_unit='minute'),
 }
 
 
@@ -133,3 +143,20 @@ def parse_meters(meters):
         return {parse_name(v): parse(v) for v in meters}
     else:
         raise Exception("Expected iterable meters")
+
+time_units = {'hour': 60*60,
+              'hours': 60*60,
+              'minute': 60,
+              'minutes': 60,
+              'second': 1,
+              'seconds': 1}
+
+def parse_time_unit(time_unit):
+    if isinstance(time_unit, (int, float)):
+        return time_unit
+    elif isinstance(time_unit, str) and time_unit in time_units:
+        return time_units[time_unit]
+    elif isinstance(time_unit, str):
+        raise ValueError("Invalid time_unit reference!")
+    else:
+        raise TypeError("Invalid type for time_unit")
