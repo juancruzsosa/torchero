@@ -19,8 +19,7 @@ class SupervisedValidator(BatchValidator):
         else:
             output = self.model(x)
 
-        for meter in self.meters.values():
-            meter.measure(output.data, y.data)
+        self._metrics.measure(output.data, y.data)
 
 
 class SupervisedTrainer(BatchTrainer):
@@ -101,7 +100,5 @@ class SupervisedTrainer(BatchTrainer):
         self.optimizer.step()
 
         self.model.train(mode=False)
-        with torch.no_grad():
-            for meter in self.train_meters.values():
-                meter.measure(output.data, y.data)
+        self._train_metrics.measure(output.data, y.data)
         self.model.train(mode=True)

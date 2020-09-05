@@ -5,10 +5,9 @@ import torch
 
 import torchero.hparams
 from torchero.callbacks import Callback, CallbackContainer, History
-from torchero.meters import ZeroMeasurementsError
 from torchero.utils.defaults import parse_meters
 from torchero.utils.mixins import DeviceMixin
-from torchero.utils.collections import ParamsDict
+from torchero.utils.collections import MetricsDict, ParamsDict
 
 class ValidationGranularity(Enum):
     AT_LOG = 'log'
@@ -29,14 +28,11 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
     """ Abstract class for all validation classes that works with batched inputs.
         All those validators should subclass this class
     """
-    METER_ALREADY_EXISTS_MESSAGE = 'Meter {name} already exists as train meter'
 
     def __init__(self, model, meters):
         super(BatchValidator, self).__init__()
         self.model = model
-        meters = parse_meters(meters)
-        self._meters = meters
-        self._metrics = {}
+        self._metrics = MetricsDict(parse_meters(meters))
 
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):
@@ -55,28 +51,18 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         pass
 
     def meters_names(self):
-        return self._meters.keys()
+        return self.meters.keys()
 
     @property
     def meters(self):
-        return self._meters
+        return self._metrics.meters
 
-    def _compile_metrics(self):
-        for metric_name, meter in self._meters.items():
-            try:
-                value = meter.value()
-                self._metrics[metric_name] = value
-            except ZeroMeasurementsError:
-                continue
-
-    def _reset_meters(self):
-        self._metrics = {}
-
-        for meter in self._meters.values():
-            meter.reset()
+    @property
+    def metrics(self):
+        return self._metrics
 
     def validate(self, valid_dataloader):
-        self._reset_meters()
+        self._metrics.reset()
 
         if not valid_dataloader:
             return self._metrics
@@ -90,15 +76,11 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
                 self.validate_batch(*batch)
         self.model.train(mode=True)
 
-        self._compile_metrics()
-        return self._metrics
+        self._metrics.compile()
+        return dict(self._metrics)
 
     def add_named_meter(self, name, meter):
-        if name in self._meters:
-            raise Exception(self.METER_ALREADY_EXISTS_MESSAGE
-                                .format(name=name))
-
-        self._meters[name] = meter
+        self._metrics.add_metric(name, meter)
 
 
 class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
@@ -167,13 +149,13 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
                 epoch)
         """
         if logging_frecuency < 0:
-            raise Exception(self.INVALID_LOGGING_FRECUENCY_MESSAGE
-                                .format(logging_frecuency=logging_frecuency))
+            raise ValueError(self.INVALID_LOGGING_FRECUENCY_MESSAGE
+                                 .format(logging_frecuency=logging_frecuency))
 
         if not isinstance(validation_granularity, ValidationGranularity) \
                 or validation_granularity not in ValidationGranularity:
-            raise Exception(self.INVALID_VALIDATION_GRANULARITY_MESSAGE
-                                .format(mode=validation_granularity))
+            raise ValueError(self.INVALID_VALIDATION_GRANULARITY_MESSAGE
+                                 .format(mode=validation_granularity))
 
         super(BatchTrainer, self).__init__()
 
@@ -184,8 +166,6 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self.model = model
         self._epochs_trained = 0
         self._steps_trained = 0
-        self._train_metrics = {}
-        self._val_metrics = {}
         self._prefixes = prefixes
 
         train_meters = parse_meters(train_meters)
@@ -196,7 +176,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         else:
             val_meters = parse_meters(val_meters)
 
-        self.train_meters = train_meters
+        self._train_metrics = MetricsDict(train_meters)
         self._hparams = self._create_hparams(dict(hparams))
         self.validator = self.create_validator(val_meters)
 
@@ -229,7 +209,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @property
     def meters(self):
-        return {**self.prepend_name_dict(self._prefixes[0], self.train_meters),
+        return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics.meters),
                 **self.prepend_name_dict(self._prefixes[1], self.validator.meters)}
 
     @property
@@ -241,7 +221,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             `meters` that made at least one measure
         """
         return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics),
-                **self.prepend_name_dict(self._prefixes[1], self._val_metrics)}
+                **self.prepend_name_dict(self._prefixes[1], self.validator.metrics)}
 
     @property
     def train_metrics(self):
@@ -250,16 +230,6 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
     @property
     def val_metrics(self):
         return dict(self._val_metrics)
-
-    def _compile_train_metrics(self):
-        self._train_metrics = {}
-
-        for metric_name, meter in self.train_meters.items():
-            try:
-                value = meter.value()
-                self._train_metrics[metric_name] = value
-            except ZeroMeasurementsError:
-                continue
 
     @property
     def epochs_trained(self):
@@ -295,13 +265,6 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         """
         pass
 
-    def reset_meters(self):
-        self._train_metrics = {}
-        self._val_metrics = {}
-        for meter in self.train_meters.values():
-            meter.reset()
-
-
     def log(self):
         self._callbacks.on_log()
 
@@ -310,7 +273,9 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
                 self.step % self.logging_frecuency == 0)
 
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
-        self.reset_meters()
+        self._train_metrics.reset()
+        self.validator.metrics.reset()
+
         for self.step, batch in enumerate(train_dataloader):
             # convert to 1-d tuple if batch was a tensor instead of a tuple
             if torch.is_tensor(batch):
@@ -321,7 +286,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             self._steps_trained += 1
 
             if self._is_time_to_log():
-                self._compile_train_metrics()
+                self._train_metrics.compile()
                 self.log()
 
         self._epochs_trained += 1
@@ -373,7 +338,11 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
                  or self.step % log_frec == log_frec - 1))
 
     def _validate(self):
-        self._val_metrics = self.validator.validate(self.valid_dataloader)
+        self.validator.validate(self.valid_dataloader)
+
+    @property
+    def train_meters(self):
+        return self._train_metrics.meters
 
     @property
     def val_meters(self):
@@ -401,11 +370,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self._raised_stop_training = True
 
     def add_named_train_meter(self, name, meter):
-        if name in self.train_meters:
-            raise Exception(self.METER_ALREADY_EXISTS_MESSAGE
-                                .format(name=name))
-
-        self.train_meters[name] = meter
+        self._train_metrics.add_metric(name, meter)
 
     def add_named_val_meter(self, name, meter):
         self.validator.add_named_meter(name, meter)
