@@ -15,14 +15,12 @@ from torchero.base import ValidationGranularity
 class DummyModel(nn.Module):
     def __init__(self):
         super(DummyModel, self).__init__()
+        self.dummy = nn.Linear(1, 1)
         self.train(mode=True)
-        self.is_cuda = False
 
-    def cuda(self, device=None):
-        self.is_cuda = True
-
-    def cpu(self):
-        self.is_cuda = False
+    @property
+    def is_cuda(self):
+        return next(iter(self.parameters())).device.type == 'cuda'
 
     def forward(self, x):
         return x

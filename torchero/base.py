@@ -10,7 +10,7 @@ import torchero.hparams
 from torchero.callbacks import Callback, CallbackContainer, History
 from torchero.meters import ZeroMeasurementsError
 from torchero.utils.defaults import parse_meters
-from torchero.utils.mixins import CudaMixin
+from torchero.utils.mixins import DeviceMixin
 
 
 class ValidationGranularity(Enum):
@@ -100,7 +100,7 @@ class ParamsDict(MutableMapping):
 
 
 
-class BatchValidator(CudaMixin, metaclass=ABCMeta):
+class BatchValidator(DeviceMixin, metaclass=ABCMeta):
     """ Abstract class for all validation classes that works with batched inputs.
         All those validators should subclass this class
     """
@@ -115,7 +115,7 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
 
     def _prepare_tensor(self, x):
         if torch.is_tensor(x):
-            return Variable(self._tensor_to_cuda(x))
+            return Variable(self._convert_tensor(x))
         else:
             return x
 
@@ -182,7 +182,7 @@ class BatchValidator(CudaMixin, metaclass=ABCMeta):
         self._meters[name] = meter
 
 
-class BatchTrainer(CudaMixin, metaclass=ABCMeta):
+class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
         All those trainers should subclass this class
     """
@@ -298,19 +298,10 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
     def history(self):
         return self._history_callback.registry
 
-    def cuda(self, device=None):
-        """ Turn model to cuda
-        """
-        super(BatchTrainer, self).cuda(device=device)
-        self.model.cuda(device=device)
-        self.validator.cuda(device=device)
-
-    def cpu(self):
-        """ Turn model to cpu
-        """
-        super(BatchTrainer, self).cpu()
-        self.model.cpu()
-        self.validator.cpu()
+    def to(self, device):
+        super(BatchTrainer, self).to(device)
+        self.model.to(self._device)
+        self.validator.to(self._device)
 
     def meters_names(self):
         """ Returns the meters names
@@ -393,7 +384,7 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
 
     def _prepare_tensor(self, x):
         if torch.is_tensor(x):
-            return Variable(self._tensor_to_cuda(x))
+            return Variable(self._convert_tensor(x))
         else:
             return x
 
@@ -488,8 +479,6 @@ class BatchTrainer(CudaMixin, metaclass=ABCMeta):
         else:
             metrics = self.val_meters
         validator = self.create_validator(metrics)
-        if next(self.model.parameters()).is_cuda:
-            validator.cuda()
         results = validator.validate(dataloader)
         self.model.train(mode=False)
         return results
