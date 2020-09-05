@@ -1,6 +1,8 @@
 import math
 from .common import *
 from torchero.meters.aggregators import batch, scale
+from torchero.utils.defaults import parse_meters
+from time import sleep
 
 class BaseMetricsTests(unittest.TestCase):
     def measure_once(self, meter, batchs):
@@ -540,3 +542,54 @@ class BinaryScores(BaseMetricsTests):
     def test_1_batch_f1_score(self):
         meter = meters.F1Score()
         self.assertMeasureAlmostEqual(meter, self.batch_1, 2 * (2/4 * 2/3) / (2/4 + 2/3))
+
+class SpeedMetersTests(BaseMetricsTests):
+    def test_default_mode(self):
+        meters = parse_meters({'bps': 'batches/s',
+                               'spb': 'sec/batch',
+                               'ips': 'it/s',
+                               'spi': 'sec/it',
+
+                               'bpm': 'batches/min',
+                               'mpb': 'min/batch',
+                               'ipm': 'it/min',
+                               'mpi': 'min/it',
+                               })
+        for meter in ['bps', 'bpm', 'ips', 'ipm']:
+            self.assertEqual(meters[meter].DEFAULT_MODE, 'max')
+        for meter in ['spb', 'mpb', 'spi', 'mpi']:
+            self.assertEqual(meters[meter].DEFAULT_MODE, 'min')
+
+    def test_batch_speed_is_less_than_sleep_time(self):
+        meters = parse_meters({'bps': 'batches/s',
+                               'spb': 'sec/batch',
+                               'ips': 'it/s',
+                               'spi': 'sec/it',
+
+                               'bpm': 'batches/min',
+                               'mpb': 'min/batch',
+                               'ipm': 'it/min',
+                               'mpi': 'min/it',
+                               })
+
+        for meter in meters.values():
+            meter.measure(torch.zeros(3, 5))
+        sleep(0.5)
+        for meter in meters.values():
+            meter.measure(torch.zeros(3, 5))
+        sleep(1)
+        for meter in meters.values():
+            meter.measure(torch.zeros(2, 5))
+        sleep(1.5)
+        total_time = (0.5+1+1.5)
+        total_batches = 3
+        total_it = 7
+        self.assertGreaterEqual(meters['bps'].value(), total_batches/total_time)
+        self.assertGreaterEqual(meters['bpm'].value(), total_batches/(total_time/60))
+        self.assertGreaterEqual(meters['ips'].value(), total_it/total_time)
+        self.assertGreaterEqual(meters['ipm'].value(), total_it/(total_time*60))
+
+        self.assertLessEqual(meters['spb'].value(), total_time/total_batches)
+        self.assertLessEqual(meters['mpb'].value(), (total_time/60)/total_batches)
+        self.assertLessEqual(meters['spi'].value(), total_time/total_it)
+        self.assertLessEqual(meters['mpi'].value(), (total_time/60)/total_it)
