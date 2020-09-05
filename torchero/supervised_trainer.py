@@ -14,7 +14,10 @@ class SupervisedValidator(BatchValidator):
         super(SupervisedValidator, self).__init__(model, meters)
 
     def validate_batch(self, x, y):
-        output = self.model(x)
+        if isinstance(x, (tuple, list)):
+            output = self.model(*x)
+        else:
+            output = self.model(x)
 
         for meter in self.meters.values():
             meter.measure(output.data, y.data)
@@ -87,7 +90,10 @@ class SupervisedTrainer(BatchTrainer):
 
     def update_batch(self, x, y):
         self.optimizer.zero_grad()
-        output = self.model(x)
+        if isinstance(x, (tuple, list)):
+            output = self.model(*x)
+        else:
+            output = self.model(x)
         if isinstance(self.criterion, (nn.BCEWithLogitsLoss, nn.BCELoss)):
             y = y.double()
         loss = self.criterion(output, y)

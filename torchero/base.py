@@ -4,7 +4,6 @@ from itertools import chain
 from collections.abc import MutableMapping
 
 import torch
-from torch.autograd import Variable
 
 import torchero.hparams
 from torchero.callbacks import Callback, CallbackContainer, History
@@ -113,12 +112,6 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         self._meters = meters
         self._metrics = {}
 
-    def _prepare_tensor(self, x):
-        if torch.is_tensor(x):
-            return Variable(self._convert_tensor(x))
-        else:
-            return x
-
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):
         """ Abstract method for validate model per batch
@@ -167,7 +160,7 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
             for batch in valid_dataloader:
                 if isinstance(batch, torch.Tensor):
                     batch = (batch, )
-                batch = list(map(self._prepare_tensor, batch))
+                batch = map(self._prepare_tensor, batch)
                 self.validate_batch(*batch)
         self.model.train(mode=True)
 
@@ -382,11 +375,6 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         for meter in self.train_meters.values():
             meter.reset()
 
-    def _prepare_tensor(self, x):
-        if torch.is_tensor(x):
-            return Variable(self._convert_tensor(x))
-        else:
-            return x
 
     def log(self):
         self._callbacks.on_log()

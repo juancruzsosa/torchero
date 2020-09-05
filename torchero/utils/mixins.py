@@ -1,4 +1,5 @@
 import torch
+from torch.autograd import Variable
 
 class DeviceMixin(object):
     def __init__(self):
@@ -46,3 +47,11 @@ class DeviceMixin(object):
         if (self._device is not None) and (torch.get_device(x) != self._device):
             x = x.to(self._device)
         return x
+
+    def _prepare_tensor(self, x):
+        if torch.is_tensor(x):
+            return Variable(self._convert_tensor(x))
+        elif isinstance(x, (tuple, list)):
+            return type(x)([self._prepare_tensor(t) for t in x])
+        else:
+            return x
