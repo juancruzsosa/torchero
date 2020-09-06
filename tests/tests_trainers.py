@@ -62,6 +62,25 @@ class TrainerTests(unittest.TestCase):
         self.w -= (sign(self.w*3-0)*3 + sign(self.w*4-0)*4)/2.0
         self.assertAlmostEqual(trainer.history[1]['val_acc'], sum((self.w*i)**2 for i in range(0,10))/10)
 
+    def test_column_layout(self):
+        acc_meter = MSE()
+        trainer = SupervisedTrainer(model=self.model, optimizer=self.optimizer, acc_meters={'acc': acc_meter}, criterion=self.criterion, logging_frecuency=1, validation_granularity=ValidationGranularity.AT_LOG)
+        trainer.train(self.training_dataloader, valid_dataloader=self.validation_dataloader, epochs=2)
+        col_layout = trainer.history.get_column_layout()
+        expected_layout = { (0,0): { "metrics": "train_acc",
+                                     "title": "train_acc",
+                                     "ylabel": "acc" },
+                            (0,1): { "metrics": "val_acc",
+                                     "title": "val_acc",
+                                     "ylabel": "acc" },
+                            (1,0): { "metrics": "train_loss",
+                                     "title": "train_loss",
+                                     "ylabel": "loss" },
+                            (1,1): { "metrics": "val_loss",
+                                     "title": "val_loss",
+                                     "ylabel": "loss" }}
+        self.assertEqual(col_layout, expected_layout)
+
     def test_trainer_with_val_acc_meter_argument_cant_differ_from_train_acc_meter(self):
         acc_meter = MSE()
         val_acc_meter = RMSE()
@@ -99,6 +118,23 @@ class BinaryClassificationTrainerTest(unittest.TestCase):
         self.assertNotIn('train_precision_wl', trainer.metrics.keys())
         self.assertNotIn('train_recall_wl', trainer.metrics.keys())
         self.assertNotIn('train_f1_wl', trainer.metrics.keys())
+        default_layout = trainer.history.get_default_layout()
+        expected_layout = { (0,0): { "metrics": ["train_acc", "val_acc"],
+                                     "title": "train_acc/val_acc",
+                                     "ylabel": "acc"},
+                            (0,1): { "metrics": ["train_f1", "val_f1"],
+                                     "title": "train_f1/val_f1",
+                                     "ylabel": "f1" },
+                            (1,0): { "metrics": ["train_loss","val_loss"],
+                                     "title": "train_loss/val_loss",
+                                     "ylabel": "loss" },
+                            (1,1): { "metrics": ["train_precision","val_precision"],
+                                     "title": "train_precision/val_precision",
+                                     "ylabel": "precision"},
+                            (2,0): { "metrics": ["train_recall","val_recall"],
+                                     "title": "train_recall/val_recall",
+                                     "ylabel": "recall" } }
+        self.assertEqual(default_layout, expected_layout)
         metrics = trainer.evaluate(self.val_dl)
         self.assertIn('loss', metrics)
         self.assertIn('acc', metrics)
