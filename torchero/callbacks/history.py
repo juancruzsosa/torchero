@@ -1,4 +1,6 @@
+import math
 import os
+from itertools import product, chain
 from collections import defaultdict
 from operator import itemgetter
 from torchero.callbacks.base import Callback
@@ -36,6 +38,9 @@ class HistoryManager(Callback):
 
     def __len__(self):
         return len(self.records)
+
+    def columns(self):
+        return set(chain(*map(lambda x: set(x.keys()), self.records)))
 
     def append(self, epoch, step, metrics, hparams):
         self.records.append({'epoch': epoch,
@@ -142,6 +147,95 @@ class HistoryManager(Callback):
 
         if title is not None:
             ax.set_title(str(title))
+
+    def plot(self,
+             layout='default',
+             figsize=None,
+             from_epoch=0,
+             title="Metrics",
+             smooth=0):
+        """ Plot a figure for a group of metrics
+
+        Arguments:
+            layout (str or dict): Plot layout. If a dict is passed
+            it should have one entry per cell, keys are row and cell positions
+            whereas values are a dictionary of options for that cell.
+            If string is passed, options are:
+                *) 'default' is a layout that has one cell per metric
+                comparing train/validation in the same plot
+                *) 'columns': has a column per set (train/validation).
+            figsize (tuple or int): Matplotlib figure size.
+            from_epoch (int): Start epoch for all plot
+            title (str): Plot header's title
+            smooth (float): Amount of smoothing for all lineplots
+
+        Example:
+            For a Figure with losses (left plot) and accuracies (right plot)
+
+            >>> layout = {
+                (0, 0): {'metrics': ['train_loss', 'val_loss'], 'title': 'Losses', 'smooth': 0.5, 'ylabel': 'loss'},
+                (0, 1): {'metrics': ['train_acc', 'val_acc'], 'title': 'Accuracy', 'ylabel': 'loss'}
+            }
+            >>> trainer.history.plot(layout, title="Training Results", figsize=(20, 10))
+        """
+
+        import matplotlib.pyplot as plt
+
+        if isinstance(layout, str):
+            if layout == 'default':
+                layout = self.get_default_layout()
+            elif layout == 'column':
+                layout = self.get_column_layout()
+            else:
+                raise ValueError("Unknown layout '{}'. Use 'default', 'columns' or a dictionary".format(layout))
+
+        nrows = max(map(lambda x: x[0], layout.keys()))+1
+        ncols = max(map(lambda x: x[1], layout.keys()))+1
+
+        if figsize is None:
+            figsize = (15, 10 * nrows / ncols)
+        fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
+        axs = axs.reshape((nrows, ncols))
+
+        for (i, j), item in layout.items():
+            self.epoch_plot(item['metrics'],
+                            title=item.get('title', ''),
+                            ylabel=item.get('ylabel', ''),
+                            ax=axs[i][j],
+                            from_epoch=item.get('from_epoch', from_epoch),
+                            smooth=item.get('smooth', smooth))
+
+        if title is not None:
+            plt.suptitle(title)
+        return fig, axs
+
+    def get_default_layout(self):
+        cols = self.columns()-{'epoch', 'step'}
+        suffixes = set(x.split('_', maxsplit=1)[1] for x in cols)
+        suffixes = [(s, sorted([c for c in cols if c.endswith(s)])) for s in suffixes]
+        suffixes = sorted(suffixes, key=lambda x: x[0])
+        n = len(suffixes)
+        nrows = math.ceil(math.sqrt(n))
+        ncols = math.ceil(n / nrows)
+        indices = product(range(nrows), range(ncols))
+        layout = {(i, j): {'metrics': cols,
+                           'title': '/'.join(cols),
+                           'ylabel': title}
+                  for (i, j), (title, cols) in zip(indices, suffixes)}
+
+        return layout
+
+    def get_column_layout(self):
+        cols = self.columns()-{'epoch', 'step'}
+        prefixes = set(x.split('_', maxsplit=1)[0] for x in cols)
+        prefixes = [(p, sorted([c for c in cols if c.startswith(p)])) for p in prefixes]
+        prefixes = sorted(prefixes, key=lambda x: x[0])
+
+        layout = {(i, j): {'metrics': col, 'title': col, 'ylabel': col[len(p)+1:]}
+                    for j, (p, cols) in enumerate(prefixes)
+                        for i, col in enumerate(cols)}
+        return layout
+
 
     def __str__(self):
         return str(os.linesep.join(map(str, self.records)))
