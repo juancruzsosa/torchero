@@ -92,7 +92,7 @@ class HistoryManager(Callback):
         ax.plot(list(x), list(y), label=monitor)
         ax.legend()
 
-    def epoch_plot(self, monitor, from_epoch=0, ax=None, title=None, smooth=0):
+    def epoch_plot(self, monitor, from_epoch=0, ax=None, title=None, ylabel=None, smooth=0):
         """ Plot monitor history values across epochs
 
         Arguments:
@@ -137,6 +137,8 @@ class HistoryManager(Callback):
         ax.legend()
         ax.grid(axis='both')
         ax.set_xlabel("epochs")
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
 
         if title is not None:
             ax.set_title(str(title))
