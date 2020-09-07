@@ -32,3 +32,16 @@ class Logger(Callback):
               "{meters}".format(trainer=self.trainer,
                                 meters=meters,
                                 separator=self.separator))
+
+    def __repr__(self):
+        monitors_repr = ""
+        if self.monitors is not None:
+            monitors_repr = 'monitors={}'.format(repr(self.monitors))
+        hparams_repr = ""
+        if self.hparams is not None:
+            hparams_repr = 'hparams={}'.format(repr(self.hparams))
+        return "{cls}(separator={sep}{monitors}{hparams})".format(
+            cls=self.__class__.__name__,
+            monitors=monitors_repr,
+            hparams=hparams_repr
+        )

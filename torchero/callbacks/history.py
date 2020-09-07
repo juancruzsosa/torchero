@@ -20,6 +20,11 @@ class History(Callback):
                              self.trainer.metrics,
                              self.trainer.hparams)
 
+    def __repr__(self):
+        return "{cls}()".format(
+            cls=self.__class__.__name__
+        )
+
 
 class HistoryManager(Callback):
     UNRECOGNIZED_LEVEL_MESSAGE = (

@@ -102,3 +102,24 @@ class SupervisedTrainer(BatchTrainer):
         self.model.train(mode=False)
         self._train_metrics.measure(output.data, y.data)
         self.model.train(mode=True)
+
+    def __repr__(self):
+        return "{cls}(model={model},\n\
+    criterion={criterion},\n\
+    optimizer={optimizer},\n\
+    callbacks={callbacks},\n\
+    acc_meters={train_meters},\n\
+    val_acc_meters={val_meters},\n\
+    hparams={hparams},\n\
+    logging_frecuency={logging_frecuency},\n\
+    prefixes={prefixes})".format(
+            cls=self.__class__.__name__,
+            model=repr(self.model),
+            criterion=repr(self.criterion),
+            optimizer=repr(self.optimizer),
+            callbacks=repr(self._callbacks),
+            train_meters=repr(self._train_metrics.meters),
+            val_meters=repr(self.validator.meters),
+            hparams=repr(self._hparams),
+            logging_frecuency=repr(self.logging_frecuency),
+            prefixes=repr(self._prefixes))

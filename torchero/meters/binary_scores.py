@@ -52,6 +52,13 @@ class BinaryAccuracy(BatchMeter):
         if not ((b == 0) | (b == 1)).all():
             raise ValueError(self.INVALID_TENSOR_CONTENT_MESSAGE)
 
+    def __repr__(self):
+        return "{cls}(threshold={th}, aggregator={agg})".format(
+            cls=self.__class__.__name__,
+            th=repr(self.threshold),
+            agg=repr(self.aggregator)
+        )
+
 
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
@@ -67,6 +74,13 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
         output = self.activation(output)
         return super(BinaryWithLogitsAccuracy, self)._get_result(output,
                                                                  target)
+    def __repr__(self):
+        return "{cls}(threshold={th}, aggregator={agg}, activation={act})".format(
+            cls=self.__class__.__name__,
+            th=repr(self.threshold),
+            agg=repr(self.aggregator),
+            act=repr(self.activation)
+        )
 
 
 class TPMeter(BaseMeter):
@@ -149,6 +163,14 @@ class TPMeter(BaseMeter):
 
     def value(self):
         return (self.tp, self.tn, self.fp, self.fn)
+
+    def __repr__(self):
+        return "{cls}(threshold={th}, with_logits={wl}, activation={act})".format(
+            cls=self.__class__.__name__,
+            th=repr(self.threshold),
+            wl=repr(self.with_logits),
+            act=repr(self.activation)
+        )
 
 
 class Recall(TPMeter):

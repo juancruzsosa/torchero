@@ -25,6 +25,9 @@ class HistoryCallbackTests(unittest.TestCase):
                                    update_batch_fn=update_batch,
                                    valid_batch_fn=validate_batch)
 
+    def test_repr(self):
+        self.assertEqual(repr(History()), "History()")
+
     def test_history_callback_register_every_training_stat(self):
         self.assertEqual(self.trainer.metrics, {})
 
@@ -229,6 +232,18 @@ class CSVExporterTests(unittest.TestCase):
             self.assertEqual(lines[1], '0,,2.0\n')
             self.assertEqual(lines[2], '0,,4.5')
 
+    def test_repr(self):
+        self.assertEqual(repr(CSVLogger(output='stats.csv',
+                                        append=False,
+                                        level='epoch')),
+                         "CSVLogger(output='stats.csv', append=False, level='epoch')")
+        self.assertEqual(repr(CSVLogger(output='stats.csv',
+                                        append=True,
+                                        level='step',
+                                        columns=['train_acc'],
+                                        hparams_columns=['lr'])),
+                         "CSVLogger(output='stats.csv', append=True, level='step', columns=['train_acc'], hparams_columns=['lr'])")
+
     def tearDown(self):
         shutil.rmtree(self.base_tree)
 
@@ -258,6 +273,12 @@ class ProgbarTests(unittest.TestCase):
         self.trainer.train(train_dl, epochs=2)
         self.assertEqual(self.callback.epoch_tqdm.unit, 'epoch')
         self.assertEqual(self.callback.epoch_tqdm.total, 2)
+
+    def test_repr(self):
+        self.assertEqual(repr(ProgbarLogger(ascii=True, notebook=False)),
+                         'ProgbarLogger(ascii=True, notebook=False)')
+        self.assertEqual(repr(ProgbarLogger(ascii=False, notebook=True, monitors=['train_acc'])),
+                         'ProgbarLogger(ascii=False, notebook=True, monitors=[\'train_acc\'])')
 
 
 class CheckpointTests(unittest.TestCase):
@@ -567,6 +588,10 @@ class EarlyStoppingTests(unittest.TestCase):
                                mode=mode,
                                patience=patience,
                                min_delta=min_delta)
+
+    def test_repr(self):
+        self.assertEqual(repr(EarlyStopping(monitor='train_acc', min_delta=0.1, patience=1, mode='min')),
+                         "EarlyStopping(monitor='train_acc', min_delta=0.1, patience=1, mode='min')")
 
     @staticmethod
     def meter_from_list(measure_list, meter_name):

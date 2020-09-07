@@ -33,3 +33,6 @@ class CallbackContainer(Callback):
 
     def on_train_end(self):
         self.signal('on_train_end')
+
+    def __repr__(self):
+        return repr(list(self.callbacks))

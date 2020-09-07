@@ -86,3 +86,12 @@ class EarlyStopping(Callback):
     @property
     def monitor(self):
         return self._monitor
+
+    def __repr__(self):
+        return "{cls}(monitor={monitor}, min_delta={min_delta}, patience={patience}, mode={mode})".format(
+            cls=self.__class__.__name__,
+            monitor=repr(self._monitor),
+            mode=repr(self._mode),
+            patience=repr(self._patience),
+            min_delta=repr(self._min_delta)
+        )

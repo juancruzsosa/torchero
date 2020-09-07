@@ -97,3 +97,11 @@ class ModelCheckpoint(Callback):
 
             torch.save(self.trainer.model.state_dict(), model_file)
             self.outperform = True
+
+    def __repr__(self):
+        return "{cls}(path={path}, monitor={monitor}, mode={mode})".format(
+            cls=self.__class__.__name__,
+            mode=repr(self._mode),
+            monitor=repr(self.monitor_name),
+            path=repr(self.path)
+        )

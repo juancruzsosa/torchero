@@ -17,6 +17,9 @@ class Scale(Aggregator):
     def final_value(self, value):
         return self.aggregator.final_value(value) * self.scale
 
+    def __repr__(self):
+        return "{}*{}".format(repr(self.aggregator), repr(self.scale))
+
 
 def percentage(aggregator):
     return Scale(aggregator, scale=100.0)

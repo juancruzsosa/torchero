@@ -28,3 +28,6 @@ class Aggregator(object, metaclass=ABCMeta):
         if self._num_samples == 0:
             raise ZeroMeasurementsError()
         return result
+
+    def __repr__(self):
+        return "{}()".format(self.__class__.__name__)

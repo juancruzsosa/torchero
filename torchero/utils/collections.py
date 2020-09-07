@@ -165,4 +165,4 @@ class ParamsDict(MutableMapping):
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__,
-                               ", ".join(map(lambda x: "{}={}".format(x[0], repr(x[1])), self)))
+                               ", ".join(map(lambda x: "{}={}".format(x[0], repr(x[1])), self.items())))

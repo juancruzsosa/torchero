@@ -35,3 +35,6 @@ class BaseMeter(object, metaclass=ABCMeta):
 
                 self.measure(model(x.cuda()), y_hat.cuda())
         return self.value()
+
+    def __repr__(self):
+        return "{}()".format(self.__class__.__name__)

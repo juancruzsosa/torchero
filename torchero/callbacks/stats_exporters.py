@@ -86,3 +86,19 @@ class CSVLogger(Callback):
 
     def on_train_end(self):
         self.file_handle.close()
+
+    def __repr__(self):
+        columns = ""
+        if self.columns is not None:
+            columns = ", columns={}".format(repr(self.columns))
+        hparams_columns = ""
+        if self.hparams_columns is not None:
+            hparams_columns = ", hparams_columns={}".format(repr(self.hparams_columns))
+        return "{cls}(output={output}, append={append}, level={level}{columns}{hparams})".format(
+            cls=self.__class__.__name__,
+            output=repr(self.output),
+            append=repr(self.append),
+            level=repr(self.level.name.lower()),
+            columns=columns,
+            hparams=hparams_columns
+        )

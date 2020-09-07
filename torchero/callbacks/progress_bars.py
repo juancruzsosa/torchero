@@ -25,7 +25,8 @@ class ProgbarLogger(Callback):
             hparams (list of str): List of hyperparameters names to show after every status update
         """
         self.ascii = ascii
-        if notebook:
+        self.notebook = notebook
+        if self.notebook:
             self.tqdm = tqdm.tqdm_notebook
         else:
             self.tqdm = tqdm.tqdm
@@ -87,3 +88,18 @@ class ProgbarLogger(Callback):
 
         self.step_tqdms = []
         self.step_bars = []
+
+    def __repr__(self):
+        monitors_repr = ""
+        if self.monitors is not None:
+            monitors_repr = ', monitors={}'.format(repr(self.monitors))
+        hparams_repr = ""
+        if self.hparams is not None:
+            hparams_repr = ', hparams={}'.format(repr(self.hparams))
+        return "{cls}(ascii={ascii}, notebook={notebook}{monitors}{hparams})".format(
+            cls=self.__class__.__name__,
+            monitors=monitors_repr,
+            hparams=hparams_repr,
+            ascii=repr(self.ascii),
+            notebook=repr(self.notebook),
+        )
