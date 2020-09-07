@@ -1,2 +1,10 @@
+.ipynb_checkpoints/
 __pycache__
 dist/
+build/
+documentation/build/
+data/
+*.egg-info/
+examples/notebooks/runs
+examples/notebooks/saved_model
+test_report.xml
