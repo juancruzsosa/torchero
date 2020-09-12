@@ -1,5 +1,9 @@
+import sys
+
 from torchero.callbacks.base import Callback
 from torchero.utils.format import format_metric
+
+from logging import StreamHandler
 
 try:
     import tqdm
@@ -8,6 +12,17 @@ except ImportError:
     print("install tqdm for progress bars support.")
     raise
 
+class ProgbarLoggerStreamHandler(object):
+    def __init__(self, tqdm=tqdm.tqdm, file=sys.stderr):
+        self.file = file
+        self.tqdm = tqdm
+
+    def write(self, x):
+        if len(x.rstrip()) > 0:
+            self.tqdm.write(x, file=self.file, end='')
+
+    def flush(self):
+        return getattr(self.file, "flush", lambda: None)()
 
 class ProgbarLogger(Callback):
     """ Callback that displays progress bars to monitor
@@ -35,6 +50,19 @@ class ProgbarLogger(Callback):
 
         self.step_tqdms = []
         self.step_bars = []
+
+    def accept(self, trainer):
+        """ Accepts a trainer
+
+        Args:
+            trainer(instance of :class:`torchero.base.BaseTrainer`):
+                Trainer to attach to
+        """
+        self.trainer = trainer
+        if self.notebook:
+            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.notebook.tqdm))
+        else:
+            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.tqdm))
 
     def on_train_begin(self):
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
