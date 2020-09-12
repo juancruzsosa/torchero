@@ -3,12 +3,21 @@ from torchero.utils.format import format_metric
 
 
 class Logger(Callback):
-    def __init__(self, separator=',\t', monitors=None, hparams=None):
+    UNRECOGNIZED_LEVEL = (
+        "Unrecognized level {level}. Level parameter should be either 'epoch' "
+        "or 'step'"
+    )
+
+    def __init__(self, separator=',\t', monitors=None, hparams=None, level='epoch'):
         self.separator = separator
         self.monitors = monitors
         self.hparams = hparams
+        if level in ('epoch', 'step'):
+            self.level = level
+        else:
+            raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
 
-    def on_log(self):
+    def log(self):
         monitors = self.monitors
         if monitors is None:
             monitors = self.trainer.metrics.keys()
@@ -27,11 +36,22 @@ class Logger(Callback):
 
         meters = self.separator.join(map(lambda x: '{}: {}'.format(*x),
                                          metrics.items()))
-        print("epoch: {trainer.epoch}/{trainer.total_epochs}{separator}"
-              "step: {trainer.step}/{trainer.total_steps}{separator}"
-              "{meters}".format(trainer=self.trainer,
-                                meters=meters,
-                                separator=self.separator))
+
+        message = "epoch: {trainer.epoch}/{trainer.total_epochs}{separator}"
+        if self.level == 'step':
+            message += "step: {trainer.step}/{trainer.total_steps}{separator}"
+        message += "{meters}"
+        self.trainer.logger.info(message.format(trainer=self.trainer,
+                                                meters=meters,
+                                                separator=self.separator))
+
+    def on_log(self):
+        if self.level == 'step':
+            self.log()
+
+    def on_epoch_end(self):
+        if self.level == 'epoch':
+            self.log()
 
     def __repr__(self):
         monitors_repr = ""
