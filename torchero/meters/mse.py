@@ -9,7 +9,7 @@ from torchero.meters.batch import BatchMeter
 class MSE(BatchMeter):
     """ Meter for mean squared error metric
     """
-
+    name = 'mse'
     DEFAULT_MODE = 'min'
     INVALID_BATCH_DIMENSION_MESSAGE = (
         'Expected both tensors have at less two dimension and same shape'

@@ -9,6 +9,7 @@ class BinaryAccuracy(BatchMeter):
     """ Meter for accuracy on binary targets (assuming normalized inputs)
     """
     name = "acc"
+    DEFAULT_MODE = 'max'
     INVALID_DIMENSION_MESSAGE = (
         'Expected both tensors have same dimension'
     )
@@ -63,6 +64,7 @@ class BinaryAccuracy(BatchMeter):
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
     """
+    DEFAULT_MODE = 'max'
     def __init__(self, aggregator=None, threshold=0.5, activation=None):
         super(BinaryWithLogitsAccuracy, self).__init__(threshold=threshold,
                                                        aggregator=aggregator)
@@ -180,6 +182,8 @@ class Recall(TPMeter):
 
     The best value is 1 and the worst value is 0.
     """
+    DEFAULT_MODE = 'max'
+
     def value(self):
         return self.recall
 
@@ -191,6 +195,8 @@ class Precision(TPMeter):
 
     The best value is 1 and the worst value is 0.
     """
+
+    DEFAULT_MODE = 'max'
     def value(self):
         return self.precision
 
@@ -202,6 +208,8 @@ class Specificity(TPMeter):
 
     The best value is 0 and the worst value is 1.
     """
+    DEFAULT_MODE = 'min'
+
     def value(self):
         return self.specificity
 
@@ -213,6 +221,8 @@ class NPV(TPMeter):
 
     The best value is 0 and the worst value is 1.
     """
+    DEFAULT_MODE = 'min'
+
     def value(self):
         return self.tn/(self.tn + self.fn)
 
@@ -225,6 +235,8 @@ class FBetaScore(TPMeter):
 
     The best value is 1 and the worst value is 0.
     """
+    DEFAULT_MODE = 'max'
+
     def __init__(self, beta, threshold=0.5, with_logits=False):
         super(FBetaScore, self).__init__(threshold=threshold,
                                          with_logits=with_logits)

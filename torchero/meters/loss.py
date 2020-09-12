@@ -6,6 +6,7 @@ from torchero.meters.averager import Averager
 
 
 class LossMeter(Averager):
+    name = 'loss'
     DEFAULT_MODE = 'min'
 
     def __init__(self, criterion):
