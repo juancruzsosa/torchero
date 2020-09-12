@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 from torch.optim import lr_scheduler
 
+from torchero.utils.defaults import get_default_mode
 from torchero.callbacks.base import Callback
 
 
@@ -132,7 +133,7 @@ class ReduceLROnPlateau(_TorchScheduler):
 
     def __init__(self,
                  monitor,
-                 mode='min',
+                 mode='auto',
                  factor=0.1,
                  patience=3,
                  threshold=1e-4,
@@ -153,7 +154,13 @@ class ReduceLROnPlateau(_TorchScheduler):
             'eps': eps},
          on_event=on_event,
          optimizer=optimizer)
+        self._mode = mode
         self._monitor = monitor
+
+    def _get_scheduler(self):
+        if self._params['mode'] == 'auto':
+            self._params['mode'] = get_default_mode(self.trainer.meters[self._monitor])
+        return super(ReduceLROnPlateau, self)._get_scheduler()
 
     def _step(self):
         if self._monitor in self.trainer.metrics:
