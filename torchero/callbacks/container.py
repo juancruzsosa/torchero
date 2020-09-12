@@ -36,3 +36,6 @@ class CallbackContainer(Callback):
 
     def __repr__(self):
         return repr(list(self.callbacks))
+
+    def __iter__(self):
+        return iter(self.callbacks)
