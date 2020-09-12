@@ -48,12 +48,16 @@ class _TorchScheduler(OptimizerScheduler):
 
     def accept(self, trainer):
         super(_TorchScheduler, self).accept(trainer)
-        self._scheduler = self.__class__.SCHEDULER_CLASS(
-                                optimizer=self._optimizer,
-                                **self._params)
+        self._scheduler = self._get_scheduler()
+
+    def _step(self):
+        self._scheduler.step()
+
+    def _get_scheduler(self):
+        return self.__class__.SCHEDULER_CLASS(optimizer=self._optimizer, **self._params)
 
     def step(self):
-        self._scheduler.step()
+        self._step()
 
 
 class LambdaLR(_TorchScheduler):
@@ -155,6 +159,6 @@ class ReduceLROnPlateau(_TorchScheduler):
          optimizer=optimizer)
         self._monitor = monitor
 
-    def step(self):
+    def _step(self):
         if self._monitor in self.trainer.metrics:
             self._scheduler.step(self.trainer.metrics[self._monitor])
