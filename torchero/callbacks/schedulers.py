@@ -54,7 +54,13 @@ class _TorchScheduler(OptimizerScheduler):
         return self.__class__.SCHEDULER_CLASS(optimizer=self._optimizer, **self._params)
 
     def step(self):
+        old_lrs = [param_group['lr'] for param_group in self._optimizer.param_groups]
         self._step()
+        for i, (param_group, old_lr) in enumerate(zip(self._optimizer.param_groups, old_lrs)):
+            if param_group['lr'] < old_lr:
+                self.trainer.logger.info("Learning rate of param group n°{} reduced from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
+            elif param_group['lr'] > old_lr:
+                self.trainer.logger.info("Learning rate of param group n°{} increased from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
 
 
 class LambdaLR(_TorchScheduler):
