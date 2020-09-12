@@ -1,3 +1,5 @@
+import logging
+
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 
@@ -8,6 +10,7 @@ from torchero.callbacks import Callback, CallbackContainer, History
 from torchero.utils.defaults import parse_meters
 from torchero.utils.mixins import DeviceMixin
 from torchero.utils.collections import MetricsDict, ParamsDict
+
 
 class ValidationGranularity(Enum):
     AT_LOG = 'log'
@@ -107,6 +110,21 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         ValidationGranularity.AT_EPOCH: _OnEpochValidScheduler,
         ValidationGranularity.AT_LOG: _OnLogValidScheduler
     }
+    logger = None
+    logger_handler = None
+
+    @classmethod
+    def create_default_logger_handler(cls):
+        if cls.logger is None:
+            logger = logging.getLogger("Trainer")
+            logger_handler = logging.StreamHandler()
+            formatter = logging.Formatter('[%(asctime)s]:[%(levelname)s]: %(message)s',
+                                          '%Y-%m-%d %H:%M:%S')
+            logger_handler.setFormatter(formatter)
+            logger.addHandler(logger_handler)
+            logger.setLevel(logging.INFO)
+            cls.logger = logger
+            cls.logger_handler = logger_handler
 
     @staticmethod
     def prepend_name_dict(prefix, d):
@@ -163,6 +181,8 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
         self.logging_frecuency = logging_frecuency
 
+        self.create_default_logger_handler()
+
         self.model = model
         self._epochs_trained = 0
         self._steps_trained = 0
@@ -192,6 +212,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
         for callback in callbacks:
             self._callbacks.add(callback)
+
 
     @property
     def history(self):
