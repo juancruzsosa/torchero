@@ -99,6 +99,7 @@ class ProgbarLogger(Callback):
 
 
         step_bar = self.step_bars[-1]
+        step_bar.set_description("Epoch {}".format(self.trainer.epoch+1))
         step_bar.set_postfix(**metrics, **hparams)
         step_bar.update(self.trainer.steps_trained - self.last_step)
         self.last_step = self.trainer.steps_trained
