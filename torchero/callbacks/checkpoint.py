@@ -78,6 +78,14 @@ class ModelCheckpoint(Callback):
 
         value = self.trainer.metrics[self.monitor_name]
         if self.last_value is None or self.is_better(value):
+            if self.last_value is None:
+                message = "Model saved to {path}"
+            else:
+                message = "Model saved to {path}: {monitor} improved from {last_value:.3f} to {current_value:.3f}"
+            self.trainer.logger.info(message.format(path=repr(self.path),
+                                                    monitor=self.monitor_name,
+                                                    last_value=self.last_value,
+                                                    current_value=value))
             self.last_value = value
             index_content = [{self.monitor_name: self.last_value,
                               'epoch': self.trainer.epochs_trained}]
