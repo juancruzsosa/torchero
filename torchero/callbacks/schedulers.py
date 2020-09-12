@@ -8,8 +8,8 @@ from torchero.callbacks.base import Callback
 class OptimizerScheduler(Callback):
     """ Interface of Optimizer schedulers
     """
-    def __init__(self, on_event='epoch_begin', optimizer=None):
-        if on_event not in ('log', 'epoch_begin', 'epoch_end'):
+    def __init__(self, on_event='epoch_end', optimizer=None):
+        if on_event not in ('log', 'epoch_end'):
             raise Exception("Unrecongized on_event parameter. Expected")
         self._on_event = on_event
         self._optimizer = optimizer
@@ -25,10 +25,6 @@ class OptimizerScheduler(Callback):
         if self._on_event == 'log':
             self.step()
 
-    def on_epoch_begin(self):
-        if self._on_event == 'epoch_begin':
-            self.step()
-
     def on_epoch_end(self):
         if self._on_event == 'epoch_end':
             self.step()
@@ -41,7 +37,7 @@ class OptimizerScheduler(Callback):
 class _TorchScheduler(OptimizerScheduler):
     """ Adapts Torch learning rate scheduler to Torchero Optimzer scheduler
     """
-    def __init__(self, params, on_event='epoch_begin', optimizer=None):
+    def __init__(self, params, on_event='epoch_end', optimizer=None):
         super(_TorchScheduler, self).__init__(on_event=on_event,
                                               optimizer=optimizer)
         self._params = params
@@ -65,7 +61,7 @@ class LambdaLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.LambdaLR
 
-    def __init__(self, lr_lambda, on_event='epoch_begin', optimizer=None):
+    def __init__(self, lr_lambda, on_event='epoch_end', optimizer=None):
         super(LambdaLR, self).__init__({'lr_lambda': lr_lambda},
                                        on_event=on_event,
                                        optimizer=optimizer)
@@ -79,7 +75,7 @@ class StepLR(_TorchScheduler):
     def __init__(self,
                  step_size,
                  gamma=0.1,
-                 on_event='epoch_begin',
+                 on_event='epoch_end',
                  optimizer=None):
         super(StepLR, self).__init__({'step_size': step_size, 'gamma': gamma},
                                      on_event=on_event,
@@ -94,7 +90,7 @@ class MultiStepLR(_TorchScheduler):
     def __init__(self,
                  milestones,
                  gamma=0.1,
-                 on_event='epoch_begin',
+                 on_event='epoch_end',
                  optimizer=None):
         super(MultiStepLR, self).__init__({'milestones': milestones,
                                            'gamma': gamma},
@@ -107,7 +103,7 @@ class ExponentialLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.ExponentialLR
 
-    def __init__(self, gamma=0.1, on_event='epoch_begin', optimizer=None):
+    def __init__(self, gamma=0.1, on_event='epoch_end', optimizer=None):
         super(ExponentialLR, self).__init__({'gamma': gamma},
                                             on_event=on_event,
                                             optimizer=optimizer)
@@ -121,7 +117,7 @@ class CosineAnnealingLR(_TorchScheduler):
     def __init__(self,
                  T_max,
                  eta_min=0,
-                 on_event='epoch_begin',
+                 on_event='epoch_end',
                  optimizer=None):
         super(CosineAnnealingLR, self).__init__({'T_max': T_max,
                                                  'eta_min': eta_min},
