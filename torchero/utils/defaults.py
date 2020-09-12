@@ -5,12 +5,17 @@ from torch import optim
 
 from torchero import meters
 
+INVALID_MODE_INFERENCE_MESSAGE = (
+    "Could not infer mode from meter {meter}"
+)
 
 def get_default_mode(meter):
     if hasattr(meter.__class__, 'DEFAULT_MODE'):
         return getattr(meter.__class__, 'DEFAULT_MODE')
     else:
-        return ''
+        raise Exception(INVALID_MODE_INFERENCE_MESSAGE
+                        .format(meter=getattr(meter, 'name', meter.__class__.__name__)))
+
 
 
 optimizers = {

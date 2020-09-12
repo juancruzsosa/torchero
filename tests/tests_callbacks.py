@@ -1,7 +1,9 @@
 import shutil
-from .common import *
 import pandas as pd
 
+import torchero
+
+from .common import *
 
 class HistoryCallbackTests(unittest.TestCase):
     def setUp(self):
@@ -569,8 +571,9 @@ class CheckpointTests(unittest.TestCase):
                               update_batch_fn=self.meter_from_list(measures, 't'))
         try:
             trainer.train(self.train_dl, epochs=0)
+            self.fail()
         except Exception as e:
-            self.assertEqual(str(e), checkpoint.INVALID_MODE_INFERENCE_MESSAGE.format(meter='t'))
+            self.assertEqual(str(e), torchero.utils.defaults.INVALID_MODE_INFERENCE_MESSAGE.format(meter='Averager'))
 
 class EarlyStoppingTests(unittest.TestCase):
     def setUp(self):
@@ -743,5 +746,6 @@ class EarlyStoppingTests(unittest.TestCase):
                               update_batch_fn=self.meter_from_list(measures, 'v'))
         try:
             trainer.train(self.train_dl, epochs=0)
+            self.fail()
         except Exception as e:
-            self.assertEqual(str(e), callback.INVALID_MODE_INFERENCE_MESSAGE.format(meter='v'))
+            self.assertEqual(str(e), callback.INVALID_MODE_INFERENCE_MESSAGE.format(meter='Averager'))

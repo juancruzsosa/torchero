@@ -14,9 +14,6 @@ class ModelCheckpoint(Callback):
     UNRECOGNIZED_MODE = (
         "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
     )
-    INVALID_MODE_INFERENCE_MESSAGE = (
-        "Could not infer mode from meter {meter}"
-    )
 
     def __init__(self, path, monitor, mode='auto'):
         """ Constructor
@@ -50,10 +47,6 @@ class ModelCheckpoint(Callback):
     def on_train_begin(self):
         if self._mode.lower() == 'auto':
             self._mode = get_default_mode(self.trainer.meters[self.monitor_name])
-            if self._mode == '':
-                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE
-                                    .format(meter=self.monitor_name))
-
         self.is_better = self.criterion(self._mode)
 
         if not os.path.exists(self.path):
