@@ -123,3 +123,7 @@ class SupervisedTrainer(BatchTrainer):
             hparams=repr(self._hparams),
             logging_frecuency=repr(self.logging_frecuency),
             prefixes=repr(self._prefixes))
+
+    def to(self, device):
+        super(SupervisedTrainer, self).to(device)
+        self.criterion.to(self._device)
