@@ -68,7 +68,7 @@ class HistoryManager(Callback):
         try:
             import pandas as pd
         except ImportError:
-            raise Exception("Install pandas (pip install pandas) to export to history to dataframe")
+            raise ImportError("Install pandas (pip install pandas) to export to history to dataframe")
 
         df = (pd.DataFrame.from_records(self.records)
                 .sort_values(['epoch', 'step']))
