@@ -86,6 +86,7 @@ class CSVLogger(Callback):
 
     def on_train_end(self):
         self.file_handle.close()
+        del self.file_handle
 
     def __repr__(self):
         columns = ""
