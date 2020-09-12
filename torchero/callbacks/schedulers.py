@@ -3,7 +3,6 @@ from abc import abstractmethod
 from torch.optim import lr_scheduler
 
 from torchero.callbacks.base import Callback
-from torchero.callbacks.monitor import LRMonitor
 
 
 class OptimizerScheduler(Callback):
@@ -21,7 +20,6 @@ class OptimizerScheduler(Callback):
         elif self._optimizer is None:
             self._optimizer = trainer.optimizer
         super(OptimizerScheduler, self).accept(trainer)
-        trainer.add_callback(LRMonitor(optimizer=self._optimizer))
 
     def on_log(self):
         if self._on_event == 'log':
