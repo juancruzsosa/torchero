@@ -38,10 +38,11 @@ class OptimizerScheduler(Callback):
 class _TorchScheduler(OptimizerScheduler):
     """ Adapts Torch learning rate scheduler to Torchero Optimzer scheduler
     """
-    def __init__(self, params, on_event='epoch_end', optimizer=None):
+    def __init__(self, params, on_event='epoch_end', optimizer=None, verbose=False):
         super(_TorchScheduler, self).__init__(on_event=on_event,
                                               optimizer=optimizer)
         self._params = params
+        self.verbose = verbose
 
     def accept(self, trainer):
         super(_TorchScheduler, self).accept(trainer)
@@ -54,13 +55,15 @@ class _TorchScheduler(OptimizerScheduler):
         return self.__class__.SCHEDULER_CLASS(optimizer=self._optimizer, **self._params)
 
     def step(self):
-        old_lrs = [param_group['lr'] for param_group in self._optimizer.param_groups]
+        if self.verbose:
+            old_lrs = [param_group['lr'] for param_group in self._optimizer.param_groups]
         self._step()
-        for i, (param_group, old_lr) in enumerate(zip(self._optimizer.param_groups, old_lrs)):
-            if param_group['lr'] < old_lr:
-                self.trainer.logger.info("Learning rate of param group n°{} reduced from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
-            elif param_group['lr'] > old_lr:
-                self.trainer.logger.info("Learning rate of param group n°{} increased from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
+        if self.verbose:
+            for i, (param_group, old_lr) in enumerate(zip(self._optimizer.param_groups, old_lrs)):
+                if param_group['lr'] < old_lr:
+                    self.trainer.logger.info("Learning rate of param group n°{} reduced from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
+                elif param_group['lr'] > old_lr:
+                    self.trainer.logger.info("Learning rate of param group n°{} increased from {:.4e} to {:.4e}".format(i, old_lr, param_group['lr']))
 
 
 class LambdaLR(_TorchScheduler):
@@ -68,10 +71,11 @@ class LambdaLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.LambdaLR
 
-    def __init__(self, lr_lambda, on_event='epoch_end', optimizer=None):
+    def __init__(self, lr_lambda, on_event='epoch_end', optimizer=None, verbose=False):
         super(LambdaLR, self).__init__({'lr_lambda': lr_lambda},
                                        on_event=on_event,
-                                       optimizer=optimizer)
+                                       optimizer=optimizer,
+                                       verbose=verbose)
 
 
 class StepLR(_TorchScheduler):
@@ -83,10 +87,13 @@ class StepLR(_TorchScheduler):
                  step_size,
                  gamma=0.1,
                  on_event='epoch_end',
-                 optimizer=None):
-        super(StepLR, self).__init__({'step_size': step_size, 'gamma': gamma},
+                 optimizer=None,
+                 verbose=False):
+        super(StepLR, self).__init__({'step_size': step_size,
+                                      'gamma': gamma},
                                      on_event=on_event,
-                                     optimizer=optimizer)
+                                     optimizer=optimizer,
+                                     verbose=verbose)
 
 
 class MultiStepLR(_TorchScheduler):
@@ -98,11 +105,13 @@ class MultiStepLR(_TorchScheduler):
                  milestones,
                  gamma=0.1,
                  on_event='epoch_end',
-                 optimizer=None):
+                 optimizer=None,
+                 verbose=False):
         super(MultiStepLR, self).__init__({'milestones': milestones,
                                            'gamma': gamma},
                                           on_event=on_event,
-                                          optimizer=optimizer)
+                                          optimizer=optimizer,
+                                          verbose=verbose)
 
 
 class ExponentialLR(_TorchScheduler):
@@ -110,10 +119,11 @@ class ExponentialLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.ExponentialLR
 
-    def __init__(self, gamma=0.1, on_event='epoch_end', optimizer=None):
+    def __init__(self, gamma=0.1, on_event='epoch_end', optimizer=None, verbose=False):
         super(ExponentialLR, self).__init__({'gamma': gamma},
                                             on_event=on_event,
-                                            optimizer=optimizer)
+                                            optimizer=optimizer,
+                                            verbose=verbose)
 
 
 class CosineAnnealingLR(_TorchScheduler):
@@ -125,11 +135,13 @@ class CosineAnnealingLR(_TorchScheduler):
                  T_max,
                  eta_min=0,
                  on_event='epoch_end',
-                 optimizer=None):
+                 optimizer=None,
+                 verbose=False):
         super(CosineAnnealingLR, self).__init__({'T_max': T_max,
                                                  'eta_min': eta_min},
                                                 on_event=on_event,
-                                                optimizer=optimizer)
+                                                optimizer=optimizer,
+                                                verbose=False)
 
 
 class ReduceLROnPlateau(_TorchScheduler):
@@ -148,7 +160,8 @@ class ReduceLROnPlateau(_TorchScheduler):
                  min_lr=0,
                  eps=1e-8,
                  on_event='epoch_end',
-                 optimizer=None):
+                 optimizer=None,
+                 verbose=True):
         super(ReduceLROnPlateau, self).__init__({
             'mode': mode,
             'factor': factor,
@@ -159,7 +172,8 @@ class ReduceLROnPlateau(_TorchScheduler):
             'min_lr': min_lr,
             'eps': eps},
          on_event=on_event,
-         optimizer=optimizer)
+         optimizer=optimizer,
+         verbose=verbose)
         self._mode = mode
         self._monitor = monitor
 
