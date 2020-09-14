@@ -40,9 +40,6 @@ class EarlyStopping(Callback):
 
         if self._mode.lower() == 'auto':
             self._mode = get_default_mode(self.trainer.meters[self.monitor])
-            if self._mode == '':
-                raise Exception(self.INVALID_MODE_INFERENCE_MESSAGE
-                                    .format(meter=self.monitor))
 
         self._has_improved = criterion_by_mode[self._mode]
 
@@ -66,6 +63,9 @@ class EarlyStopping(Callback):
             self._round = 0
 
         if self._round > self._patience:
+            self.trainer.logger.info("{monitor} has not improved from {value:.4f} for {round} rounds: Stop Training...".format(monitor=self._monitor,
+                                                                                                                               value=self._last_best_monitor_value,
+                                                                                                                               round=self._round))
             self.trainer.stop_training()
 
         self._last_best_monitor_value = (self._last_best_monitor_value or
