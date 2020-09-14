@@ -8,9 +8,6 @@ class EarlyStopping(Callback):
     UNRECOGNIZED_MODE_MESSAGE = (
         "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
     )
-    INVALID_MODE_INFERENCE_MESSAGE = (
-        "Could not infer mode from meter {meter}"
-    )
 
     def __init__(self, monitor, min_delta=0, patience=0, mode='auto'):
         """ Constructor

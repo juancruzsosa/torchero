@@ -748,4 +748,4 @@ class EarlyStoppingTests(unittest.TestCase):
             trainer.train(self.train_dl, epochs=0)
             self.fail()
         except Exception as e:
-            self.assertEqual(str(e), callback.INVALID_MODE_INFERENCE_MESSAGE.format(meter='Averager'))
+            self.assertEqual(str(e), torchero.utils.defaults.INVALID_MODE_INFERENCE_MESSAGE.format(meter='Averager'))
