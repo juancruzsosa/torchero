@@ -53,7 +53,7 @@ class EarlyStopping(Callback):
     def _min_improved_criterion(self, value):
         return value - self._last_best_monitor_value < self._min_delta
 
-    def on_log(self):
+    def step(self):
         monitor_value = self.trainer.metrics[self.monitor]
 
         if (self._last_best_monitor_value is not None and
@@ -61,6 +61,7 @@ class EarlyStopping(Callback):
             self._round += 1
         else:
             self._round = 0
+            self._last_best_monitor_value = monitor_value
 
         if self._round > self._patience:
             self.trainer.logger.info("{monitor} has not improved from {value:.4f} for {round} rounds: Stop Training...".format(monitor=self._monitor,
@@ -68,8 +69,8 @@ class EarlyStopping(Callback):
                                                                                                                                round=self._round))
             self.trainer.stop_training()
 
-        self._last_best_monitor_value = (self._last_best_monitor_value or
-                                         monitor_value)
+    def on_epoch_end(self):
+        self.step()
 
     @property
     def mode(self):
