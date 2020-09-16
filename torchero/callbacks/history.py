@@ -216,7 +216,7 @@ class HistoryManager(Callback):
 
     def get_default_layout(self):
         cols = self.columns()-{'epoch', 'step'}
-        suffixes = set(x.split('_', maxsplit=1)[1] for x in cols)
+        suffixes = set(x.split('_', maxsplit=1)[1] if '_' in x else x for x in cols)
         suffixes = [(s, sorted([c for c in cols if c.endswith(s)])) for s in suffixes]
         suffixes = sorted(suffixes, key=lambda x: x[0])
         n = len(suffixes)
