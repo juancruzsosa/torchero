@@ -27,7 +27,7 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
     def num_classes(self):
         return self.matrix.shape[0]
 
-    def plot(self, ax=None, fig=None, classes=None, xlabel="Predicted label", ylabel="True label", title="Confusion Matrix", cmap="Blues"):
+    def plot(self, ax=None, fig=None, classes=None, xlabel="Predicted label", ylabel="True label", title="Confusion Matrix", cmap="Blues", colorbar=False):
         try:
             from matplotlib import pyplot as plt
         except ImportError:
@@ -79,7 +79,8 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
             ax.set_xticklabels(classes)
             ax.set_yticklabels(classes)
 
-        fig.colorbar(im, ax=ax)
+        if colorbar:
+            fig.colorbar(im, ax=ax)
 
 
 class FixedConfusionMatrixController(ConfusionMatrixController):
