@@ -23,32 +23,48 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
         for i, j in zip(a, b):
             self.matrix[i][j] += 1
 
-    def plot(self, ax=None, classes=None, xlabel="Predicted label", ylabel="True label", title="Confusion Matrix"):
+    @property
+    def num_classes(self):
+        return self.matrix.shape[0]
+
+    def plot(self, ax=None, fig=None, classes=None, xlabel="Predicted label", ylabel="True label", title="Confusion Matrix", cmap="Blues"):
         try:
             from matplotlib import pyplot as plt
         except ImportError:
             raise ImportError(
                 "Matplotlib is required in order to plot confusion matrix"
             )
+        if (classes is not None) and (len(classes) != self.num_classes):
+            raise ValueError("number of classes is: {} but {} were passed!".format(self.num_classes, len(classes)))
 
         if ax is None:
             ax = plt.gca()
-        ax.imshow(self.matrix)
-        ax.set_xticks(range(len(classes)))
-        ax.set_yticks(range(len(classes)))
+        if fig is None:
+            fig = plt.gcf()
+        matrix = self.matrix
+        normalized_matrix = matrix / matrix.sum(dim=0)
+        cmap = plt.get_cmap(cmap)
+        im=ax.imshow(normalized_matrix, cmap=cmap, vmin=0, vmax=1)
+        ax.set_xticks(range(self.num_classes))
+        ax.set_yticks(range(self.num_classes))
 
         ax.xaxis.set_ticks_position('top')
         ax.xaxis.set_label_position('top')
 
-        for i in range(self.matrix.shape[0]):
-            for j in range(self.matrix.shape[1]):
-                value = self.matrix[i, j].item()
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                value = matrix[i, j].item()
+                normalized_value = normalized_matrix[i, j].item()
                 if self.normalize:
                     value = '{:.2f}'.format(value)
                 else:
                     value = '{}'.format(int(value))
+                    if i == j:
+                        value += " " + "({:.0f}%)".format(normalized_value * 100)
+                r, g, b, _ = cmap(normalized_value)
+                text_color = 'white' if r * g * b < 0.5 else 'black'
                 text = ax.text(j, i, value,
-                               ha="center", va="center", color="w")
+                               ha="center", va="center", color=text_color)
 
         if xlabel is not None:
             ax.set_xlabel(xlabel)
@@ -62,6 +78,8 @@ class ConfusionMatrixController(object, metaclass=ABCMeta):
         if classes is not None:
             ax.set_xticklabels(classes)
             ax.set_yticklabels(classes)
+
+        fig.colorbar(im, ax=ax)
 
 
 class FixedConfusionMatrixController(ConfusionMatrixController):
