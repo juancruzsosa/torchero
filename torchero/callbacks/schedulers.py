@@ -9,11 +9,17 @@ from torchero.callbacks.base import Callback
 class OptimizerScheduler(Callback):
     """ Interface of Optimizer schedulers
     """
-    def __init__(self, on_event='epoch_end', optimizer=None):
+    def __init__(self, start=1, on_event='epoch_end', end=None, optimizer=None):
         if on_event not in ('log', 'epoch_end'):
             raise Exception("Unrecongized on_event parameter. Expected")
         self._on_event = on_event
         self._optimizer = optimizer
+        if start < 1:
+            raise ValueError("Start epoch should be an integer greater or equal than 1")
+        if (end is not None) and (start > end):
+            raise ValueError("End epoch should be an integer greater or equal than `start` argument")
+        self._start = start
+        self._end = end
 
     def accept(self, trainer):
         if self._optimizer is None and not hasattr(trainer, 'optimizer'):
@@ -23,11 +29,15 @@ class OptimizerScheduler(Callback):
         super(OptimizerScheduler, self).accept(trainer)
 
     def on_log(self):
-        if self._on_event == 'log':
+        if self._on_event == 'log' and \
+           self.trainer.epochs_trained >= self._start and \
+           (self._end is None or self.trainer.epochs_trained <= self._end):
             self.step()
 
     def on_epoch_end(self):
-        if self._on_event == 'epoch_end':
+        if self._on_event == 'epoch_end' and \
+           self.trainer.epochs_trained >= self._start and \
+           (self._end is None or self.trainer.epochs_trained <= self._end):
             self.step()
 
     @abstractmethod
@@ -38,8 +48,10 @@ class OptimizerScheduler(Callback):
 class _TorchScheduler(OptimizerScheduler):
     """ Adapts Torch learning rate scheduler to Torchero Optimzer scheduler
     """
-    def __init__(self, params, on_event='epoch_end', optimizer=None, verbose=False):
-        super(_TorchScheduler, self).__init__(on_event=on_event,
+    def __init__(self, params, start=0, end=None, on_event='epoch_end', optimizer=None, verbose=False):
+        super(_TorchScheduler, self).__init__(start=start,
+                                              end=end,
+                                              on_event=on_event,
                                               optimizer=optimizer)
         self._params = params
         self.verbose = verbose
@@ -71,8 +83,10 @@ class LambdaLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.LambdaLR
 
-    def __init__(self, lr_lambda, on_event='epoch_end', optimizer=None, verbose=False):
+    def __init__(self, lr_lambda, start=1, end=None, on_event='epoch_end', optimizer=None, verbose=False):
         super(LambdaLR, self).__init__({'lr_lambda': lr_lambda},
+                                       start=start,
+                                       end=end,
                                        on_event=on_event,
                                        optimizer=optimizer,
                                        verbose=verbose)
@@ -86,11 +100,15 @@ class StepLR(_TorchScheduler):
     def __init__(self,
                  step_size,
                  gamma=0.1,
+                 start=1,
+                 end=None,
                  on_event='epoch_end',
                  optimizer=None,
                  verbose=False):
         super(StepLR, self).__init__({'step_size': step_size,
                                       'gamma': gamma},
+                                     start=start,
+                                     end=end,
                                      on_event=on_event,
                                      optimizer=optimizer,
                                      verbose=verbose)
@@ -104,6 +122,8 @@ class MultiStepLR(_TorchScheduler):
     def __init__(self,
                  milestones,
                  gamma=0.1,
+                 start=0,
+                 end=None,
                  on_event='epoch_end',
                  optimizer=None,
                  verbose=False):
@@ -134,11 +154,15 @@ class CosineAnnealingLR(_TorchScheduler):
     def __init__(self,
                  T_max,
                  eta_min=0,
+                 start=1,
+                 end=None,
                  on_event='epoch_end',
                  optimizer=None,
                  verbose=False):
         super(CosineAnnealingLR, self).__init__({'T_max': T_max,
                                                  'eta_min': eta_min},
+                                                start=start,
+                                                end=end,
                                                 on_event=on_event,
                                                 optimizer=optimizer,
                                                 verbose=False)
@@ -159,6 +183,8 @@ class ReduceLROnPlateau(_TorchScheduler):
                  cooldown=0,
                  min_lr=0,
                  eps=1e-8,
+                 start=1,
+                 end=None,
                  on_event='epoch_end',
                  optimizer=None,
                  verbose=True):
@@ -171,6 +197,8 @@ class ReduceLROnPlateau(_TorchScheduler):
             'cooldown': cooldown,
             'min_lr': min_lr,
             'eps': eps},
+         start=start,
+         end=end,
          on_event=on_event,
          optimizer=optimizer,
          verbose=verbose)
