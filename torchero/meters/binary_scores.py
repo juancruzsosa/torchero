@@ -103,7 +103,7 @@ class TPMeter(BaseMeter):
         super(TPMeter, self).__init__()
         self.threshold = threshold
         if with_logits and activation is None:
-            self.activation = nn.Sigmoid()
+            activation = nn.Sigmoid()
         self.with_logits = with_logits
         self.activation = activation
         self.reset()
