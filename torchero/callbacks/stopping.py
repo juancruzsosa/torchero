@@ -51,6 +51,8 @@ class EarlyStopping(Callback):
         return value - self._last_best_monitor_value < self._min_delta
 
     def step(self):
+        if self.monitor not in self.trainer.metrics:
+            return
         monitor_value = self.trainer.metrics[self.monitor]
 
         if (self._last_best_monitor_value is not None and
