@@ -82,6 +82,10 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         self._metrics.compile()
         return dict(self._metrics)
 
+    def validate_all(self, dataloaders):
+        records = {split_name: self.validate(dl) for split_name, dl in dataloaders.items()}
+        return records
+
     def add_named_meter(self, name, meter):
         self._metrics.add_metric(name, meter)
 
@@ -385,6 +389,17 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         validator = self.create_validator(metrics)
         validator.to(self._device)
         results = validator.validate(dataloader)
+        self.model.train(mode=False)
+        return results
+
+    def evaluate_all(self, dataloaders, metrics=None):
+        if metrics is not None:
+            metrics = parse_meters(metrics)
+        else:
+            metrics = self.val_meters
+        validator = self.create_validator(metrics)
+        validator.to(self._device)
+        results = validator.validate_all(dataloaders)
         self.model.train(mode=False)
         return results
 
