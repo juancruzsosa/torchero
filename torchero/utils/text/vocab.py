@@ -117,3 +117,23 @@ class Vocab(object):
         if self.eos is  not None:
             ids_seq.append(self.word2idx[self.eos])
         return ids_seq
+
+    def __getstate__(self):
+        return {'words': self.idx2word,
+                'freqs': [self.freq[word] in self.idx2word],
+                'pad': self.pad,
+                'eos': self.eos,
+                'unk': self.unk,
+                'max_size': self.max_size,
+                'start_index': self.start_index
+                }
+
+    def __setstate__(self, d):
+        self.start_index = d['start_index']
+        self.idx2word = d['words']
+        self.word2idx = {word: i for i, word in enumerate(d['words'])}
+        self.freq = Counter(d['freqs'])
+        self.pad = d['pad']
+        self.eos = d['eos']
+        self.unk = d['unk']
+        self.max_size = d['max_size']
