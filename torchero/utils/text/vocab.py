@@ -96,9 +96,25 @@ class Vocab(object):
         return len(self.word2idx)
 
     def __iter__(self):
-        """ Returns an iterator to word indexes
+        """ Returns an iterator to word in the vocabulary
         """
-        return iter(self.word2idx)
+        return iter(self.idx2word)
+
+    def __contains__(self, word):
+        """ vocab.__contains__(word) <==> word in vocab
+        """
+        return word in self.word2idx
+
+    def words(self):
+        return iter(self)
+
+    def indexes(self):
+        yield from range(self.start_index, len(self)+1)
+
+    def items(self):
+        """ Returns an iterator to
+        """
+        yield from ((word, self.start_index + i) for i, word in enumerate(self.idx2word))
 
     def __getitem__(self, word):
         """ Returns the index of the given term
@@ -106,16 +122,19 @@ class Vocab(object):
         return self.word2idx.get(word, self.word2idx[self.unk] if self.unk else None)
 
     def __repr__(self):
-        return repr(dict(self.word2idx))
+        return repr(dict(self.items()))
 
     def __call__(self, tokens):
         """ Converts list of tokens to list of indexes
         """
-        ids_seq = [self[token] for token in tokens]
         if self.unk is None:
-            ids_seq = [idx for idx in ids_seq if idx is not None]
-        if self.eos is  not None:
-            ids_seq.append(self.word2idx[self.eos])
+            ids_seq = [self[token] for token in tokens
+                        if token in self.word2idx]
+        else:
+            ids_seq = [self[token] for token in tokens]
+
+        if self.eos is not None:
+            ids_seq.append(self[self.eos])
         return ids_seq
 
     def __getstate__(self):
