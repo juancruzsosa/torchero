@@ -12,7 +12,7 @@ class Vocab(object):
             3
         >>> v1['xyz']
             1
-        >>> v1.frec['and']
+        >>> v1.freq['and']
             3
         >>> v2 = Vocab(['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'other', 'fox'])
         >>> v2
@@ -56,7 +56,7 @@ class Vocab(object):
         self.eos = eos
         self.unk = unk
         self.max_size = max_size
-        self.frec = Counter()
+        self.freq = Counter()
         self.idx2word = list()
         self.word2idx = {}
         if self.pad is not None:
@@ -81,9 +81,9 @@ class Vocab(object):
         new_vocab = Counter(vocab)
         for word, freq in new_vocab.most_common():
             if word in self.word2idx:
-                self.frec[word] += freq
+                self.freq[word] += freq
             elif self.max_size is None or self.last_index < self.max_size:
-                self.frec[word] += freq
+                self.freq[word] += freq
                 self.last_index += 1
                 self.word2idx[word] = self.last_index
                 self.idx2word.append(word)
