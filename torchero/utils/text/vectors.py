@@ -10,6 +10,7 @@ import numpy as np
 import torch
 
 from torchero.utils.io import download_from_url
+from torchero.utils.text.vocab import Vocab
 
 class KeyedVectors(object):
     """ Class to represent list of word vectors. Each word could be any
@@ -63,7 +64,7 @@ class KeyedVectors(object):
             vectors.append(vector)
         return cls(words, vectors)
 
-    def __init__(self, words, vectors):
+    def __init__(self, words, vectors, eos=None, unk=None, pad=None):
         """ Constructor
 
         Arguments:
@@ -71,8 +72,7 @@ class KeyedVectors(object):
             vectors (iterable of arrays): Vector of each words. It must have the
                 same length than the word list
         """
-        self.idx2word = list(words)
-        self.word2idx = {word: i for i, word in enumerate(words)}
+        self.vocab = Vocab(words, eos=None, unk=None, pad=None, order_by='insertion')
         self.matrix = torch.stack([torch.Tensor(v) for v in vectors])
 
     @property
@@ -84,7 +84,7 @@ class KeyedVectors(object):
     def __len__(self):
         """ Returns the vocabulary size
         """
-        return len(self.matrix)
+        return len(self.vocab)
 
     def __getitem__(self, item):
         """ Returns the vector of a given word or list of words
@@ -99,26 +99,26 @@ class KeyedVectors(object):
             Output: (D,) where D is the vector size
         """
         if isinstance(item, (list, tuple)):
-            return self.matrix[[self.word2idx[word] for word in item]]
+            return self.matrix[[self.vocab[word]-1 for word in item]]
         elif isinstance(item, str):
-            return self.matrix[self.word2idx[item]]
+            return self.matrix[self.vocab[item]-1]
         else:
             raise ValueError("Indexing not supported to {}".format(repr(type(x))))
 
     def similarity(self, word_a, word_b):
-        """ Returns the vocabulary size
+        """ Returns the similarity between two words
         """
-        if isinstance(word_a, (tuple, list)):
+        if isinstance(word_a, list):
             vec_a = self[word_a]
         else:
             vec_a = self[word_a].unsqueeze(0)
             a_is_list = False
-        if isinstance(word_b, (tuple, list)):
+        if isinstance(word_b, list):
             vec_b = self[word_b]
         else:
             vec_b = self[word_b].unsqueeze(0)
         similarity = torch.cosine_similarity(vec_a, vec_b)
-        if not isinstance(word_a, (tuple, list)) and not isinstance(word_b, (tuple, list)):
+        if not isinstance(word_a, list) and not isinstance(word_b, list):
             return similarity.squeeze(0)
         else:
             return similarity
@@ -142,19 +142,18 @@ class KeyedVectors(object):
         vec = (positive - negative).unsqueeze(dim=0)
         similarities_idxs = torch.cosine_similarity(vec, self.matrix)
         results = torch.topk(similarities_idxs, k=topn)
-        return [(self.idx2word[i], v) for i, v in zip(results.indices, results.values)]
+        return [(self.vocab.idx2word[i], v) for i, v in zip(results.indices, results.values)]
 
     def __getstate__(self):
-        return {'words': self.idx2word,
+        return {'vocab': self.vocab,
                 'matrix': self.matrix.tolist()}
 
     def __setstate__(self, d):
-        self.idx2word = d['words']
-        self.word2idx = {word: i for i, word in enumerate(self.idx2word)}
+        self.vocab = d['words']
         self.matrix = torch.Tensor(d['matrix'])
 
     def _dump_as_word2vec_plain(self, fp, delimiter=' '):
-        for word, vector in zip(self.idx2word, self.matrix):
+        for word, vector in zip(self.vocab, self.matrix):
             vector_str = delimiter.join(map(str, vector.tolist()))
             fp.write(word)
             fp.write(delimiter)
@@ -163,7 +162,7 @@ class KeyedVectors(object):
 
     def _dump_as_word2vec_binary(self, fp):
         fp.write("{} {}\n".format(len(self), self.vector_size).encode('utf-8'))
-        for word, vector in zip(self.idx2word, self.matrix):
+        for word, vector in zip(self.vocab, self.matrix):
             fp.write(word.encode('utf-8'))
             fp.write(b"")
             s = struct.pack('f'*self.vector_size, *vector.tolist())
