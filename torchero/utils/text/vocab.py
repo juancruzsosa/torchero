@@ -1,5 +1,8 @@
-from collections import Counter
+from collections import Counter, OrderedDict
 from itertools import chain
+
+class OrderedCounter(Counter, OrderedDict):
+    pass
 
 class OutOfVocabularyError(LookupError):
     pass
@@ -21,6 +24,11 @@ class Vocab(object):
         >>> v2
             {'<pad>': 0, '<unk>': 1, 'the': 2, 'fox': 3, 'quick': 4, 'brown': 5, 'jumps': 6, 'over': 7, 'other': 8}
     """
+    ORDER_BY_OPTIONS = ('frequency', 'insertion', 'alpha')
+    INVALID_ORDER_BY_ARGUMENT_MESSAGE = ("Invalid argument for order_by. "
+                                         "Use {options}, or a function. "
+                                         "Got: {value}")
+
     @classmethod
     def build_from_texts(cls, texts, eos=None, pad='<pad>', unk='<unk>', max_size=None):
         """ Builds a Vocabulary from a list of sentences
@@ -41,7 +49,7 @@ class Vocab(object):
         vocab = cls(examples, eos=eos, pad=pad, unk=unk, max_size=max_size)
         return vocab
 
-    def __init__(self, vocab={}, eos=None, pad='<pad>', unk='<unk>', max_size=None):
+    def __init__(self, vocab={}, eos=None, pad=None, unk=None, max_size=None, order_by='frequency'):
         """ Constructor
 
         Arguments:
@@ -54,6 +62,7 @@ class Vocab(object):
             max_size (int): Maximum size of the Vocabulary in number of
                 elements. The discarded elements are selected from the list of less frequent terms.
                 If None is passed the size of the vocabulary will have no growth limit.
+            order_by_freq (bool): If true the order of insertion is ordering from frequency
         """
         self.pad = pad
         self.eos = eos
@@ -62,36 +71,72 @@ class Vocab(object):
         self.freq = Counter()
         self.idx2word = list()
         self.word2idx = {}
-        if self.pad is not None:
-            self.last_index = -1
+        if order_by is None:
+            raise ValueError(self.INVALID_ORDER_BY_ARGUMENT_MESSAGE.format(
+                             options=self.ORDER_BY_OPTIONS, value=order_by))
+        self.default_order = order_by
+        if self.pad is not None: # Padding always go to index 
+            self.start_index = 0
             self.add([self.pad])
         else:
-            self.last_index = 0
+            # index 0 always reserved for padding
+            self.start_index = 1
         if unk is not None:
             self.add([self.unk])
         if eos is not None:
             self.add([self.eos])
-        self.add(vocab)
+        self.add(vocab, order_by=order_by)
 
-    def add(self, vocab):
-        """ Merge vocabularies
+    def add(self, vocab, order_by=None):
+        """ Merge vocabularies. 
+
+        Note:
+            *) The order for numbering new words uses the `order_by` parameter.
+                By default it orders from the most frequent to the least frequent.
+            *) The number of new added terms depends on the vocabulary max size
+                setted at vocabulary construction time.
+            *) This method preserves the index numbers for the old words.
 
         Arguments:
             vocab (iterable or mapping): If a mapping is passed it will be used
                 as a dictionary of terms counts. If a iterable is passed the
                 elements are counted from the iterable. Default: {}
+            order_by (None or str or function of tuples): If none is passed used 
+                the order passed at creation. If 'insertion'
+                is passed the vocab iteration order is used, if 'frequency'
+                is passed the frequency order is used, if 'alpha'
+                is passed the order of the keys will be used. If a function
+                is passed the function is used to sort the elements by 
+                applying it for each tuple (word, frequency). Default: 'freq'
         """
-        new_vocab = Counter(vocab)
-        for word, freq in new_vocab.most_common():
-            if word in self.word2idx:
+        if (isinstance(order_by, str) and order_by not in self.ORDER_BY_OPTIONS) or \
+           (order_by is not None and
+            not isinstance(order_by, str) and
+            not callable(order_by)):
+                raise ValueError(self.INVALID_ORDER_BY_ARGUMENT_MESSAGE.format(
+                                    options=self.ORDER_BY_OPTIONS,
+                                    value=order_by))
+        vocab = OrderedCounter(vocab)
+
+        if order_by is None: # Insertion order
+            order_by = self.default_order
+        if isinstance(order_by, str):
+            if order_by == 'frequency': # Use frequency ordering
+                it = vocab.most_common()
+            elif order_by == 'insertion': # Use insertion Ordering
+                it = vocab.items()
+            else: # Alpha. Use alphabetical order
+                it = sorted(vocab.items(), key=lambda x: x[0])
+        else: # Use function order
+            it = sorted(vocab.items(), key=order_by)
+
+        for word, freq in it:
+            if word in self.word2idx: # The word is already in the vocabulary
                 self.freq[word] += freq
-            elif self.max_size is None or self.last_index < self.max_size:
-                self.freq[word] += freq
-                self.last_index += 1
-                self.word2idx[word] = self.last_index
+            elif (self.max_size is None or len(self) < self.max_size):
+                self.freq[word] = freq
+                self.word2idx[word] = len(self)
                 self.idx2word.append(word)
-            else:
-                break
 
     def __len__(self):
         """ Returns the number of terms in the vocabulary
