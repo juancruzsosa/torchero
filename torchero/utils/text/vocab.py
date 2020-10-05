@@ -1,6 +1,9 @@
 from collections import Counter
 from itertools import chain
 
+class OutOfVocabularyError(LookupError):
+    pass
+
 class Vocab(object):
     """ Represents a Vocabulary to map objects to ids
 
@@ -119,7 +122,11 @@ class Vocab(object):
     def __getitem__(self, word):
         """ Returns the index of the given term
         """
-        return self.word2idx.get(word, self.word2idx[self.unk] if self.unk else None)
+        index = self.word2idx.get(word, self.word2idx[self.unk] if self.unk else None)
+        if index is None:
+            raise OutOfVocabularyError("{} is not in the Vocabulary".format(word))
+        else:
+            return index + self.start_index
 
     def __repr__(self):
         return repr(dict(self.items()))
