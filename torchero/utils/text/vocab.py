@@ -30,7 +30,7 @@ class Vocab(object):
                                          "Got: {value}")
 
     @classmethod
-    def build_from_texts(cls, texts, eos=None, pad='<pad>', unk='<unk>', max_size=None):
+    def build_from_texts(cls, texts, eos=None, pad=None, unk=None, max_size=None, min_count=1):
         """ Builds a Vocabulary from a list of sentences
 
         Arguments:
@@ -46,10 +46,10 @@ class Vocab(object):
             examples = chain.from_iterable(texts)
         else:
             examples = chain.from_iterable(map(lambda x: x + [eos]), texts)
-        vocab = cls(examples, eos=eos, pad=pad, unk=unk, max_size=max_size)
+        vocab = cls(examples, eos=eos, pad=pad, unk=unk, max_size=max_size, min_count=min_count)
         return vocab
 
-    def __init__(self, vocab={}, eos=None, pad=None, unk=None, max_size=None, order_by='frequency'):
+    def __init__(self, vocab={}, eos=None, pad=None, unk=None, max_size=None, order_by='frequency', min_count=1):
         """ Constructor
 
         Arguments:
@@ -68,6 +68,7 @@ class Vocab(object):
         self.eos = eos
         self.unk = unk
         self.max_size = max_size
+        self.min_count = min_count
         self.freq = Counter()
         self.idx2word = list()
         self.word2idx = {}
@@ -85,9 +86,9 @@ class Vocab(object):
             self.add([self.unk])
         if eos is not None:
             self.add([self.eos])
-        self.add(vocab, order_by=order_by)
+        self.add(vocab, order_by=order_by, min_count=self.min_count)
 
-    def add(self, vocab, order_by=None):
+    def add(self, vocab, order_by=None, min_count=None):
         """ Merge vocabularies. 
 
         Note:
@@ -133,7 +134,7 @@ class Vocab(object):
         for word, freq in it:
             if word in self.word2idx: # The word is already in the vocabulary
                 self.freq[word] += freq
-            elif (self.max_size is None or len(self) < self.max_size):
+            elif (self.max_size is None or len(self) < self.max_size) and (min_count is None or freq >= min_count):
                 self.freq[word] = freq
                 self.word2idx[word] = len(self)
                 self.idx2word.append(word)
@@ -191,12 +192,13 @@ class Vocab(object):
 
     def __getstate__(self):
         return {'words': self.idx2word,
-                'freqs': [self.freq[word] in self.idx2word],
+                'freqs': [self.freq[word] for word in self.idx2word],
                 'pad': self.pad,
                 'eos': self.eos,
                 'unk': self.unk,
                 'max_size': self.max_size,
-                'start_index': self.start_index
+                'start_index': self.start_index,
+                'min_count': self.min_count
                 }
 
     def __setstate__(self, d):
@@ -208,3 +210,4 @@ class Vocab(object):
         self.eos = d['eos']
         self.unk = d['unk']
         self.max_size = d['max_size']
+        self.min_count = d['min_count']

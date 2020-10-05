@@ -6,7 +6,20 @@ from torchero.utils.text.tokenizers import tokenizers
 from torchero.utils.text.vocab import Vocab
 
 class TextClassificationDataset(Dataset):
-    def __init__(self, texts, targets, tokenizer=str.split, vocab=None, vocab_max_size=None, eos=None, pad='<pad>', unk='<unk>', transform=str.lower, transform_target=None):
+    def __init__(
+        self,
+        texts,
+        targets,
+        tokenizer=str.split,
+        vocab=None,
+        vocab_max_size=None,
+        vocab_min_count=1,
+        eos=None,
+        pad="<pad>",
+        unk="<unk>",
+        transform=str.lower,
+        transform_target=None,
+    ):
         if len(texts) != len(targets):
             raise RuntimeError("The number of texts should equal the number of targets")
         self.texts = texts
@@ -20,7 +33,9 @@ class TextClassificationDataset(Dataset):
         samples = self.texts
         samples = map(self.transform, samples)
         samples = map(self.tokenizer, samples)
-        self.vocab = vocab or Vocab.build_from_texts(samples, eos=eos, pad=pad, unk=unk, max_size=vocab_max_size)
+        self.vocab = vocab or Vocab.build_from_texts(
+            samples, eos=eos, pad=pad, unk=unk, max_size=vocab_max_size, min_count=vocab_min_count
+        )
 
     def __len__(self):
         return len(self.texts)
