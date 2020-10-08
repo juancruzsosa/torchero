@@ -1,4 +1,5 @@
 import csv
+import json
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -9,6 +10,40 @@ from torchero.utils.text.vocab import Vocab
 
 
 class TextClassificationDataset(Dataset):
+    @classmethod
+    def from_json(
+        cls,
+        path,
+        text_col,
+        target_col,
+        tokenizer=str.split,
+        vocab=None,
+        vocab_max_size=None,
+        vocab_min_count=1,
+        eos=None,
+        pad="<pad>",
+        unk="<unk>",
+        transform=str.lower,
+        transform_target=None,
+    ):
+        with open(path, 'r') as jsonfile:
+            records = json.load(jsonfile)
+            texts = [r[text_col] for r in records]
+            targets = [r[target_col] for r in records]
+            return cls(
+                texts,
+                targets,
+                tokenizer=tokenizer,
+                vocab=vocab,
+                vocab_max_size=vocab_max_size,
+                vocab_min_count=vocab_min_count,
+                eos=eos,
+                pad=pad,
+                unk=unk,
+                transform=transform,
+                transform_target=transform_target,
+            )
+
     @classmethod
     def from_csv(
         cls,
