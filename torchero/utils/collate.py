@@ -3,15 +3,21 @@ import torch
 
 
 class PadSequenceCollate(object):
-    def __init__(self, pad_value=0, pad_scheme='left'):
+    def __init__(self, pad_value=0, padding_scheme='left'):
         self.pad_value = pad_value
-        if pad_scheme not in ('left', 'right'):
+        if padding_scheme not in ('left', 'right', 'center'):
             raise ValueError("invalid padding scheme")
-        self.pad_scheme = pad_scheme
+        self.padding_scheme = padding_scheme
 
     def pad_tensor(self, x, expected_size):
         assert(expected_size >= len(x))
-        padding = (expected_size - len(x), 0) if self.pad_scheme == 'left' else (0, expected_size - len(x))
+        pad_amount = expected_size - len(x)
+        if self.padding_scheme == 'left':
+            padding = (pad_amount, 0)
+        elif self.padding_scheme == 'right':
+            padding = (0, pad_amount)
+        else: # padding_scheme == 'center'
+            padding = (pad_amount-pad_amount//2, pad_amount//2)
         x = torch.nn.functional.pad(x,
                                     padding,
                                     value=self.pad_value)
