@@ -1,5 +1,8 @@
 # Torchero - A training framework for pytorch #
 
+**Torchero** is a library that works on top of the *PyTorch* framework built to
+facilitate the training of Neural Networks.
+
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/juancruzsosa/torchero/Python%20package?logo=github)](https://github.com/juancruzsosa/torchero/actions)
 [![codecov](https://codecov.io/gh/juancruzsosa/torchero/branch/master/graph/badge.svg)](https://codecov.io/gh/juancruzsosa/torchero)
 [![PyPI](https://img.shields.io/pypi/v/torchero?logo=pypi)](https://pypi.org/project/torchero/)
@@ -9,11 +12,13 @@
 
 ## Features ##
 
-* Train/validate models for given number of epochs
-* Hooks/Callbacks to add personalized behavior
-* Different metrics of model accuracy/error
-* Training/validation statistics monitors
-* Cross fold validation iterators for splitting validation data from train data
+It provides tools and utilities to:
+
+- Set up a training process in a few lines of code.
+- Monitor the training performance by checking several prebuilt metrics on a handy progress bar.
+- Integrate a dashboard with *TensorBoard* to visualize those metrics in an online manner with a minimal setup.
+- Add custom functionality via Callbacks.
+- NLP: Datasets for text classification tasks. Vectors, etc.
 
 ## Installation ##
 
@@ -31,72 +36,107 @@ cd torchero
 python setup.py install
 ```
 
-## Example ##
+## Quickstart - MNIST ##
 
-### Training with MNIST 
+In this case we are going to use torchero to train a Convolutional Neural Network
+for the MNIST Dataset.
+
+### Loading the Data
+
+First, we load the dataset using ``torchvision``. Then,
+if we want we can show the image samples using ``show_imagegrid_dataset``
 
 ```python
-import torch
-from torch import nn
 from torch.utils.data import DataLoader
-from torch import optim
-import torchvision
-from torchvision.datasets import MNIST
-from torchvision import transforms
-import torchero
+from torchvision.datasets import MNIST # The MNIST dataset
+from torchvision import transforms # To convert to Images to Tensors
+
 from torchero import SupervisedTrainer
-from torchero.meters import CategoricalAccuracy
-from torchero.callbacks import ProgbarLogger as Logger, CSVLogger
+from torchero.callbacks import ProgbarLogger, ModelCheckpoint, CSVLogger
+from torchero.utils import show_imagegrid_dataset
 
-class Network(nn.Module):
-    def __init__(self):
-        super(Network, self).__init__()
-        self.filter = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5),
-                                    nn.ReLU(inplace=True),
-                                    nn.BatchNorm2d(32),
-                                    nn.MaxPool2d(2),
-                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
-                                    nn.ReLU(inplace=True),
-                                    nn.BatchNorm2d(64),
-                                    nn.MaxPool2d(2))
-        self.linear = nn.Sequential(nn.Linear(5*5*64, 500),
-                                    nn.BatchNorm1d(500),
-                                    nn.ReLU(inplace=True),
-                                    nn.Linear(500, 10))
+from matplotlib import pyplot as plt
 
-    def forward(self, x):
-        bs = x.shape[0]
-        return self.linear(self.filter(x).view(bs, -1))
+train_ds = MNIST(root='/tmp/data/mnist', download=True, train=True, transform=transforms.ToTensor())
+test_ds = MNIST(root='/tmp/data/mnist', download=False, train=False, transform=transforms.ToTensor())
 
-train_ds = MNIST(root='data/',
-                 download=True,
-                 train=True,
-                 transform=transforms.Compose([transforms.ToTensor()]))
-test_ds = MNIST(root='data/',
-                download=False,
-                train=False,
-                transform=transforms.Compose([transforms.ToTensor()]))
-train_dl = DataLoader(train_ds, batch_size=50)
-test_dl = DataLoader(test_ds, batch_size=50)
+train_dl = DataLoader(train_ds, batch_size=32)
+test_dl = DataLoader(test_ds, batch_size=32)
 
-model = Network()
-
-trainer = SupervisedTrainer(model=model,
-                            optimizer='sgd',
-                            criterion='cross_entropy',
-                            acc_meters={'acc': 'categorical_accuracy_percentage'},
-                            callbacks=[Logger(),
-                                       CSVLogger(output='training_stats.csv')
-                                      ])
-
-# If you want to use cuda uncomment the next line
-# trainer.cuda()
-
-trainer.train(dataloader=train_dl,
-              valid_dataloader=test_dl,
-              epochs=2)
-
+show_imagegrid_dataset(train_ds)
+plt.show()
 ```
+
+![mnist images by class](documentation/source/img/quickstart/mnist_train_data.png)
+
+### Creating the Model
+
+Then we have to define the model. For this case we can use a Sequential one.
+
+```python
+model = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5),
+					  nn.ReLU(inplace=True),
+					  nn.MaxPool2d(2),
+					  nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
+					  nn.ReLU(inplace=True),
+					  nn.MaxPool2d(2),
+					  nn.Flatten(),
+					  nn.Linear(5*5*64, 500),
+					  nn.ReLU(inplace=True),
+					  nn.Linear(500, 10))
+```
+
+### Training the Model
+
+After the network and both train and test DataLoader's are defined.
+We can run the training using ``SDG`` optimizer, cross entropy Loss,
+categorical accuracy, a progress bar, a ModelCheckpoint to
+save the model when improves on accuracy, a CSVLogger to
+dump the metrics on a CSV file. We can call ``trainer.cuda()`` if we
+want to do training on GPU insted of CPU.
+
+```python
+trainer = SupervisedTrainer(model=model,
+						  optimizer='sgd',
+						  criterion='cross_entropy',
+						  acc_meters=['categorical_accuracy_percentage'],
+						  callbacks=[ProgbarLogger(notebook=True),
+									 ModelCheckpoint('saved_model', mode='max', monitor='val_acc'),
+									 CSVLogger('training_results.xml')])
+
+if torch.cuda.is_available():
+	trainer.cuda()
+
+trainer.train()
+trainer.train(dataloader=train_dl, valid_dataloader=test_dl, epochs=5)
+```
+
+![progress bar training](documentation/source/img/quickstart/training_status.gif)
+
+### Showing the training results
+
+To see the training metrics
+
+```python
+fig, axs = plt.subplots(figsize=(14,3), ncols=2, nrows=1)
+trainer.history.plot()
+plt.show()
+```
+
+And if we want to see for example the confusion matrix on the test set.
+
+```python
+results = trainer.evaluate(test_dl, ['categorical_accuracy_percentage', 'confusion_matrix'])
+plt.figure(figsize=(10, 10))
+results['confusion_matrix'].plot(classes=train_ds.classes)
+```
+![confusion matrix](documentation/source/img/quickstart/confusion_matrix.png)
+
+## Documentation ##
+
+Additional documentation can be founded [here](https://readthedocs.org/projects/torchero/badge/?version=latest)
+
+## Extensive List of Classes ##
 
 ### Trainers ###
 
