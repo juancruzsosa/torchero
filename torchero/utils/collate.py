@@ -3,7 +3,34 @@ import torch
 
 
 class PadSequenceCollate(object):
+    """ Collator for sequence padding. Useful for handle batchs of variable size tensors
+
+    Converts list of tuples ($x_i$, $y_i$) where $x_i$ is a tensor with shape (N_i, *)
+    into a tuple (X, L), Y where X is a single padded.
+
+    Example:
+        >>> collate =  PadSequenceCollate()
+        >>> X_1, y_1 = torch.tensor([1, 2]), torch.tensor(1)
+        >>> X_2, y_2 = torch.tensor([3]), torch.tensor(0)
+        >>> collate([(X_1, y_1), (X_2, y_2)])
+        (tensor([[1, 2], [0, 3]), torch([2, 1])), tensor([1., 0.])
+        >>> collate =  PadSequenceCollate(pad_value=-1, padding_scheme='right')
+        (tensor([[1, 2], [3, -1]), torch([2, 1])), tensor([1., 0.])
+
+    This is ment to be used in the set-up of a DataLoader as collate_fn parameter
+    """
+
     def __init__(self, pad_value=0, padding_scheme='left'):
+        """ Constructor
+
+        Arguments:
+            pad_value: Value used for fill the padding
+            padding_scheme: Padding scheme. One of 'left', 'right', 'center'. If
+                'left' is passed the padding is added at the begining of the
+                sequence. If 'right' is passed the padding is added to the end.
+                If 'center' is passed the half of the padding is added at the begining
+                and half at the end of the sequence
+        """
         self.pad_value = pad_value
         if padding_scheme not in ('left', 'right', 'center'):
             raise ValueError("invalid padding scheme")
@@ -43,13 +70,14 @@ class PadSequenceCollate(object):
         return (sequences, lengths), labels
 
 class BoWCollate(object):
-    """ Batch Collator intended to be used with EmbeddingBag
+    """ Batch Collator intended to be used with EmbeddingBag.
 
     Example:
-        >> collate = BoWCollate()
-        >> collate(torch.tensor([([1, 2], torch.tensor(1.)),
-                                 ([3], torch.tensor(0))])
-        (torch.tensor([1, 2, 3]), torch.LongTensor([0, 2])), torch.tensor([1, 0])
+        >>> collate =  BoWCollate()
+        >>> X_1, y_1 = torch.tensor([1, 2]), torch.tensor(1)
+        >>> X_2, y_2 = torch.tensor([3]), torch.tensor(0)
+        >>> collate([(X_1, y_1), (X_2, y_2)])
+        (tensor([1, 2, 3]), torch([0, 2])), tensor([1., 0.])
     """
     def __call__(self, batch):
         target_elem = batch[0][1]
