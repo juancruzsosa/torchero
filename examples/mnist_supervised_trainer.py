@@ -12,7 +12,7 @@ from torchvision import transforms
 import torchero
 from torchero import SupervisedTrainer
 from torchero.meters import CategoricalAccuracy
-from torchero.callbacks import ProgbarLogger as Logger, CSVLogger
+from torchero.callbacks import ProgbarLogger as Logger, CSVLogger, ModelCheckpoint
 
 class Network(nn.Module):
     def __init__(self):
@@ -65,23 +65,18 @@ def main():
                                 logging_frecuency=args.logging_frecuency,
                                 acc_meters={'acc': 'categorical_accuracy_percentage'},
                                 callbacks=[Logger(),
+                                           ModelCheckpoint('saved_model', monitor='val_acc'),
                                            CSVLogger(output='training_stats.csv')
                                           ])
     if args.use_cuda:
-        trainer.cuda()
+        trainer.to('cuda')
 
     trainer.train(dataloader=train_dl,
                   valid_dataloader=test_dl,
                   epochs=args.epochs)
 
-    validator = trainer.validator
-
-    if args.use_cuda:
-        validator.cuda()
-
-    result = validator.validate(test_dl)
-    plt.imshow(result['val_cfg'].cpu().numpy())
-    plt.show()
+    result = trainer.evaluate(test_dl)
+    print('\n'.join(map(lambda x: '{}: {}'.format(*x), result.items())))
 
 if __name__ == '__main__':
     main()
