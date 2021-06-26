@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from torchero.callbacks.base import Callback
@@ -12,17 +13,20 @@ except ImportError:
     print("install tqdm for progress bars support.")
     raise
 
-class ProgbarLoggerStreamHandler(object):
-    def __init__(self, tqdm=tqdm.tqdm, file=sys.stderr):
-        self.file = file
+class TqdmLoggingHandler(logging.Handler):
+    def __init__(self, tqdm=tqdm.tqdm, level=logging.NOTSET):
         self.tqdm = tqdm
+        super().__init__(level)
 
-    def write(self, x):
-        if len(x.rstrip()) > 0:
-            self.tqdm.write(x, file=self.file, end='')
-
-    def flush(self):
-        return getattr(self.file, "flush", lambda: None)()
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.tqdm.write(msg)
+            self.flush()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
 
 class ProgbarLogger(Callback):
     """ Callback that displays progress bars to monitor
@@ -60,9 +64,9 @@ class ProgbarLogger(Callback):
         """
         self.trainer = trainer
         if self.notebook:
-            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.notebook.tqdm))
+            self.trainer.logger.addHanlder(TqdmLoggingHandler(tqdm.notebook.tqdm))
         else:
-            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.tqdm))
+            self.trainer.logger.addHandler(TqdmLoggingHandler(tqdm.tqdm))
 
     def on_train_begin(self):
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
