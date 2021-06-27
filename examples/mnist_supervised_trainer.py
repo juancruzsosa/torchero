@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import argparse
 import torch
@@ -12,7 +13,9 @@ from torchvision import transforms
 import torchero
 from torchero import SupervisedTrainer
 from torchero.meters import CategoricalAccuracy
-from torchero.callbacks import ProgbarLogger as Logger, CSVLogger, ModelCheckpoint
+from torchero.callbacks import ProgbarLogger as  Logger, CSVLogger, ModelCheckpoint
+
+logging.basicConfig(format='[%(asctime)s]:[%(levelname)s]: %(message)s')
 
 class Network(nn.Module):
     def __init__(self):

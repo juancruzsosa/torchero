@@ -14,14 +14,13 @@ except ImportError:
     raise
 
 class TqdmLoggingHandler(logging.Handler):
-    def __init__(self, tqdm=tqdm.tqdm, level=logging.NOTSET):
-        self.tqdm = tqdm
+    def __init__(self, level=logging.NOTSET):
         super().__init__(level)
 
     def emit(self, record):
         try:
             msg = self.format(record)
-            self.tqdm.write(msg)
+            tqdm.tqdm.write(msg, end='\n')
             self.flush()
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -64,14 +63,15 @@ class ProgbarLogger(Callback):
         """
         self.trainer = trainer
         if self.notebook:
-            self.trainer.logger.addHanlder(TqdmLoggingHandler(tqdm.notebook.tqdm))
+            self.trainer.logger.addHandler(TqdmLoggingHandler())
         else:
-            self.trainer.logger.addHandler(TqdmLoggingHandler(tqdm.tqdm))
+            self.trainer.logger.addHandler(TqdmLoggingHandler())
 
     def on_train_begin(self):
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
                                     unit='epoch',
                                     leave=True,
+                                    position=0,
                                     ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
         self.last_step = 0
@@ -80,6 +80,7 @@ class ProgbarLogger(Callback):
         step_tqdm = self.tqdm(total=self.trainer.total_steps,
                               unit=' batchs',
                               leave=True,
+                              position=1+len(self.step_tqdms),
                               ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
