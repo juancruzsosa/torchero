@@ -115,20 +115,14 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         ValidationGranularity.AT_LOG: _OnLogValidScheduler
     }
     logger = None
-    logger_handler = None
 
     @classmethod
     def create_default_logger_handler(cls):
         if cls.logger is None:
             logger = logging.getLogger("Trainer")
-            logger_handler = logging.StreamHandler()
-            formatter = logging.Formatter('[%(asctime)s]:[%(levelname)s]: %(message)s',
-                                          '%Y-%m-%d %H:%M:%S')
-            logger_handler.setFormatter(formatter)
-            logger.addHandler(logger_handler)
             logger.setLevel(logging.INFO)
             cls.logger = logger
-            cls.logger_handler = logger_handler
+
 
     @staticmethod
     def prepend_name_dict(prefix, d):

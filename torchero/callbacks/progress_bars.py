@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from torchero.callbacks.base import Callback
@@ -12,17 +13,19 @@ except ImportError:
     print("install tqdm for progress bars support.")
     raise
 
-class ProgbarLoggerStreamHandler(object):
-    def __init__(self, tqdm=tqdm.tqdm, file=sys.stderr):
-        self.file = file
-        self.tqdm = tqdm
+class TqdmLoggingHandler(logging.Handler):
+    def __init__(self, level=logging.NOTSET):
+        super().__init__(level)
 
-    def write(self, x):
-        if len(x.rstrip()) > 0:
-            self.tqdm.write(x, file=self.file, end='')
-
-    def flush(self):
-        return getattr(self.file, "flush", lambda: None)()
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            tqdm.tqdm.write(msg, end='\n')
+            self.flush()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.handleError(record)
 
 class ProgbarLogger(Callback):
     """ Callback that displays progress bars to monitor
@@ -60,14 +63,15 @@ class ProgbarLogger(Callback):
         """
         self.trainer = trainer
         if self.notebook:
-            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.notebook.tqdm))
+            self.trainer.logger.addHandler(TqdmLoggingHandler())
         else:
-            self.trainer.logger_handler.setStream(ProgbarLoggerStreamHandler(tqdm.tqdm))
+            self.trainer.logger.addHandler(TqdmLoggingHandler())
 
     def on_train_begin(self):
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
                                     unit='epoch',
                                     leave=True,
+                                    position=0,
                                     ascii=self.ascii)
         self.epoch_bar = self.epoch_tqdm.__enter__()
         self.last_step = 0
@@ -76,6 +80,7 @@ class ProgbarLogger(Callback):
         step_tqdm = self.tqdm(total=self.trainer.total_steps,
                               unit=' batchs',
                               leave=True,
+                              position=1+len(self.step_tqdms),
                               ascii=self.ascii)
         self.step_tqdms.append(step_tqdm)
         self.step_bars.append(step_tqdm.__enter__())
