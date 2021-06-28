@@ -72,7 +72,7 @@ class KeyedVectors(object):
             vectors (iterable of arrays): Vector of each words. It must have the
                 same length than the word list
         """
-        self.vocab = Vocab(words, eos=None, unk=None, pad=None, order_by='insertion')
+        self.vocab = Vocab(words, eos=None, unk=None, pad='<pad>', order_by='insertion')
         self.matrix = torch.stack([torch.Tensor(v) for v in vectors])
 
     @property
