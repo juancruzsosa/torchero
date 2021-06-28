@@ -64,7 +64,7 @@ class PadSequenceCollate(object):
             labels = torch.stack([x[1] for x in batch])
         elif isinstance(target_elem, np.ndarray):
             labels = torch.from_numpy(np.stack([x[1] for x in batch]))
-        elif isinstance(target_elem, (float, int)):
+        elif isinstance(target_elem, (float, int, list)):
             labels = torch.tensor([x[1] for x in batch])
         else:
             raise RuntimeError("Labels type not supported")
@@ -89,7 +89,7 @@ class BoWCollate(object):
             labels = torch.stack([x[1] for x in batch])
         elif isinstance(target_elem, np.ndarray):
             labels = torch.from_numpy(np.stack([x[1] for x in batch]))
-        elif isinstance(target_elem, (float, int)):
+        elif isinstance(target_elem, (float, int, list)):
             labels = torch.tensor([x[1] for x in batch])
         else:
             raise RuntimeError("Labels type not supported")

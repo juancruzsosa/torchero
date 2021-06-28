@@ -12,7 +12,15 @@ from torchero.utils.text.vocab import Vocab
 class TextClassificationDataset(Dataset):
     """ Dataset for Text classification task
     """
-
+    @staticmethod
+    def get_record_item(record, target_field):
+        if isinstance(target_field, (str, int)):
+            return record[target_field]
+        elif isinstance(target_field, list):
+            return [record[field] for field in target_field]
+        else:
+            raise TypeError("Invalid `target_field` type")
+    
     @classmethod
     def from_json(
         cls,
@@ -34,7 +42,7 @@ class TextClassificationDataset(Dataset):
             path (str or Path): Path of the json file
             text_col (str or int): If a string is passed the column name for the
                 texts. If a int is passed the index of the column for the text
-            text_col (str or int): If a string is passed the column name for the
+            text_col (str, int, list of str or list of str): If a string is passed the column name for the
                 target. If a int is passed the index of the column for the target
             tokenizer (callable): See TextClassificationDataset constructor
             vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
@@ -48,7 +56,7 @@ class TextClassificationDataset(Dataset):
         with open(path, 'r') as jsonfile:
             records = json.load(jsonfile)
             texts = [r[text_col] for r in records]
-            targets = [r[target_col] for r in records]
+            targets = [self.get_record_item(record, target_col) for r in records]
             return cls(
                 texts,
                 targets,
@@ -104,8 +112,9 @@ class TextClassificationDataset(Dataset):
             transform (callable): See TextClassificationDataset constructor
             transform_target (callable): See TextClassificationDataset constructor
         """
-        def check_column(col, columns):
-            if not isinstance(col, (int, str)):
+        def check_column(col, columns, single=True):
+            permitted_types = (int, str) if single else (int, str, list)
+            if not isinstance(col, permitted_types):
                 raise TypeError("invalid column type")
             if isinstance(col, str) and col not in columns:
                 raise RuntimeError(
@@ -130,16 +139,18 @@ class TextClassificationDataset(Dataset):
                 column_names = list(column_names or csv_col_names)
             if column_names is not None:
                 check_column(text_col, column_names)
-                check_column(target_col, column_names)
+                check_column(target_col, column_names, single=False)
             if isinstance(text_col, str):
                 text_col = column_names.index(text_col)
             if isinstance(target_col, str):
                 target_col = column_names.index(target_col)
+            else: # isinstance(target_col, list)
+                target_col = [column_names.index(t) for t in target_col]
             texts = []
             targets = []
             for row in it:
                 texts.append(row[text_col])
-                targets.append(row[target_col])
+                targets.append(cls.get_record_item(row, target_col))
             return cls(
                 texts,
                 targets,
