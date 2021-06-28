@@ -12,6 +12,7 @@ from torchero.utils.text.vocab import Vocab
 class TextClassificationDataset(Dataset):
     """ Dataset for Text classification task
     """
+
     @classmethod
     def from_json(
         cls,
@@ -26,25 +27,24 @@ class TextClassificationDataset(Dataset):
         pad="<pad>",
         unk="<unk>",
         transform=str.lower,
-        transform_target=None,
-    ):
-    """ Creates a TextClassificationDataset from a json file (with list of dict fields scheme).
+        transform_target=None):
+        """ Creates a TextClassificationDataset from a json file (with list of dict fields scheme).
 
-    Arguments:
-        path (str or Path): Path of the json file
-        text_col (str or int): If a string is passed the column name for the
-            texts. If a int is passed the index of the column for the text
-        text_col (str or int): If a string is passed the column name for the
-            target. If a int is passed the index of the column for the target
-        tokenizer (callable): See TextClassificationDataset constructor
-        vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
-        vocab_min_count (int): See TextClassificationDataset constructor
-        eos (str): See TextClassificationDataset constructor
-        pad (str): See TextClassificationDataset constructor
-        unk (str): See TextClassificationDataset constructor
-        transform (callable): See TextClassificationDataset constructor
-        transform_target (callable): See TextClassificationDataset constructor
-    """
+        Arguments:
+            path (str or Path): Path of the json file
+            text_col (str or int): If a string is passed the column name for the
+                texts. If a int is passed the index of the column for the text
+            text_col (str or int): If a string is passed the column name for the
+                target. If a int is passed the index of the column for the target
+            tokenizer (callable): See TextClassificationDataset constructor
+            vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
+            vocab_min_count (int): See TextClassificationDataset constructor
+            eos (str): See TextClassificationDataset constructor
+            pad (str): See TextClassificationDataset constructor
+            unk (str): See TextClassificationDataset constructor
+            transform (callable): See TextClassificationDataset constructor
+            transform_target (callable): See TextClassificationDataset constructor
+        """
         with open(path, 'r') as jsonfile:
             records = json.load(jsonfile)
             texts = [r[text_col] for r in records]
@@ -83,27 +83,27 @@ class TextClassificationDataset(Dataset):
         transform=str.lower,
         transform_target=None,
     ):
-    """ Creates a TextClassificationDataset from a csv file
+        """ Creates a TextClassificationDataset from a csv file
 
-    Arguments:
-        path (str or Path): Path of the csv file
-        text_col (str or int): If a string is passed the column name for the
-            texts. If a int is passed the index of the column for the text
-        text_col (str or int): If a string is passed the column name for the
-            target. If a int is passed the index of the column for the target
-        delimiter (str): Character used to splits the csv fields
-        quotechar (str): Character used to delimit the text strings
-        has_header (bool): True if the csv contains a header. False, otherwise
-        column_names (list): List of columns names
-        tokenizer (callable): See TextClassificationDataset constructor
-        vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
-        vocab_min_count (int): See TextClassificationDataset constructor
-        eos (str): See TextClassificationDataset constructor
-        pad (str): See TextClassificationDataset constructor
-        unk (str): See TextClassificationDataset constructor
-        transform (callable): See TextClassificationDataset constructor
-        transform_target (callable): See TextClassificationDataset constructor
-    """
+        Arguments:
+            path (str or Path): Path of the csv file
+            text_col (str or int): If a string is passed the column name for the
+                texts. If a int is passed the index of the column for the text
+            text_col (str or int): If a string is passed the column name for the
+                target. If a int is passed the index of the column for the target
+            delimiter (str): Character used to splits the csv fields
+            quotechar (str): Character used to delimit the text strings
+            has_header (bool): True if the csv contains a header. False, otherwise
+            column_names (list): List of columns names
+            tokenizer (callable): See TextClassificationDataset constructor
+            vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
+            vocab_min_count (int): See TextClassificationDataset constructor
+            eos (str): See TextClassificationDataset constructor
+            pad (str): See TextClassificationDataset constructor
+            unk (str): See TextClassificationDataset constructor
+            transform (callable): See TextClassificationDataset constructor
+            transform_target (callable): See TextClassificationDataset constructor
+        """
         def check_column(col, columns):
             if not isinstance(col, (int, str)):
                 raise TypeError("invalid column type")
@@ -168,29 +168,29 @@ class TextClassificationDataset(Dataset):
         transform=str.lower,
         transform_target=None,
     ):
-    """ Constructor
+        """ Constructor
 
-    Arguments:
-        texts (list-like of str): List of dataset text samples
-        targets (list-like): List of targets for every sample in texts.
-        tokenizer (callable): Function used to tokenize the text.
-        vocab (`torchero.utils.text.Vocab`): Corpus Vocabulary. If None is passed
-        the vocabulary is built from scratch from the corpus first.
-        vocab_max (int): Limits the created vocabulary to have less than `vocab_max` tokens.
-            If None the created vocabulary will have no limit.
-            Only valid when vocab argument is None. Default: None
-        vocab_min_count (int): Minimum number of occurences for a token to
-            be part of the vocabulary. Only valid when vocab argument is None.
-            Default: None
-        eos (str): Special token to be used for the end of every sentences.
-        pad (str): Special token to be used for padding.
-        unk (str): Special token to be used for unknown words.
-            If unk is None, unknown words will be skipped from the corpus.
-            Default: '<unk>'
-        transform (callable): Function used for text preprocessing before to
-            perform tokenization
-        transform_target (callable): Function used to transform targets.
-    """
+        Arguments:
+            texts (list-like of str): List of dataset text samples
+            targets (list-like): List of targets for every sample in texts.
+            tokenizer (callable): Function used to tokenize the text.
+            vocab (`torchero.utils.text.Vocab`): Corpus Vocabulary. If None is passed
+            the vocabulary is built from scratch from the corpus first.
+            vocab_max (int): Limits the created vocabulary to have less than `vocab_max` tokens.
+                If None the created vocabulary will have no limit.
+                Only valid when vocab argument is None. Default: None
+            vocab_min_count (int): Minimum number of occurences for a token to
+                be part of the vocabulary. Only valid when vocab argument is None.
+                Default: None
+            eos (str): Special token to be used for the end of every sentences.
+            pad (str): Special token to be used for padding.
+            unk (str): Special token to be used for unknown words.
+                If unk is None, unknown words will be skipped from the corpus.
+                Default: '<unk>'
+            transform (callable): Function used for text preprocessing before to
+                perform tokenization
+            transform_target (callable): Function used to transform targets.
+        """
         if len(texts) != len(targets):
             raise RuntimeError(
                 "The number of texts should equal the number of targets"
