@@ -20,7 +20,7 @@ class PadSequenceCollate(object):
     This is ment to be used in the set-up of a DataLoader as collate_fn parameter
     """
 
-    def __init__(self, pad_value=0, padding_scheme='left'):
+    def __init__(self, pad_value=0, padding_scheme='left', ret_lengths=False):
         """ Constructor
 
         Arguments:
@@ -35,6 +35,7 @@ class PadSequenceCollate(object):
         if padding_scheme not in ('left', 'right', 'center'):
             raise ValueError("invalid padding scheme")
         self.padding_scheme = padding_scheme
+        self.ret_lengths = ret_lengths
 
     def pad_tensor(self, x, expected_size):
         assert(expected_size >= len(x))
@@ -67,7 +68,10 @@ class PadSequenceCollate(object):
             labels = torch.tensor([x[1] for x in batch])
         else:
             raise RuntimeError("Labels type not supported")
-        return (sequences, lengths), labels
+        if self.ret_lengths:
+            return (sequences, lengths), labels
+        else:
+            return sequences, labels
 
 class BoWCollate(object):
     """ Batch Collator intended to be used with EmbeddingBag.
