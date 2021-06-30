@@ -1,1 +1,2 @@
-from torchero.models.text.linear import LinearModel
+from torchero.models.text.model import *
+from torchero.models.text.nn import *

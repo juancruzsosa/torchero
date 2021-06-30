@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 class LinearModel(nn.Module):
@@ -6,8 +7,11 @@ class LinearModel(nn.Module):
         self.embeddings = nn.EmbeddingBag(vocab_size,
                                           embedding_dim=embedding_dim)
         self.linear = nn.Linear(embedding_dim, output_size)
-        
-    def forward(self, x, offsets):
+
+    def forward(self, x, lens):
+        x = torch.cat([e[:l] for e, l in zip(x, lens)])
+        offsets = torch.cat([torch.zeros(1, dtype=lens.dtype, device=lens.device),
+                             lens[:-1]]).cumsum(dim=0)
         x = self.embeddings(x, offsets)
         x = self.linear(x)
         return x
