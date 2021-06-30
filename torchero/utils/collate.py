@@ -20,7 +20,7 @@ class PadSequenceCollate(object):
     This is ment to be used in the set-up of a DataLoader as collate_fn parameter
     """
 
-    def __init__(self, pad_value=0, padding_scheme='left', ret_lengths=False):
+    def __init__(self, pad_value=0, padding_scheme='right', ret_lengths=True):
         """ Constructor
 
         Arguments:
