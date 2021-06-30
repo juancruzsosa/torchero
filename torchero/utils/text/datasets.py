@@ -5,8 +5,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 from torchero.utils.collate import PadSequenceCollate
-from torchero.utils.text.tokenizers import tokenizers
-from torchero.utils.text.vocab import Vocab
 
 
 class TextClassificationDataset(Dataset):
@@ -27,14 +25,7 @@ class TextClassificationDataset(Dataset):
         path,
         text_col,
         target_col,
-        tokenizer=str.split,
-        vocab=None,
-        vocab_max_size=None,
-        vocab_min_count=1,
-        eos=None,
-        pad="<pad>",
-        unk="<unk>",
-        transform=str.lower,
+        transform_text,
         transform_target=None):
         """ Creates a TextClassificationDataset from a json file (with list of dict fields scheme).
 
@@ -44,13 +35,7 @@ class TextClassificationDataset(Dataset):
                 texts. If a int is passed the index of the column for the text
             text_col (str, int, list of str or list of str): If a string is passed the column name for the
                 target. If a int is passed the index of the column for the target
-            tokenizer (callable): See TextClassificationDataset constructor
-            vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
-            vocab_min_count (int): See TextClassificationDataset constructor
-            eos (str): See TextClassificationDataset constructor
-            pad (str): See TextClassificationDataset constructor
-            unk (str): See TextClassificationDataset constructor
-            transform (callable): See TextClassificationDataset constructor
+            transform (TextTransform): See TextClassificationDataset constructor
             transform_target (callable): See TextClassificationDataset constructor
         """
         with open(path, 'r') as jsonfile:
@@ -60,14 +45,7 @@ class TextClassificationDataset(Dataset):
             return cls(
                 texts,
                 targets,
-                tokenizer=tokenizer,
-                vocab=vocab,
-                vocab_max_size=vocab_max_size,
-                vocab_min_count=vocab_min_count,
-                eos=eos,
-                pad=pad,
-                unk=unk,
-                transform=transform,
+                transform_text=transform_text,
                 transform_target=transform_target,
             )
 
@@ -81,14 +59,7 @@ class TextClassificationDataset(Dataset):
         quotechar='"',
         has_header=True,
         column_names=None,
-        tokenizer=str.split,
-        vocab=None,
-        vocab_max_size=None,
-        vocab_min_count=1,
-        eos=None,
-        pad="<pad>",
-        unk="<unk>",
-        transform=str.lower,
+        transform_text=str.lower,
         transform_target=None,
     ):
         """ Creates a TextClassificationDataset from a csv file
@@ -104,12 +75,7 @@ class TextClassificationDataset(Dataset):
             has_header (bool): True if the csv contains a header. False, otherwise
             column_names (list): List of columns names
             tokenizer (callable): See TextClassificationDataset constructor
-            vocab (`torchero.utils.text.Vocab`): See TextClassificationDataset constructor
-            vocab_min_count (int): See TextClassificationDataset constructor
-            eos (str): See TextClassificationDataset constructor
-            pad (str): See TextClassificationDataset constructor
-            unk (str): See TextClassificationDataset constructor
-            transform (callable): See TextClassificationDataset constructor
+            transform_text (TextTransform): See TextClassificationDataset constructor
             transform_target (callable): See TextClassificationDataset constructor
         """
         def check_column(col, columns, single=True):
@@ -154,14 +120,7 @@ class TextClassificationDataset(Dataset):
             return cls(
                 texts,
                 targets,
-                tokenizer=tokenizer,
-                vocab=vocab,
-                vocab_max_size=vocab_max_size,
-                vocab_min_count=vocab_min_count,
-                eos=eos,
-                pad=pad,
-                unk=unk,
-                transform=transform,
+                transform_text=transform_text,
                 transform_target=transform_target,
             )
 
@@ -169,15 +128,9 @@ class TextClassificationDataset(Dataset):
         self,
         texts,
         targets,
-        tokenizer=str.split,
-        vocab=None,
-        vocab_max_size=None,
-        vocab_min_count=1,
-        eos=None,
-        pad="<pad>",
-        unk="<unk>",
-        transform=str.lower,
+        transform_text,
         transform_target=None,
+        build_vocab=True,
     ):
         """ Constructor
 
@@ -198,7 +151,7 @@ class TextClassificationDataset(Dataset):
             unk (str): Special token to be used for unknown words.
                 If unk is None, unknown words will be skipped from the corpus.
                 Default: '<unk>'
-            transform (callable): Function used for text preprocessing before to
+            transform_text (TextTransform): Function used for text preprocessing before to
                 perform tokenization
             transform_target (callable): Function used to transform targets.
         """
@@ -208,28 +161,17 @@ class TextClassificationDataset(Dataset):
             )
         self.texts = texts
         self.targets = targets
-        self.transform = transform
+        self.transform_text = transform_text
         self.transform_target = transform_target
-        if isinstance(tokenizer, str):
-            tokenizer = tokenizers[tokenizer]
-        self.tokenizer = tokenizer
-
-        samples = self.texts
-        samples = map(self.transform, samples)
-        samples = map(self.tokenizer, samples)
-        self.vocab = vocab or Vocab.build_from_texts(
-            samples, eos=eos, pad=pad, unk=unk, max_size=vocab_max_size, min_count=vocab_min_count
-        )
+        if build_vocab:
+            self.transform_text.build_vocab(self.texts)
 
     def __len__(self):
         return len(self.texts)
 
     def __getitem__(self, i):
         text = self.texts[i]
-        text = self.transform(text)
-        text = self.tokenizer(text)
-        ids = self.vocab(text)
-        ids = torch.LongTensor(ids)
+        ids = self.transform_text(text)
         target = self.targets[i]
         if self.transform_target:
             target = self.transform_target(target)

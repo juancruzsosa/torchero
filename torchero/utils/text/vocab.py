@@ -211,3 +211,15 @@ class Vocab(object):
         self.unk = d['unk']
         self.max_size = d['max_size']
         self.min_count = d['min_count']
+
+    def add_from_tokenized_texts(self, texts):
+        """ Updates the Vocabulary from a list of tokenized sentences
+
+        Arguments:
+            texts (list[list[str]]): Corpus (already tokenized) used to build the vocabulary
+        """
+        if self.eos is None:
+            examples = chain.from_iterable(texts)
+        else:
+            examples = chain.from_iterable(map(lambda x: x + [self.eos]), texts)
+        self.add(examples)
