@@ -11,10 +11,9 @@ class ImageModel(Model):
             transform = transforms.ToTensor()
         self.transform = transform
 
-    def predict_batch(self, image):
-        image = self.transform(image)
-        preds = super(ImageModel, self).predict_batch(image)
-        return preds
+    def input_to_tensor(self, images):
+        tensor = [self.transform(image) for image in images]
+        return tensor
 
 class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
     def __init__(self, model, transform, use_logits=True, threshold=0.5):
