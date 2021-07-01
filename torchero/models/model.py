@@ -171,7 +171,8 @@ class BinaryClassificationModel(Model):
     def predict_batch(self, *X, to_tensor=True):
         preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
         if self.use_logits:
-            preds = preds > self.threshold
+            preds = nn.functional.sigmoid(preds)
+        preds = preds > self.threshold
         return preds
 
 class ClassificationModel(Model):
