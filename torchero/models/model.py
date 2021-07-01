@@ -182,7 +182,7 @@ class ClassificationModel(Model):
         self.use_softmax = use_softmax
 
     def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
-        if loss is not None:
+        if loss is None:
             loss = 'cross_entropy' if self.use_softmax else 'nll'
         if metrics is None:
             metrics = [meters.CategoricalAccuracy(), meters.BalancedAccuracy()]
