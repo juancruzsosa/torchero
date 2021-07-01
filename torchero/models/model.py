@@ -1,5 +1,7 @@
+import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
+
 from torchero.utils.mixins import DeviceMixin
 from torchero import meters
 from torchero import SupervisedTrainer
@@ -21,8 +23,13 @@ class Model(DeviceMixin):
         self.trainer.to(self.device)
         return self
 
-    def predict_batch(self, *X):
+    def input_to_tensor(self, *X):
+        return X
+
+    def predict_batch(self, *X, to_tensor=True):
         with torch.no_grad():
+            if to_tensor:
+                X = self.input_to_tensor(*X)
             X = map(self._convert_tensor, X)
             return self.model(*X)
 
@@ -31,23 +38,24 @@ class Model(DeviceMixin):
         if self.trainer is not None:
             self.trainer.to(device)
 
-    def predict_on_dataloader(self, dl):
+    def predict_on_dataloader(self, dl, to_tensor=True):
         ys = []
         for X in dl:
-            if isinstance(X, (tuple, list)):
-                y = self.predict_batch(*X)
+            if isinstance(X, tuple):
+                y = self.predict_batch(*X, to_tensor=to_tensor)
             else:
-                y = self.predict_batch(X)
+                y = self.predict_batch(X, to_tensor=to_tensor)
             ys.extend(y)
         return ys
 
-    def predict(self, ds):
-        dl = self._get_dataloader(train_ds,
+    def predict(self,
+                ds,
+                batch_size=None,
+                to_tensor=True):
+        dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
-                                  shuffle=shuffle,
-                                  collate_fn=collate_fn,
-                                  sampler=sampler)
-        return self.predict_on_dataloader(train_dl)
+                                  shallow_dl=to_tensor)
+        return self.predict_on_dataloader(dl, to_tensor=to_tensor)
 
     def train_on_dataloader(self, train_dl, val_dl=None, epochs=1):
         if self.trainer is None:
@@ -73,15 +81,24 @@ class Model(DeviceMixin):
                         batch_size=None,
                         shuffle=True,
                         collate_fn=None,
-                        sampler=None):
-        if isinstance(ds, Dataset):
-            dl = self._create_dataloader(ds,
-                                         shuffle=shuffle,
-                                         batch_size=batch_size or 32,
-                                         collate_fn=collate_fn,
-                                         sampler=sampler)
+                        sampler=None,
+                        shallow_dl=False):
+        if isinstance(ds, (Dataset, list)):
+            if shallow_dl:
+                dl = DataLoader(ds,
+                                batch_size=batch_size or 32,
+                                shuffle=shuffle,
+                                collate_fn=collate_fn,
+                                sampler=sampler
+                )
+            else:
+                dl = self._create_dataloader(ds,
+                                             batch_size=batch_size or 32,
+                                             shuffle=shuffle,
+                                             collate_fn=collate_fn,
+                                             sampler=sampler)
         elif isinstance(ds, DataLoader):
-            dl = dl
+            dl = ds
         else:
             raise TypeError("ds type not supported. Use Dataloader or Dataset instances")
         return dl
@@ -144,14 +161,14 @@ class BinaryClassificationModel(Model):
                         meters.Precision(threshold=self.threshold, with_logits=False),
                         meters.F1Score(threshold=self.threshold, with_logits=False)])
         return super(BinaryClassificationModel, self).compile(optimizer=optimizer,
-                                                              criterion=criterion,
+                                                              loss=loss,
                                                               metrics=metrics,
                                                               hparams=hparams,
                                                               callbacks=callbacks,
                                                               val_metrics=val_metrics)
 
-    def predict_batch(self, *X):
-        preds = super(BinaryClassificationModel, self).predict_batch(*X)
+    def predict_batch(self, *X, to_tensor=True):
+        preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
         if self.use_logits:
             preds = preds > self.threshold
         return preds
