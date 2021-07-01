@@ -12,9 +12,9 @@ class Model(DeviceMixin):
         self.model = model
         self.trainer = None
 
-    def compile(self, optimizer, criterion, metrics, hparams={}, callbacks=[], val_metrics=None):
+    def compile(self, optimizer, loss, metrics, hparams={}, callbacks=[], val_metrics=None):
         self.trainer = SupervisedTrainer(model=self.model,
-                                         criterion=criterion,
+                                         criterion=loss,
                                          optimizer=optimizer,
                                          callbacks=callbacks,
                                          acc_meters=metrics,
@@ -148,8 +148,9 @@ class BinaryClassificationModel(Model):
         self.use_logits = use_logits
         self.threshold = threshold
 
-    def compile(self, optimizer, metrics=None, hparams={}, callbacks=[], val_metrics=None):
-        criterion = 'binary_cross_entropy_wl' if self.use_logits else 'binary_cross_entropy'
+    def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
+        if loss is None:
+            loss = 'binary_cross_entropy_wl' if self.use_logits else 'binary_cross_entropy'
         if metrics is None:
             metrics = ([meters.BinaryWithLogitsAccuracy(threshold=self.threshold),
                         meters.Recall(threshold=self.threshold, with_logits=True),
@@ -178,29 +179,31 @@ class ClassificationModel(Model):
         super(ClassificationModel, self).__init__(model)
         self.use_softmax = use_softmax
 
-    def compile(self, optimizer, metrics=None, hparams={}, callbacks=[], val_metrics=None):
-        criterion = 'cross_entropy' if self.use_softmax else 'nll'
+    def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
+        if loss is not None:
+            loss = 'cross_entropy' if self.use_softmax else 'nll'
         if metrics is None:
             metrics = [meters.CategoricalAccuracy(), meters.BalancedAccuracy()]
         return super(ClassificationModel, self).compile(optimizer=optimizer,
-                                                        criterion=criterion,
+                                                        loss=loss,
                                                         metrics=metrics,
                                                         hparams=hparams,
                                                         callbacks=callbacks,
                                                         val_metrics=val_metrics)
-    def predict_batch(self, *X):
-        preds = super(BinaryClassificationModel, self).predict_batch(*X)
+    def predict_batch(self, *X, to_tensor=True):
+        preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
         if self.use_softmax:
             preds = nn.functional.softmax(preds)
         return preds
 
 class RegressionModel(Model):
-    def compile(self, optimizer, metrics=None, hparams={}, callbacks=[], val_metrics=None):
-        criterion = 'mse'
+    def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
+        if loss is None:
+            loss = 'mse'
         if metrics is None:
             metrics = [meters.RMSE()]
         return super(RegressionModel, self).compile(optimizer=optimizer,
-                                                    criterion=criterion,
+                                                    loss=loss,
                                                     metrics=metrics,
                                                     hparams=hparams,
                                                     callbacks=callbacks,
