@@ -168,11 +168,12 @@ class BinaryClassificationModel(Model):
                                                               callbacks=callbacks,
                                                               val_metrics=val_metrics)
 
-    def predict_batch(self, *X, to_tensor=True):
+    def predict_batch(self, *X, output_probas=True, to_tensor=True):
         preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
         if self.use_logits:
             preds = nn.functional.sigmoid(preds)
-        preds = preds > self.threshold
+        if not output_probas:
+            preds = preds > self.threshold
         return preds
 
 class ClassificationModel(Model):
