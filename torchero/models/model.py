@@ -38,6 +38,7 @@ class Model(DeviceMixin):
         return X
 
     def _predict_batch(self, *X):
+        self.model.train(False)
         with torch.no_grad():
             X = list(map(self._convert_tensor, X))
             return self.model(*X)
@@ -69,6 +70,7 @@ class Model(DeviceMixin):
                 to_tensor=True,
                 has_targets=False):
         dl = self._get_dataloader(ds,
+                                  shuffle=False,
                                   batch_size=batch_size,
                                   shallow_dl=to_tensor)
         return self.predict_on_dataloader(dl, has_targets=has_targets)
@@ -115,7 +117,7 @@ class Model(DeviceMixin):
                  ds,
                  metrics=None,
                  batch_size=None,
-                 shuffle=True,
+                 shuffle=False,
                  collate_fn=None,
                  sampler=None):
         dl = self._get_dataloader(ds,
