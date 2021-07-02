@@ -117,12 +117,11 @@ class Model(DeviceMixin):
                  ds,
                  metrics=None,
                  batch_size=None,
-                 shuffle=False,
                  collate_fn=None,
                  sampler=None):
         dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
-                                  shuffle=shuffle,
+                                  shuffle=False,
                                   collate_fn=collate_fn,
                                   sampler=sampler)
         return self.evaluate_on_dataloader(dl, metrics=metrics)
