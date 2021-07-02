@@ -6,6 +6,17 @@ from torchero.utils.mixins import DeviceMixin
 from torchero import meters
 from torchero import SupervisedTrainer
 
+class InputDataset(Dataset):
+    def __init__(self, ds, transform):
+        self.ds = ds
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        return self.transform(self.ds[idx])
+
+    def __len__(self):
+        return len(self.ds)
+
 class Model(DeviceMixin):
     def __init__(self, model):
         super(Model, self).__init__()
@@ -26,11 +37,9 @@ class Model(DeviceMixin):
     def input_to_tensor(self, *X):
         return X
 
-    def predict_batch(self, *X, to_tensor=True):
+    def _predict_batch(self, *X):
         with torch.no_grad():
-            if to_tensor:
-                X = self.input_to_tensor(*X)
-            X = map(self._convert_tensor, X)
+            X = list(map(self._convert_tensor, X))
             return self.model(*X)
 
     def to(self, device):
@@ -38,24 +47,31 @@ class Model(DeviceMixin):
         if self.trainer is not None:
             self.trainer.to(device)
 
-    def predict_on_dataloader(self, dl, to_tensor=True):
-        ys = []
+    def _combine_preds(self, preds):
+        return torch.stack(preds).cpu()
+
+    def predict_on_dataloader(self, dl, has_targets=True):
+        preds = []
         for X in dl:
+            if has_targets:
+                X, y = X
             if isinstance(X, tuple):
-                y = self.predict_batch(*X, to_tensor=to_tensor)
+                y = self._predict_batch(*X)
             else:
-                y = self.predict_batch(X, to_tensor=to_tensor)
-            ys.extend(y)
-        return ys
+                y = self._predict_batch(X)
+            preds.extend(y)
+        preds = self._combine_preds(preds)
+        return preds
 
     def predict(self,
                 ds,
                 batch_size=None,
-                to_tensor=True):
+                to_tensor=True,
+                has_targets=False):
         dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
                                   shallow_dl=to_tensor)
-        return self.predict_on_dataloader(dl, to_tensor=to_tensor)
+        return self.predict_on_dataloader(dl, has_targets=has_targets)
 
     def train_on_dataloader(self, train_dl, val_dl=None, epochs=1):
         if self.trainer is None:
@@ -84,19 +100,11 @@ class Model(DeviceMixin):
                         sampler=None,
                         shallow_dl=False):
         if isinstance(ds, (Dataset, list)):
-            if shallow_dl:
-                dl = DataLoader(ds,
-                                batch_size=batch_size or 32,
-                                shuffle=shuffle,
-                                collate_fn=collate_fn,
-                                sampler=sampler
-                )
-            else:
-                dl = self._create_dataloader(ds,
-                                             batch_size=batch_size or 32,
-                                             shuffle=shuffle,
-                                             collate_fn=collate_fn,
-                                             sampler=sampler)
+            dl = self._create_dataloader(InputDataset(ds, self.input_to_tensor) if shallow_dl else ds,
+                                         batch_size=batch_size or 32,
+                                         shuffle=shuffle,
+                                         collate_fn=collate_fn,
+                                         sampler=sampler)
         elif isinstance(ds, DataLoader):
             dl = ds
         else:
@@ -168,8 +176,8 @@ class BinaryClassificationModel(Model):
                                                               callbacks=callbacks,
                                                               val_metrics=val_metrics)
 
-    def predict_batch(self, *X, output_probas=True, to_tensor=True):
-        preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
+    def _predict_batch(self, *X, output_probas=True):
+        preds = super(BinaryClassificationModel, self)._predict_batch(*X)
         if self.use_logits:
             preds = nn.functional.sigmoid(preds)
         if not output_probas:
@@ -192,8 +200,8 @@ class ClassificationModel(Model):
                                                         hparams=hparams,
                                                         callbacks=callbacks,
                                                         val_metrics=val_metrics)
-    def predict_batch(self, *X, to_tensor=True):
-        preds = super(BinaryClassificationModel, self).predict_batch(*X, to_tensor=to_tensor)
+    def _predict_batch(self, *X):
+        preds = super(ClassificationModel, self)._predict_batch(*X)
         if self.use_softmax:
             preds = nn.functional.softmax(preds)
         return preds

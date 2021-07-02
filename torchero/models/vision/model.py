@@ -11,9 +11,8 @@ class ImageModel(Model):
             transform = transforms.ToTensor()
         self.transform = transform
 
-    def input_to_tensor(self, images):
-        tensor = [self.transform(image) for image in images]
-        return tensor
+    def input_to_tensor(self, image):
+        return self.transform(image)
 
 class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
     def __init__(self, model, transform, use_logits=True, threshold=0.5):

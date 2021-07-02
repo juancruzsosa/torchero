@@ -19,12 +19,8 @@ class TextModel(Model):
         kwargs['collate_fn'] = kwargs.get("collate_fn") or self.collate_fn
         return DataLoader(*args, **kwargs)
 
-    def input_to_tensor(self, texts):
-        batch = [self.transform(text) for text in texts]
-        lengths = torch.LongTensor([len(x) for x in batch])
-        sequences = torch.stack([self.collate_fn.pad_tensor(x, expected_size=lengths.max())
-                                 for x in batch])
-        return sequences, lengths
+    def input_to_tensor(self, text):
+        return self.transform(text)
 
 class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
     def __init__(self, model, transform, use_logits=True, threshold=0.5):
