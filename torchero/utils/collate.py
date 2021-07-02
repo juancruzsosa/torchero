@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.utils.data._utils.collate import default_collate
 
 
 class PadSequenceCollate(object):
@@ -20,7 +21,7 @@ class PadSequenceCollate(object):
     This is ment to be used in the set-up of a DataLoader as collate_fn parameter
     """
 
-    def __init__(self, pad_value=0, padding_scheme='right', ret_lengths=True):
+    def __init__(self, pad_value=0, padding_scheme='right', ret_lengths=True, pad_dims=(0,)):
         """ Constructor
 
         Arguments:
@@ -35,6 +36,7 @@ class PadSequenceCollate(object):
         if padding_scheme not in ('left', 'right', 'center'):
             raise ValueError("invalid padding scheme")
         self.padding_scheme = padding_scheme
+        self.pad_dims = pad_dims
         self.ret_lengths = ret_lengths
 
     def pad_tensor(self, x, expected_size):
@@ -52,26 +54,29 @@ class PadSequenceCollate(object):
         return x
 
     def __call__(self, batch):
-        # Sort the batch in the descending order
-        max_length = max(map(lambda x: len(x[0]), batch))
+        single = False
+        if not isinstance(batch[0], tuple):
+            batch = [(b,) for b in batch]
+            single = True
+        batch = list(zip(*batch))
 
-        lengths = torch.LongTensor([len(x[0]) for x in batch])
-        sequences = torch.stack([self.pad_tensor(x[0],
-                                                 expected_size=max_length)
-                                 for x in batch])
-        target_elem = batch[0][1]
-        if torch.is_tensor(target_elem):
-            labels = torch.stack([x[1] for x in batch])
-        elif isinstance(target_elem, np.ndarray):
-            labels = torch.from_numpy(np.stack([x[1] for x in batch]))
-        elif isinstance(target_elem, (float, int, list)):
-            labels = torch.tensor([x[1] for x in batch])
+        for dim, X in enumerate(batch):
+            if dim in self.pad_dims and torch.is_tensor(X[0]):
+                lengths = torch.LongTensor([len(x) for x in X])
+                max_length = lengths.max().item()
+                sequences = torch.stack([self.pad_tensor(x,
+                                                         expected_size=max_length)
+                                         for x in X])
+                if self.ret_lengths:
+                    batch[dim] = sequences, lengths
+                else:
+                    batch[dim] = sequences
+            else:
+                batch[dim] = default_collate(list(X))
+        if single:
+            return batch[0]
         else:
-            raise RuntimeError("Labels type not supported")
-        if self.ret_lengths:
-            return (sequences, lengths), labels
-        else:
-            return sequences, labels
+            return tuple(batch)
 
 class BoWCollate(object):
     """ Batch Collator intended to be used with EmbeddingBag.

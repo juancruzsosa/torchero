@@ -26,7 +26,7 @@ class TextClassificationDataset(Dataset):
         text_col,
         target_col,
         transform_text,
-        transform_target=None):
+        transform_target=torch.tensor):
         """ Creates a TextClassificationDataset from a json file (with list of dict fields scheme).
 
         Arguments:
@@ -60,7 +60,7 @@ class TextClassificationDataset(Dataset):
         has_header=True,
         column_names=None,
         transform_text=str.lower,
-        transform_target=None,
+        transform_target=torch.tensor,
     ):
         """ Creates a TextClassificationDataset from a csv file
 
@@ -129,7 +129,7 @@ class TextClassificationDataset(Dataset):
         texts,
         targets,
         transform_text,
-        transform_target=None,
+        transform_target=torch.tensor,
         build_vocab=True,
     ):
         """ Constructor
