@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='torchero',
-      version='0.0.7',
+      version='0.0.8',
       description='A pluggable & extensible trainer for pytorch',
       long_description=long_description,
       long_description_content_type="text/markdown",
