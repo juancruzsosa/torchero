@@ -4,8 +4,9 @@ from .batch import BatchMeter
 
 
 class CategoricalAccuracy(BatchMeter):
-    """ Meter for accuracy categorical on categorical targets
+    """ Accuracy on categorical targets
     """
+
     name = 'acc'
     DEFAULT_MODE = 'max'
     INVALID_BATCH_DIMENSION_MESSAGE = (

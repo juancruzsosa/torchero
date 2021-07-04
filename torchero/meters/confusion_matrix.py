@@ -156,6 +156,14 @@ class ConfusionMatrix(BaseMeter):
     )
 
     def __init__(self, nr_classes='auto', normalize=False):
+        """ Constructor
+
+        Arguments:
+            nr_classes (int or str): If 'auto' is passed the confusion matrix will readjust
+                to the observed ranges. If a number is passed this will reserve the confusion matrix
+                for that size. Default 'auto'
+            normalize (bool): IF passed the confusion matrix will hold percentages
+        """
         if isinstance(nr_classes, str) and nr_classes == 'auto':
             self.matrix_controller = ResizableConfusionMatrixController(normalize=normalize)
         elif isinstance(nr_classes, int) and nr_classes > 0:

@@ -3,12 +3,25 @@ from torchero.utils.format import format_metric
 
 
 class Logger(Callback):
+    """ Callback to log metrics after each epoch
+    """
     UNRECOGNIZED_LEVEL = (
         "Unrecognized level {level}. Level parameter should be either 'epoch' "
         "or 'step'"
     )
 
     def __init__(self, separator=',\t', monitors=None, hparams=None, level='epoch'):
+        """ Constructor
+        
+        Arguments:
+            separator (str): String to separate columns
+            monitors (list of str): Set of metrics names to report. If None
+                (default) is passed it will show all metrics.
+            hparams (list of str): Set of hyperparameters to report.
+            level (str): When to log the metrics.
+                level='epoch' means after every epoch (default)
+                level='step' after every iteration step
+        """
         self.separator = separator
         self.monitors = monitors
         self.hparams = hparams

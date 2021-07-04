@@ -10,7 +10,7 @@ except ImportError:
 
 
 class RemoteMonitor(Callback):
-    """ Keras RemoteMonitor clone to stream events to a server.
+    """ Callback to stream training events to a server with the same interface as Keras RemoteMonitor.
     """
     def __init__(self,
                  root='http://localhost:9000',
@@ -25,16 +25,17 @@ class RemoteMonitor(Callback):
             root (str): Root server url
             path (str): Relative path to root to post events
             field (str): Json field of post data
+            headers (str): Http headers
             send_as_json (bool): If false sends data as plain json. Otherwise
             sends as json.
-            headers (str): Http headers
             monitors (list): List of monitors names to include in sended data.
         """
         super(RemoteMonitor, self).__init__()
 
         if requests is None:
             raise ImportError("RemoteMonitor requires "
-                              "the 'requests' library.")
+                              "the 'requests' library."
+                              "Run pip install requests.")
         self.root = root
         self.path = path
         self.field = field

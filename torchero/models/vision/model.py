@@ -5,6 +5,10 @@ from torchero.models import (Model,
                              RegressionModel)
 
 class ImageModel(Model):
+    """ Model class that wrap nn.Module models to add
+    training, prediction, saving & loading capabilities
+    for Computer Vision tasks
+    """
     def __init__(self, model, transform=None):
         super(ImageModel, self).__init__(model)
         if transform is None:
@@ -15,6 +19,9 @@ class ImageModel(Model):
         return self.transform(image)
 
 class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
+    """ Model class for Image Binary Classification (single or multilabel) tasks.
+    E.g: distinguish real vs fake images
+    """
     def __init__(self, model, transform, use_logits=True, threshold=0.5):
         super(BinaryImageClassificationModel, self).__init__(model=model,
                                                              transform=transform)
@@ -23,6 +30,9 @@ class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
                                          threshold=threshold)
 
 class ImageClassificationModel(ImageModel, ClassificationModel):
+    """ Model Class for Image Classification (for categorical targets) tasks.
+    E.g: Predict ImageNet classes of a given image
+    """
     def __init__(self, model, transform, use_softmax=True, threshold=0.5):
         super(ImageClassificationModel, self).__init__(model=model,
                                                        transform=transform)
@@ -30,6 +40,9 @@ class ImageClassificationModel(ImageModel, ClassificationModel):
                                          use_softmax=use_softmax)
 
 class ImageRegressionModel(ImageModel, RegressionModel):
+    """ Model Class for Image Regression tasks.
+    E.g: Face Landmarks recognition
+    """
     def __init__(self, model, transform, use_logits=False, threshold=0.5):
         super(ImageRegressionModel, self).__init__(model=model,
                                          transform=transform)

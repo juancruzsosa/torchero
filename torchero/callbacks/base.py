@@ -7,7 +7,7 @@ class Callback(object):
         self.trainer = None
 
     def accept(self, trainer):
-        """ Accept a trainer
+        """ Attach the callback to the given trainer
 
         Args:
             trainer(instance of :class:`torchero.base.BaseTrainer`):
@@ -16,26 +16,26 @@ class Callback(object):
         self.trainer = trainer
 
     def on_epoch_begin(self):
-        """ Trigger called before every epoch
+        """ Method invoked before every epoch
         """
         pass
 
     def on_epoch_end(self):
-        """ Trigger called after every epoch
+        """ Method invoked after every epoch
         """
         pass
 
     def on_log(self):
-        """ Trigger called after every log update
+        """ Method invoked after every log update
         """
         pass
 
     def on_train_begin(self):
-        """ Trigger called one time before training
+        """ Method invoked at the beginning of the training
         """
         pass
 
     def on_train_end(self):
-        """ Trigger called one time after training
+        """ Method invoked at the end of the training
         """
         pass

@@ -100,6 +100,16 @@ class TPMeter(BaseMeter):
     )
 
     def __init__(self, threshold=0.5, with_logits=False, activation=None):
+        """ Constructor
+
+        Arguments:
+            threshold (float): Activation threshold used
+            with_logits (bool): Set this as `True` if your model does not
+                contain sigmoid as activation in the final layer (preferable)
+                or 'False' otherwise
+            activation (nn.Sigmoid): Use a custom activation instead of
+                sigmoid. Default: None (use nn.Sigmoid if with_logits=True)
+        """
         super(TPMeter, self).__init__()
         self.threshold = threshold
         if with_logits and activation is None:
@@ -238,6 +248,17 @@ class FBetaScore(TPMeter):
     DEFAULT_MODE = 'max'
 
     def __init__(self, beta, threshold=0.5, with_logits=False):
+        """ Constructor
+
+        Arguments:
+            threshold (float): Activation threshold used
+            beta (float): Beta
+            with_logits (bool): Set this as `True` if your model does not
+                contain sigmoid as activation in the final layer (preferable)
+                or 'False' otherwise
+            activation (nn.Sigmoid): Use a custom activation instead of
+                sigmoid. Default: None (use nn.Sigmoid if with_logits=True)
+        """
         super(FBetaScore, self).__init__(threshold=threshold,
                                          with_logits=with_logits)
         self.beta = beta

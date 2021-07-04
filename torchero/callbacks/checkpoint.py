@@ -7,9 +7,9 @@ from torchero.callbacks.base import Callback
 from torchero.callbacks.exceptions import MeterNotFound
 from torchero.utils.defaults import get_default_mode
 
-
 class ModelCheckpoint(Callback):
-    """ Callback for checkpoint a model if it get betters in a given metric
+    """ Callback to save the model if it improves in a given metric with
+    respect to the previous epoch
     """
     UNRECOGNIZED_MODE = (
         "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"
@@ -19,9 +19,8 @@ class ModelCheckpoint(Callback):
         """ Constructor
 
         Arguments:
-            path (str): Path for the checkpoint file
+            path (str): Checkpoint path directory
             monitor (str): Metric name to monitor
-            temp_dir (str): Temporary folder path.
             mode (str): One of 'max', 'min', 'auto'. Alters the checkpoint
             criterion to be based on maximum or minimum monitor quantity
             (respectively).
@@ -45,6 +44,8 @@ class ModelCheckpoint(Callback):
         return self._mode
 
     def on_train_begin(self):
+        """ Set-up directory structure
+        """
         if self._mode.lower() == 'auto':
             self._mode = get_default_mode(self.trainer.meters[self.monitor_name])
         self.is_better = self.criterion(self._mode)
@@ -73,6 +74,8 @@ class ModelCheckpoint(Callback):
         return data[0]
 
     def on_epoch_end(self):
+        """ Saves the model if it has improved
+        """
         if self.monitor_name not in self.trainer.metrics:
             raise MeterNotFound(self.monitor_name)
 

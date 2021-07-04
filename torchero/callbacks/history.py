@@ -8,7 +8,7 @@ from collections import Iterable
 from torchero.utils.plots import smooth_curve
 
 class History(Callback):
-    """ Callback that record history of all training/validation metrics
+    """ Callback to save the training history of all metrics
     """
     def __init__(self):
         super(History, self).__init__()

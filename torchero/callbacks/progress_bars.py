@@ -55,12 +55,6 @@ class ProgbarLogger(Callback):
         self.step_bars = []
 
     def accept(self, trainer):
-        """ Accepts a trainer
-
-        Args:
-            trainer(instance of :class:`torchero.base.BaseTrainer`):
-                Trainer to attach to
-        """
         self.trainer = trainer
         if self.notebook:
             self.trainer.logger.addHandler(TqdmLoggingHandler())

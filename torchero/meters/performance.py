@@ -6,6 +6,8 @@ from torchero.meters.base import BaseMeter
 from torchero.utils import defaults
 
 class BaseSpeedMeter(BaseMeter):
+    """ Base class to measure the training performance
+    """
     DEFAULT_MODE = 'max'
 
     def __init__(self, time_unit='seconds'):
@@ -32,10 +34,14 @@ class BaseSpeedMeter(BaseMeter):
 
 
 class BatchSpeed(BaseSpeedMeter):
+    """ Measure the training performance in batches/`time_unit`
+    """
     def increment_unit(self, batch):
         self._unit += 1
 
 class IterSpeed(BaseSpeedMeter):
+    """ Measure the training performance in samples/`time_unit`
+    """
     def increment_unit(self, batch):
         X = next(iter(batch))
         # Asumes batch dimention is the first one
@@ -48,8 +54,11 @@ class BasePaceMeter(BaseMeter):
         return 1/super(BasePaceMeter, self).value()
 
 class BatchPace(BasePaceMeter, BatchSpeed):
+    """ Measure the training pace in `time_unit`/batches
+    """
     pass
 
 class IterPace(BasePaceMeter, IterSpeed):
+    """ Measure the training pace in `time_unit`/samples
+    """
     pass
-

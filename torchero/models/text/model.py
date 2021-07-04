@@ -10,6 +10,10 @@ from torchero.models import (Model,
 
 
 class TextModel(Model):
+    """ Model class that wrap nn.Module models to add
+    training, prediction, saving & loading capabilities
+    for Natural Language Processing (NLP) tasks
+    """
     def __init__(self, model, transform):
         super(TextModel, self).__init__(model)
         self.transform = transform
@@ -23,6 +27,9 @@ class TextModel(Model):
         return self.transform(text)
 
 class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
+    """ Model class for NLP Binary Classification (single or multilabel) tasks.
+    E.g: sentiment analysis (without neutral class), Toxicity category of user comments
+    """
     def __init__(self, model, transform, use_logits=True, threshold=0.5):
         super(BinaryTextClassificationModel, self).__init__(model=model,
                                                             transform=transform)
@@ -31,6 +38,9 @@ class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
                                         threshold=threshold)
 
 class TextClassificationModel(TextModel, ClassificationModel):
+    """ Model class for NLP Binary Classification (single or multilabel) tasks.
+    E.g: Detect topic of an user comment
+    """
     def __init__(self, model, transform, use_softmax=True, threshold=0.5):
         super(TextClassificationModel, self).__init__(model=model,
                                                       transform=transform)
@@ -39,6 +49,8 @@ class TextClassificationModel(TextModel, ClassificationModel):
                                         threshold=threshold)
 
 class TextRegressionModel(TextModel, RegressionModel):
+    """ Model class for NLP Binary Classification (single or multilabel) tasks.
+    """
     def __init__(self, model, transform):
         super(TextRegressionModel, self).__init__(model=model,
                                                   transform=transform)
