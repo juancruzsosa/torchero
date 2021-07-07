@@ -16,7 +16,7 @@ class TextTransform(object):
                  post_process=torch.LongTensor):
         self.pre_process = pre_process
         if isinstance(tokenizer, str):
-            tokenizer = tokenizers[tokenizer]
+            tokenizer = tokenizers[tokenizer]()
         self.tokenizer = tokenizer
         if vocab is None:
             vocab = Vocab(eos=eos,
