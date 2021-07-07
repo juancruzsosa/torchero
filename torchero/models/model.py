@@ -1,7 +1,11 @@
+import json
+import zipfile
+
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
+import torchero
 from torchero.utils.mixins import DeviceMixin
 from torchero import meters
 from torchero import SupervisedTrainer
@@ -269,6 +273,31 @@ class Model(DeviceMixin):
         return self.train_on_dataloader(train_dl,
                                         val_dl,
                                         epochs)
+
+    @property
+    def config(self):
+        return {'torchero_version': torchero.__version__}
+
+    def save(self, path_or_fp):
+        self.model.eval()
+        with zipfile.ZipFile(path_or_fp, mode='w') as zip_fp:
+            self._save_to_zip(zip_fp)
+
+    def _save_to_zip(self, zip_fp):
+        with zip_fp.open('model.pth', 'w') as fp:
+            torch.save(self.model.state_dict(), fp)
+        with zip_fp.open('config.json', 'w') as fp:
+            fp.write(json.dumps(self.config, indent=4).encode())
+        if self.trainer is not None:
+            self.trainer._save_to_zip(zip_fp, prefix='trainer/')
+
+    def load(self, path_or_fp):
+        with zipfile.ZipFile(path_or_fp, mode='r') as zip_fp:
+            self._load_from_zip(zip_fp)
+
+    def _load_from_zip(self, zip_fp):
+        with zip_fp.open('model.pth', 'r') as fp:
+            self.model.load_state_dict(torch.load(fp))
 
 class BinaryClassificationModel(Model):
     """ Model Class for Binary Classification (single or multilabel) tasks

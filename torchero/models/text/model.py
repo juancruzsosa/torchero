@@ -1,7 +1,10 @@
+import pickle
+
 import torch
 from torch.utils.data import DataLoader
 
 from torchero.utils.collate import PadSequenceCollate
+from torchero.utils.text import TextTransform
 from torchero.models import (Model,
                              BinaryClassificationModel,
                              ClassificationModel,
@@ -25,6 +28,14 @@ class TextModel(Model):
 
     def input_to_tensor(self, text):
         return self.transform(text)
+
+    def _save_to_zip(self, zip_fp):
+        super(TextModel, self)._save_to_zip(zip_fp)
+        with zip_fp.open('transform.pkl', 'w') as fp:
+            pickle.dump(self.transform, fp)
+
+    def _load_from_zip(self, zip_fp):
+        super(TextModel, self)._load_from_zip(zip_fp)
 
 class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.

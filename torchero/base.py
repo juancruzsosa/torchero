@@ -1,3 +1,5 @@
+import pickle
+import json
 import logging
 
 from abc import ABCMeta, abstractmethod
@@ -88,6 +90,10 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
 
     def add_named_meter(self, name, meter):
         self._metrics.add_metric(name, meter)
+
+    def _save_to_zip(self, zip_fp, prefix):
+        with zip_fp.open(prefix + '/val_metrics.pkl', 'w') as metrics_fp:
+            pickle.dump(self._metrics, metrics_fp)
 
 
 class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
@@ -210,6 +216,16 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
         for callback in callbacks:
             self._callbacks.add(callback)
+
+    def _save_to_zip(self, zip_fp, prefix=''):
+        prefix = prefix.rstrip('/')
+        with zip_fp.open(prefix + '/config.json', 'w') as config_fp:
+            config_fp.write(json.dumps(self.config, indent=4).encode())
+        self.validator._save_to_zip(zip_fp, prefix=prefix)
+        with zip_fp.open(prefix + '/train_metrics.pkl', 'w') as metrics_fp:
+            pickle.dump(self._train_metrics, metrics_fp)
+        with zip_fp.open(prefix + '/callbacks.pkl', 'w') as callbacks_fp:
+            pickle.dump(self._callbacks, callbacks_fp)
 
     @property
     def config(self):
