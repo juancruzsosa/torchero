@@ -33,5 +33,7 @@ setup(name='torchero',
       ],
       extras_require = {
           'export to dataframe':  ["pandas"],
+          "RemoteMonitor": ["requests"],
+          "extra tokenizers": ["spacy", "nltk"]
       },
       zip_safe=False)
