@@ -32,6 +32,13 @@ class BaseSpeedMeter(BaseMeter):
     def value(self):
         return float('inf') if self._running_time == 0 else self._unit * self.time_unit/self._running_time
 
+    def __getstate__(self):
+        return {'time_unit': self.time_unit}
+
+    def __setstate__(self, state):
+        self.time_unit = state['time_unit']
+        self.reset()
+
 
 class BatchSpeed(BaseSpeedMeter):
     """ Measure the training performance in batches/`time_unit`

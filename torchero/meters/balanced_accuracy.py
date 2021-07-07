@@ -46,3 +46,9 @@ class BalancedAccuracy(BaseMeter):
         arr = [self.match_counter.get(c, 0)/self.totals_counter[c]
                for c in self.totals_counter.keys()]
         return torch.Tensor(arr).mean().item()
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self, _):
+        self.reset()

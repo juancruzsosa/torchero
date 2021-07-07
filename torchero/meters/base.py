@@ -38,3 +38,9 @@ class BaseMeter(object, metaclass=ABCMeta):
 
     def __repr__(self):
         return "{}()".format(self.__class__.__name__)
+
+    def __getstate__(self):
+        return {}
+
+    def __setstate__(self):
+        return

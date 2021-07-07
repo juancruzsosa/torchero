@@ -60,6 +60,14 @@ class BinaryAccuracy(BatchMeter):
             agg=repr(self.aggregator)
         )
 
+    def __getstate__(self):
+        state = super(BinaryAccuracy, self).__getstate__()
+        state.update({'threshold': self.threshold})
+        return state
+
+    def __setstate__(self, state):
+        super(BinaryAccuracy, self).__setstate__(state)
+        self.threshold = state['threshold']
 
 class BinaryWithLogitsAccuracy(BinaryAccuracy):
     """ Binary accuracy meter with an integrated activation function
@@ -83,6 +91,15 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
             agg=repr(self.aggregator),
             act=repr(self.activation)
         )
+
+    def __getstate__(self):
+        state = super(BinaryWithLogitsAccuracy, self).__getstate__()
+        state.update({'activation': self.activation})
+        return state
+
+    def __setstate__(self, state):
+        super(BinaryWithLogitsAccuracy, self).__setstate__(state)
+        self.activation = state['activation']
 
 
 class TPMeter(BaseMeter):
@@ -184,6 +201,17 @@ class TPMeter(BaseMeter):
             act=repr(self.activation)
         )
 
+    def __getstate__(self):
+        return {'threshold': self.threshold,
+                'with_logits': self.with_logits,
+                'activation': self.activation}
+
+    def __setstate__(self, state):
+        self.threshold = state['threshold']
+        self.with_logits = state['with_logits']
+        self.activation = state['activation']
+        self.reset()
+
 
 class Recall(TPMeter):
     """ Meter to calculate the recall score where
@@ -265,6 +293,15 @@ class FBetaScore(TPMeter):
 
     def value(self):
         return self.f_beta(self.beta)
+
+    def __getstate__(self):
+        state = super(FBetaScore, self).__getstate__()
+        state.update({'beta': self.beta})
+        return state
+
+    def __setstate__(self, state):
+        super(FBetaScore, self).__setstate__(state)
+        self.beta = state['beta']
 
 
 class F1Score(FBetaScore):

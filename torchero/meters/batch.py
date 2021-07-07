@@ -19,7 +19,7 @@ class BatchMeter(BaseMeter):
         """
         self.aggregator = aggregator
         self.scale = 1
-        self._transform = transform or (lambda x: x)
+        self._transform = transform
 
         if self.aggregator is None:
             self.aggregator = Average()
@@ -38,8 +38,10 @@ class BatchMeter(BaseMeter):
 
     def measure(self, *xs):
         self.check_tensors(*xs)
+        if self._transform is not None:
+            xs = map(self._transform, xs)
         self.result = self.aggregator.combine(self.result,
-                                              self._get_result(*map(self._transform, xs)))
+                                              self._get_result(*xs))
 
     def value(self):
         val = self.aggregator.final_value(self.result) * self.scale
@@ -51,3 +53,14 @@ class BatchMeter(BaseMeter):
     def __mul__(self, y):
         self.scale *= y
         return self
+
+    def __getstate__(self):
+        return {'aggregator': self.aggregator,
+                'scale': self.scale,
+                'transform': self._transform}
+
+    def __setstate__(self, state):
+        self.aggregator = state['aggregator']
+        self.scale = state['scale']
+        self._transform = state['transform']
+        self.reset()
