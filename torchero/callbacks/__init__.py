@@ -8,9 +8,9 @@ from torchero.callbacks.exceptions import MeterNotFound
 from torchero.callbacks.logger import Logger
 from torchero.callbacks.stopping import EarlyStopping
 from torchero.callbacks.schedulers import (LambdaLR,
-                         StepLR,
-                         MultiStepLR,
-                         ExponentialLR,
-                         CosineAnnealingLR,
-                         ReduceLROnPlateau)
+                                           StepLR,
+                                           MultiStepLR,
+                                           ExponentialLR,
+                                           CosineAnnealingLR,
+                                           ReduceLROnPlateau)
 from torchero.callbacks.remote import RemoteMonitor
