@@ -45,10 +45,10 @@ class EarlyStopping(Callback):
         self._round = 0
 
     def _max_improved_criterion(self, value):
-        return self._last_best_monitor_value - value < self._min_delta
+        return self._last_best_monitor_value + self._min_delta < value
 
     def _min_improved_criterion(self, value):
-        return value - self._last_best_monitor_value < self._min_delta
+        return self._last_best_monitor_value - self._min_delta > value
 
     def step(self):
         if self.monitor not in self.trainer.metrics:
