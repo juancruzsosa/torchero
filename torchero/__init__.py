@@ -1,2 +1,3 @@
+from torchero._version import __version__
 from torchero.supervised_trainer import SupervisedTrainer, SupervisedValidator
 from torchero.unsupervised_trainers import AutoencoderTrainer, AutoencoderValidator

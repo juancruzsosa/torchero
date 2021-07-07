@@ -3,8 +3,10 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+exec(open('torchero/_version.py').read())
+
 setup(name='torchero',
-      version='0.0.8',
+      version=__version__,
       description='A pluggable & extensible trainer for pytorch',
       long_description=long_description,
       long_description_content_type="text/markdown",
