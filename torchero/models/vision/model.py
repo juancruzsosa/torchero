@@ -15,6 +15,11 @@ class ImageModel(Model):
             transform = transforms.ToTensor()
         self.transform = transform
 
+    def _save_to_zip(self, zip_fp):
+        super(ImageModel, self)._save_to_zip(zip_fp)
+        with zip_fp.open('transform.pkl', 'w') as fp:
+            pickle.dump(self.transform, fp)
+
     def input_to_tensor(self, image):
         return self.transform(image)
 
