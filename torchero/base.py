@@ -211,6 +211,13 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         for callback in callbacks:
             self._callbacks.add(callback)
 
+    @property
+    def config(self):
+        return {'epochs_trained': self._epochs_trained,
+                'steps_trained': self._steps_trained,
+                'logging_frequency': self.logging_frecuency,
+                'prefixes': self._prefixes,
+                'raised_stop_training': self._raised_stop_training}
 
     @property
     def history(self):
