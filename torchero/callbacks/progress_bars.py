@@ -1,17 +1,13 @@
 import logging
 import sys
 
+import tqdm
+
 from torchero.callbacks.base import Callback
 from torchero.utils.format import format_metric
 
 from logging import StreamHandler
 
-try:
-    import tqdm
-except ImportError:
-    print("tqdm not installed!")
-    print("install tqdm for progress bars support.")
-    raise
 
 class TqdmLoggingHandler(logging.Handler):
     def __init__(self, level=logging.NOTSET):
