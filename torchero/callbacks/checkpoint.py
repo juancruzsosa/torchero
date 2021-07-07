@@ -7,6 +7,7 @@ from torchero.callbacks.base import Callback
 from torchero.callbacks.exceptions import MeterNotFound
 from torchero.utils.defaults import get_default_mode
 
+
 class ModelCheckpoint(Callback):
     """ Callback to save the model if it improves in a given metric with
     respect to the previous epoch
@@ -35,8 +36,8 @@ class ModelCheckpoint(Callback):
         self.outperform = False
 
     def criterion(self, mode):
-        criterion_by_name = {'max': lambda b: self.last_value < b,
-                             'min': lambda b: self.last_value > b}
+        criterion_by_name = {'max': self._is_higher,
+                             'min': self._is_lower}
         return criterion_by_name[mode.lower()]
 
     @property
@@ -109,3 +110,9 @@ class ModelCheckpoint(Callback):
             monitor=repr(self.monitor_name),
             path=repr(self.path)
         )
+
+    def _is_higher(self, new_val):
+        return self.last_value < new_val
+
+    def _is_lower(self, new_val):
+        return self.last_value > new_val

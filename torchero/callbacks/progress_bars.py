@@ -127,3 +127,19 @@ class ProgbarLogger(Callback):
             ascii=repr(self.ascii),
             notebook=repr(self.notebook),
         )
+
+    def __getstate__(self):
+        return {
+            "ascii": self.ascii,
+            "notebook": self.notebook,
+            "monitors": self.monitors,
+            "hparams": self.hparams,
+        }
+
+    def __setstate__(self, state):
+        self.ascii = state["ascii"]
+        self.notebook = state["notebook"]
+        self.monitors = state["monitors"]
+        self.hparams = state["hparams"]
+        self.step_tqdms = []
+        self.step_bars = []
