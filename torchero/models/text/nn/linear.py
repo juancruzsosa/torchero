@@ -2,8 +2,12 @@ import torch
 from torch import nn
 
 class LinearModel(nn.Module):
-    """ Embedding + Linear Layer Network for text classification and regression tasks
-    """
+    @classmethod
+    def from_config(cls, config):
+        return cls(config['vocab_size'],
+                   config['embedding_dim'],
+                   config['output_size'])
+
     def __init__(self, vocab_size, embedding_dim, output_size):
         super(LinearModel, self).__init__()
         self.embeddings = nn.EmbeddingBag(vocab_size,
