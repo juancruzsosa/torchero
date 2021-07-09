@@ -1,0 +1,12 @@
+from torchvision.models import (AlexNet,
+                                ResNet,
+                                VGG,
+                                SqueezeNet,
+                                Inception3,
+                                InceptionOutputs,
+                                DenseNet,
+                                GoogLeNet,
+                                GoogLeNetOutputs,
+                                MobileNetV2,
+                                MNASNet,
+                                ShuffleNetV2)
