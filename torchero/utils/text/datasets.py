@@ -7,8 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchero.utils.collate import PadSequenceCollate
 
 
-class TextClassificationDataset(Dataset):
-    """ Dataset for Text classification task
+class LabeledTextDataset(Dataset):
+    """ Dataset for labeled text
     """
     @staticmethod
     def get_record_item(record, target_field):
@@ -168,3 +168,8 @@ class TextClassificationDataset(Dataset):
             PadSequenceCollate(pad_value=self.vocab[self.vocab.pad]),
         )
         return DataLoader(self, *args, **kwargs)
+
+class TextClassificationDataset(LabeledTextDataset):
+    """ Dataset for Text classification task
+    """
+    pass
