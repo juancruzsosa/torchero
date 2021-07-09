@@ -26,8 +26,8 @@ class TextClassificationDataset(Dataset):
         text_col,
         target_col,
         transform_text,
-        transform_target=torch.tensor):
-        """ Creates a TextClassificationDataset from a json file (with list of dict fields scheme).
+        transform_target=_default_transform_target):
+        """ Creates a class instance from a json file (with list of dict fields scheme).
 
         Arguments:
             path (str or Path): Path of the json file
@@ -35,8 +35,8 @@ class TextClassificationDataset(Dataset):
                 texts. If a int is passed the index of the column for the text
             text_col (str, int, list of str or list of str): If a string is passed the column name for the
                 target. If a int is passed the index of the column for the target
-            transform (TextTransform): See TextClassificationDataset constructor
-            transform_target (callable): See TextClassificationDataset constructor
+            transform (TextTransform): See class instance constructor
+            transform_target (callable): See class instance constructor
         """
         with open(path, 'r') as jsonfile:
             records = json.load(jsonfile)
@@ -62,7 +62,7 @@ class TextClassificationDataset(Dataset):
         transform_text=str.lower,
         transform_target=torch.tensor,
     ):
-        """ Creates a TextClassificationDataset from a csv file
+        """ Creates a class instance from a csv file
 
         Arguments:
             path (str or Path): Path of the csv file
@@ -74,9 +74,8 @@ class TextClassificationDataset(Dataset):
             quotechar (str): Character used to delimit the text strings
             has_header (bool): True if the csv contains a header. False, otherwise
             column_names (list): List of columns names
-            tokenizer (callable): See TextClassificationDataset constructor
-            transform_text (TextTransform): See TextClassificationDataset constructor
-            transform_target (callable): See TextClassificationDataset constructor
+            transform_text (TextTransform): Function used for text preprocessing before to perform tokenization
+            transform_target (callable): Function used to transform targets.
         """
         def check_column(col, columns, single=True):
             permitted_types = (int, str) if single else (int, str, list)
@@ -137,20 +136,6 @@ class TextClassificationDataset(Dataset):
         Arguments:
             texts (list-like of str): List of dataset text samples
             targets (list-like): List of targets for every sample in texts.
-            tokenizer (callable): Function used to tokenize the text.
-            vocab (`torchero.utils.text.Vocab`): Corpus Vocabulary. If None is passed
-            the vocabulary is built from scratch from the corpus first.
-            vocab_max (int): Limits the created vocabulary to have less than `vocab_max` tokens.
-                If None the created vocabulary will have no limit.
-                Only valid when vocab argument is None. Default: None
-            vocab_min_count (int): Minimum number of occurences for a token to
-                be part of the vocabulary. Only valid when vocab argument is None.
-                Default: None
-            eos (str): Special token to be used for the end of every sentences.
-            pad (str): Special token to be used for padding.
-            unk (str): Special token to be used for unknown words.
-                If unk is None, unknown words will be skipped from the corpus.
-                Default: '<unk>'
             transform_text (TextTransform): Function used for text preprocessing before to
                 perform tokenization
             transform_target (callable): Function used to transform targets.
