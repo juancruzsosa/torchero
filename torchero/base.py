@@ -41,7 +41,7 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
 
     @abstractmethod
     def validate_batch(self, *arg, **kwargs):
-        """ Abstract method for validate model per batch
+        """ Validate model
 
         Args:
             *args (variable length arguments

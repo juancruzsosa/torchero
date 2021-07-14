@@ -357,8 +357,6 @@ class Model(DeviceMixin):
             self.trainer._load_from_zip(zip_fp, prefix='trainer/')            
 
 class BinaryClassificationModel(Model):
-    """ Model Class for Binary Classification (single or multilabel) tasks
-    """
     def __init__(self, model, use_logits=True, threshold=0.5):
         """ Constructor
 
