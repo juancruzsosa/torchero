@@ -14,6 +14,20 @@ class LSTMForSequenceClassification(nn.Module):
                    config.get('mode', 'max'),
                    config.get('dropout_clf', 0.5))
 
+    @property
+    def config(self):
+        return {
+            'vocab_size': self.embeddings.num_embeddings,
+            'output_size': self.linear.out_features,
+            'embedding_dim': self.embeddings.embedding_dim,
+            'hidden_size': self.lstm.hidden_size,
+            'bidirectional': self.lstm.bidirectional,
+            'num_layers': self.lstm.num_layers,
+            'mode': self.mode,
+            'dropout_clf': self.dropout_clf.p,
+        }
+
+
     def __init__(self,
                  vocab_size,
                  output_size,

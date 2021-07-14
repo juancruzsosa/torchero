@@ -95,6 +95,10 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         with zip_fp.open(prefix + '/val_metrics.pkl', 'w') as metrics_fp:
             pickle.dump(self._metrics, metrics_fp)
 
+    def _load_from_zip(self, zip_fp, prefix=''):
+        with zip_fp.open(prefix + '/val_metrics.pkl', 'r') as metrics_fp:
+            self._metrics = pickle.load(metrics_fp)
+
 
 class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
     """ Abstract trainer for all trainer classes that works with batched inputs.
@@ -226,6 +230,22 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             pickle.dump(self._train_metrics, metrics_fp)
         with zip_fp.open(prefix + '/callbacks.pkl', 'w') as callbacks_fp:
             pickle.dump(self._callbacks, callbacks_fp)
+    
+    def _load_from_zip(self, zip_fp, prefix=''):
+        prefix = prefix.rstrip('/')
+        with zip_fp.open(prefix + '/config.json', 'r') as config_fp:
+            config = json.loads(config_fp.read().decode())
+            self._epochs_trained = config['epochs_trained']
+            self._steps_trained = config['steps_trained']
+            self._logging_frequency = config['logging_frequency']
+            self._prefixes = config['prefixes']
+            self._raised_stop_training = config['raised_stop_training']
+        self.validator._load_from_zip(zip_fp, prefix=prefix)
+        with zip_fp.open(prefix + '/train_metrics.pkl', 'r') as metrics_fp:
+            self._train_metrics = pickle.load(metrics_fp)
+        with zip_fp.open(prefix + '/callbacks.pkl', 'r') as callbacks_fp:
+            self._callbacks = pickle.load(callbacks_fp)
+
 
     @property
     def config(self):

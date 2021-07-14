@@ -35,9 +35,3 @@ class Averager(BaseMeter):
         result = result / self.num_samples
 
         return result
-
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self, _):
-        self.reset()

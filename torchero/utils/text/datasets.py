@@ -26,7 +26,9 @@ class LabeledTextDataset(Dataset):
         text_col,
         target_col,
         transform_text,
-        transform_target=_default_transform_target):
+        transform_target=_default_transform_target,
+        build_vocab=False,
+        ):
         """ Creates a class instance from a json file (with list of dict fields scheme).
 
         Arguments:
@@ -41,12 +43,13 @@ class LabeledTextDataset(Dataset):
         with open(path, 'r') as jsonfile:
             records = json.load(jsonfile)
             texts = [r[text_col] for r in records]
-            targets = [self.get_record_item(record, target_col) for r in records]
+            targets = [cls.get_record_item(record, target_col) for r in records]
             return cls(
                 texts,
                 targets,
                 transform_text=transform_text,
                 transform_target=transform_target,
+                build_vocab=build_vocab,
             )
 
     @classmethod
@@ -60,7 +63,8 @@ class LabeledTextDataset(Dataset):
         has_header=True,
         column_names=None,
         transform_text=str.lower,
-        transform_target=torch.tensor,
+        transform_target=_default_transform_target,
+        build_vocab=False,
     ):
         """ Creates a class instance from a csv file
 
@@ -121,6 +125,7 @@ class LabeledTextDataset(Dataset):
                 targets,
                 transform_text=transform_text,
                 transform_target=transform_target,
+                build_vocab=build_vocab,
             )
 
     def __init__(
@@ -128,8 +133,8 @@ class LabeledTextDataset(Dataset):
         texts,
         targets,
         transform_text,
-        transform_target=torch.tensor,
-        build_vocab=True,
+        transform_target=_default_transform_target,
+        build_vocab=False,
     ):
         """ Constructor
 
@@ -165,7 +170,7 @@ class LabeledTextDataset(Dataset):
     def dataloader(self, *args, **kwargs):
         kwargs["collate_fn"] = kwargs.get(
             "collate_fn",
-            PadSequenceCollate(pad_value=self.vocab[self.vocab.pad]),
+            PadSequenceCollate(pad_value=self.transform_text.vocab[self.transform_text.vocab.pad]),
         )
         return DataLoader(self, *args, **kwargs)
 

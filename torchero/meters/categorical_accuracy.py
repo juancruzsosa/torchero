@@ -34,12 +34,3 @@ class CategoricalAccuracy(BatchMeter):
     def _get_result(self, a, b):
         return torch.sum((a.topk(k=self.k, dim=1)[1] ==
                           b.unsqueeze(-1)).float(), dim=1)
-
-    def __getstate__(self):
-        state = super(CategoricalAccuracy, self).__getstate__()
-        state.update({'k': self.k})
-        return state
-
-    def __setstate__(self, state):
-        super(CategoricalAccuracy, self).__setstate__(state)
-        self.k = state['k']

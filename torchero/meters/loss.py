@@ -10,7 +10,7 @@ class LossMeter(Averager):
     DEFAULT_MODE = 'min'
 
     def __init__(self, criterion):
-        super(Averager, self).__init__()
+        super(LossMeter, self).__init__()
         self.criterion = criterion
 
     def measure(self, x, y):

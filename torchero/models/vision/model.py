@@ -6,7 +6,7 @@ from torchero.models import (Model,
                              BinaryClassificationModel,
                              ClassificationModel,
                              RegressionModel)
-from torchero.models.vision.nn import pretrained, torchvision
+from torchero.models.vision.nn.torchvision import TorchvisionModel
 
 __all__ = ['arch_aliases',
            'ImageModel',
@@ -104,7 +104,7 @@ class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
     """ Model class for Image Binary Classification (single or multilabel) tasks.
     E.g: distinguish real vs fake images
     """
-    def __init__(self, model, transform, use_logits=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_logits=True, threshold=0.5):
         super(BinaryImageClassificationModel, self).__init__(model=model,
                                                              transform=transform)
         super(ImageModel, self).__init__(model=model,
@@ -115,7 +115,7 @@ class ImageClassificationModel(ImageModel, ClassificationModel):
     """ Model Class for Image Classification (for categorical targets) tasks.
     E.g: Predict ImageNet classes of a given image
     """
-    def __init__(self, model, transform, use_softmax=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5):
         super(ImageClassificationModel, self).__init__(model=model,
                                                        transform=transform)
         super(ImageModel, self).__init__(model=model,
@@ -125,6 +125,6 @@ class ImageRegressionModel(ImageModel, RegressionModel):
     """ Model Class for Image Regression tasks.
     E.g: Face Landmarks recognition
     """
-    def __init__(self, model, transform, use_logits=False, threshold=0.5):
+    def __init__(self, model, transform=None, use_logits=False, threshold=0.5):
         super(ImageRegressionModel, self).__init__(model=model,
                                          transform=transform)

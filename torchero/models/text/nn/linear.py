@@ -8,6 +8,12 @@ class LinearModel(nn.Module):
                    config['embedding_dim'],
                    config['output_size'])
 
+    @property
+    def config(self):
+        return {'vocab_size': self.embeddings.num_embeddings,
+                'embedding_dim': self.embeddings.embedding_dim,
+                'output_size': self.linear.out_features}
+
     def __init__(self, vocab_size, embedding_dim, output_size):
         super(LinearModel, self).__init__()
         self.embeddings = nn.EmbeddingBag(vocab_size,

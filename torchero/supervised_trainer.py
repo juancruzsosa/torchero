@@ -127,3 +127,19 @@ class SupervisedTrainer(BatchTrainer):
     def to(self, device):
         super(SupervisedTrainer, self).to(device)
         self.criterion.to(self._device)
+
+    def _save_to_zip(self, zip_fp, prefix=''):
+        prefix = prefix.rstrip('/')
+        super(SupervisedTrainer, self)._save_to_zip(zip_fp, prefix=prefix)
+        with zip_fp.open(prefix + '/loss.pkl', 'w') as loss_fp:
+            torch.save(self.criterion, loss_fp)
+        with zip_fp.open(prefix + '/optimizer.pkl', 'w') as optim_fp:
+            torch.save(self.optimizer, optim_fp)
+
+    def _load_from_zip(self, zip_fp, prefix=''):
+        prefix = prefix.rstrip('/')
+        super(SupervisedTrainer, self)._load_from_zip(zip_fp, prefix=prefix)
+        with zip_fp.open(prefix + '/loss.pkl', 'r') as loss_fp:
+            self.criterion = torch.load(loss_fp)
+        with zip_fp.open(prefix + '/optimizer.pkl', 'r') as optim_fp:
+            self.optimizer = torch.load(optim_fp)

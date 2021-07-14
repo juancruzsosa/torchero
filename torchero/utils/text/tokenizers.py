@@ -23,6 +23,11 @@ class SpacyTokenizer(object):
 
     def __setstate__(self, state):
         self.lang = state['lang']
+        try:
+            import spacy
+        except ImportError:
+            raise ImportError("spacy not found. Install it using pip install spacy")
+        self.model = spacy.blank(self.lang)
 
 
 class EnglishSpacyTokenizer(SpacyTokenizer):

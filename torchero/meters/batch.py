@@ -53,14 +53,3 @@ class BatchMeter(BaseMeter):
     def __mul__(self, y):
         self.scale *= y
         return self
-
-    def __getstate__(self):
-        return {'aggregator': self.aggregator,
-                'scale': self.scale,
-                'transform': self._transform}
-
-    def __setstate__(self, state):
-        self.aggregator = state['aggregator']
-        self.scale = state['scale']
-        self._transform = state['transform']
-        self.reset()

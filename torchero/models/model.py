@@ -1,5 +1,6 @@
 import json
 import zipfile
+import importlib
 
 import torch
 from torch import nn
@@ -25,10 +26,47 @@ class InputDataset(Dataset):
     def __len__(self):
         return len(self.ds)
 
+class ModelImportException(Exception):
+    pass
+
+
 class Model(DeviceMixin):
+    """ Model Class for Binary Classification (single or multilabel) tasks
+    """
     """ Model class that wrap nn.Module models to add
     training, prediction, saving & loading capabilities
     """
+
+    @classmethod
+    def load_from_file(_, path_or_fp, net=None):
+        """ Load a saved model from disk an convert it to the desired type (ImageModel, TextModel, etc)
+
+        Arguments:
+            net (nn.Module): Neural network initialized in the same way as the saved one.
+            path_or_fp (file-like or str): Path to saved model
+        """
+        with zipfile.ZipFile(path_or_fp, mode='r') as zip_fp:
+            with zip_fp.open('config.json', 'r') as fp:
+                config = json.loads(fp.read().decode('utf-8'))
+        model_type = config['torchero_model_type']
+        module = importlib.import_module(model_type['module'])
+        model_type = getattr(module, model_type['type'])
+        print(model_type)
+        if net is None:
+            if 'net' not in config:
+                raise ModelImportException("Invalid network configuration json (Expected 'net' key)")
+            net_type = config['net']['type']
+            net_module = importlib.import_module(net_type['module'])
+            net_type = getattr(net_module, net_type['type'])
+            print(net_type)
+            if 'config' not in config['net']:
+                raise ModelImportException("Network configuration not found in config.json ('net.config'). Create function passing an already initialized network")
+            if hasattr(net_type, 'from_config') and 'config' in config['net']:
+                net = net_type.from_config(config['net']['config'])
+        model = model_type(net)
+        model.load(path_or_fp)
+        return model
+
     def __init__(self, model):
         """ Constructor
 
@@ -276,7 +314,19 @@ class Model(DeviceMixin):
 
     @property
     def config(self):
-        return {'torchero_version': torchero.__version__}
+        config = {
+            'torchero_version': torchero.__version__,
+            'torchero_model_type': {'module': self.__class__.__module__,
+                                    'type': self.__class__.__name__},
+            'compiled': self.trainer is not None,
+        }
+        if hasattr(self.model, 'config'):
+            config.update({'net': {
+                'type': {'module': self.model.__class__.__module__,
+                         'type': self.model.__class__.__name__},
+                'config': self.model.config
+            }})
+        return config
 
     def save(self, path_or_fp):
         self.model.eval()
@@ -298,6 +348,13 @@ class Model(DeviceMixin):
     def _load_from_zip(self, zip_fp):
         with zip_fp.open('model.pth', 'r') as fp:
             self.model.load_state_dict(torch.load(fp))
+        with zip_fp.open('config.json', 'r') as config_fp:
+            config = json.loads(config_fp.read().decode())
+        if config['compiled'] is True:
+            self.trainer = SupervisedTrainer(model=self.model,
+                                             criterion=None,
+                                             optimizer=None)
+            self.trainer._load_from_zip(zip_fp, prefix='trainer/')            
 
 class BinaryClassificationModel(Model):
     """ Model Class for Binary Classification (single or multilabel) tasks
@@ -433,3 +490,6 @@ class RegressionModel(Model):
                                                     hparams=hparams,
                                                     callbacks=callbacks,
                                                     val_metrics=val_metrics)
+
+def load_model_from_file(path_or_fp, net=None):
+    return Model.load_from_file(path_or_fp, net)
