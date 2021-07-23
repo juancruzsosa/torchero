@@ -49,3 +49,6 @@ class CallbackContainer(Callback):
 
     def __iter__(self):
         return iter(self.callbacks)
+
+    def __len__(self):
+        return len(self.callbacks)
