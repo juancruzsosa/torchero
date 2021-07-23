@@ -3,7 +3,7 @@ __pycache__
 dist/
 build/
 documentation/build/
-data/
+./data/
 *.egg-info/
 examples/notebooks/runs
 examples/notebooks/saved_model
