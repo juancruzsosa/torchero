@@ -5,8 +5,8 @@ from torchero.callbacks.base import Callback
 
 
 class LogLevel(Enum):
-    EPOCH = 1
-    STEP = 0
+    EPOCH = 'epoch'
+    STEP = 'step'
 
 
 class CSVLogger(Callback):
@@ -31,12 +31,7 @@ class CSVLogger(Callback):
         self.append = append
         self.columns = columns
         self.hparams_columns = hparams_columns
-        if level == 'epoch':
-            self.level = LogLevel.EPOCH
-        elif level == 'step':
-            self.level = LogLevel.STEP
-        else:
-            raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
+        self.level = LogLevel(level)
 
     def on_train_begin(self):
         if self.columns is None:
