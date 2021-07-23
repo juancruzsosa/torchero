@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from torch.optim import lr_scheduler
 
@@ -6,7 +6,7 @@ from torchero.utils.defaults import get_default_mode
 from torchero.callbacks.base import Callback
 
 
-class OptimizerScheduler(Callback):
+class OptimizerScheduler(Callback, metaclass=ABCMeta):
     """ Abstract class for all optimizer schedulers
     """
     def __init__(self, start=1, on_event='epoch_end', end=None, optimizer=None):
