@@ -4,6 +4,7 @@ from torch import nn
 from torch import optim
 
 from torchero import meters
+from functools import partial
 
 INVALID_MODE_INFERENCE_MESSAGE = (
     "Could not infer mode from meter {meter}"
@@ -84,29 +85,30 @@ meters_by_name = {
     'confusion_matrix': meters.ConfusionMatrix,
     'confusion_matrix_percentage': lambda: meters.ConfusionMatrix() * 100,
     'balanced_accuracy': meters.BalancedAccuracy,
-    'precision': meters.Precision,
-    'precision_wl': lambda: meters.Precision(with_logits=True),
-    'recall': meters.Recall,
-    'recall_wl': lambda: meters.Recall(with_logits=True),
-    'f1': meters.F1Score,
-    'f1_wl': lambda: meters.F1Score(with_logits=True),
-    'f2': meters.F2Score,
-    'f2_wl': lambda: meters.F2Score(with_logits=True),
-    'specificity': meters.F2Score,
-    'specificity_wl': lambda: meters.F2Score(with_logits=True),
-    'npv': meters.NPV,
-    'npv_wl': lambda: meters.NPV(with_logits=True),
-
-    'batches/s': lambda: meters.BatchSpeed(time_unit='second'),
-    'it/s': lambda: meters.IterSpeed(time_unit='second'),
-    'sec/batch': lambda: meters.BatchPace(time_unit='second'),
-    'sec/it': lambda: meters.IterPace(time_unit='second'),
-
-    'batches/min': lambda: meters.BatchSpeed(time_unit='minute'),
-    'it/min': lambda: meters.IterSpeed(time_unit='minute'),
-    'min/batch': lambda: meters.BatchPace(time_unit='minute'),
-    'min/it': lambda: meters.IterPace(time_unit='minute'),
 }
+
+for name, metric in (('recall', meters.Recall),
+                     ('precision', meters.Precision),
+                     ('npv', meters.NPV),
+                     ('specificity', meters.Specificity),
+                     ('f1', meters.F1Score),
+                     ('f2', meters.F2Score)):
+    meters_by_name.update({
+        name: metric,
+        name + '_wl': partial(metric, with_logits=True)
+    })
+    for agg_name in ('micro', 'macro', 'weighted'):
+        meters_by_name.update({
+            agg_name + '_' + name: partial(metric, with_logits=False, agg=agg_name),
+            agg_name + '_' + name + '_wl': partial(metric, with_logits=True, agg=agg_name)
+        })
+
+for name, speed_metric, pace_metric in (('batches', meters.BatchSpeed, meters.BatchPace),
+                                        ('it', meters.IterSpeed, meters.IterPace)):
+    for unit_abbr, unit in (('sec', 'second'),
+                            ('min', 'minute')):
+        meters_by_name.update({name + '/' + unit_abbr: partial(speed_metric, time_unit=unit),
+                               unit_abbr + '/' + name: partial(pace_metric, time_unit=unit)})
 
 
 def get_meters_by_name(name):
