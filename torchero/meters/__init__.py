@@ -15,6 +15,6 @@ from torchero.meters.categorical_accuracy import CategoricalAccuracy
 from torchero.meters.confusion_matrix import ConfusionMatrix
 from torchero.meters.exceptions import ZeroMeasurementsError
 from torchero.meters.loss import LossMeter
-from torchero.meters.mse import MSE, MSLE, RMSE, RMSLE
+from torchero.meters.mse import MSE, MSLE, RMSE, RMSLE, MAE
 from torchero.meters.nullmeter import NullMeter
 from torchero.meters.performance import BatchSpeed, BatchPace, IterSpeed, IterPace

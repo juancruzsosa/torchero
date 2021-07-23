@@ -2,14 +2,12 @@ import math
 
 import torch
 
-from torchero.meters.aggregators.batch import Average
+from torchero.meters.aggregators.batch import Average, Maximum
 from torchero.meters.batch import BatchMeter
 
-
-class MSE(BatchMeter):
+class RegressionMetric(BatchMeter):
     """ Meter for mean squared error metric
     """
-    name = 'mse'
     DEFAULT_MODE = 'min'
     INVALID_BATCH_DIMENSION_MESSAGE = (
         'Expected both tensors have at less two dimension and same shape'
@@ -17,14 +15,12 @@ class MSE(BatchMeter):
     INVALID_INPUT_TYPE_MESSAGE = (
         'Expected types (FloatTensor, FloatTensor) as inputs'
     )
+    agg_func = Average
 
     def __init__(self, transform=None):
         """ Constructor
         """
-        super(MSE, self).__init__(transform=transform, aggregator=Average())
-
-    def _get_result(self, a, b):
-        return torch.pow(a-b, 2)
+        super(MSE, self).__init__(transform=transform, aggregator=self.agg_func)
 
     def measure(self, a, b):
         if not torch.is_tensor(a) or not torch.is_tensor(b):
@@ -34,24 +30,41 @@ class MSE(BatchMeter):
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
         super(MSE, self).measure(a, b)
 
+class MAE(RegressionMetric):
+    """ Meter for mean absolute error metric
+    """
+    name = 'mae'
+    def _get_result(self, a, b):
+        return (a-b).abs()
+
+
+class MSE(RegressionMetric):
+    """ Meter for mean squared error metric
+    """
+    name = 'mse'
+    def _get_result(self, a, b):
+        return torch.pow(a-b, 2)
+
 
 class RMSE(MSE):
     """ Meter for rooted mean squared error metric
     """
+    name = 'rmse'
     def value(self):
         return math.sqrt(super(RMSE, self).value())
 
 
-class MSLE(MSE):
+class MSLE(RegressionMetric):
     """ Meter for mean squared log error metric
     """
-    def __init__(self, transform=None):
-        transform = transform or (lambda x: x)
-        super(MSLE, self).__init__(transform=lambda x: torch.log(transform(x)+1))
+    name = 'msle'
+    def _get_result(self, a, b):
+        return torch.pow(torch.log(a+1)-torch.log(b+1), 2)
 
 
 class RMSLE(MSLE):
     """ Meter for rooted mean squared log error metric
     """
+    name = 'rmsle'
     def value(self):
         return math.sqrt(super(RMSLE, self).value())
