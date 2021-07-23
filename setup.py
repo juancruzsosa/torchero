@@ -24,7 +24,8 @@ setup(name='torchero',
           'tqdm',
           'requests',
           'matplotlib',
-          'Pillow'
+          'Pillow',
+          'pandas',
       ],
       classifiers=[
           "Programming Language :: Python :: 3",
