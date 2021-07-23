@@ -97,7 +97,7 @@ class TPMeter(BaseMeter):
         'Expected binary target tensors (1 or 0 in each component)'
     )
 
-    def __init__(self, threshold=0.5, with_logits=False, activation=None):
+    def __init__(self, threshold=0.5, with_logits=False, activation=None, agg='micro'):
         """ Constructor
 
         Arguments:
@@ -112,6 +112,9 @@ class TPMeter(BaseMeter):
         self.threshold = threshold
         if with_logits and activation is None:
             activation = nn.Sigmoid()
+        if agg not in ('micro', 'macro', 'weighted'):
+            raise ValueError("agg parameter must be micro, or macro")
+        self.agg = agg
         self.with_logits = with_logits
         self.activation = activation
         self.reset()
@@ -138,48 +141,78 @@ class TPMeter(BaseMeter):
         if self.activation is not None:
             output = self.activation(output)
         predictions = (output >= self.threshold).long()
-        self.tp += (predictions & target).sum().item()
-        self.fp += (predictions & (target ^ 1)).sum().item()
-        self.fn += ((predictions ^ 1) & target).sum().item()
-        self.tn += ((predictions ^ 1) & (target ^ 1)).sum().item()
+        self.tp += (predictions & target).sum(dim=0)
+        self.fp += (predictions & (target ^ 1)).sum(dim=0)
+        self.fn += ((predictions ^ 1) & target).sum(dim=0)
+        self.tn += ((predictions ^ 1) & (target ^ 1)).sum(dim=0)
+
+    def support(self):
+        return self.tp + self.fn
+
+    def aggregate(self, f):
+        tp, tn, fp, fn = self.value()
+        if self.agg == 'micro':
+            return f(tp.sum(), tn.sum(), fp.sum(), fn.sum()).item()
+        elif self.agg == 'macro':
+            return f(tp, tn, fp, fn).mean().item()
+        else: # self.agg == 'weighted'
+            support = self.support()
+            return ((f(tp, tn, fp, fn) * support).sum()/support.sum()).item()
+
+    @staticmethod
+    def _recall(tp, tn, fp, fn):
+        return tp/(tp + fn)
+
+    @staticmethod
+    def _precision(tp, tn, fp, fn):
+        return tp/(tp + fp)
+
+    @staticmethod
+    def _specificity(tp, tn, fp, fn):
+        return tn/(tn + fp)
+
+    @staticmethod
+    def _npv(tp, tn, fp, fn):
+        return tn/(tn + fn)
+
+    def _gen_fbeta(self, beta=1):
+        def fbeta(tp, tn, fp, fn):
+            r = self._recall(tp, tn, fp, fn)
+            p = self._precision(tp, tn, fp, fn)
+            num = (1 + beta**2) * p * r
+            den = (beta ** 2) * p + r
+            return num / den
+        return fbeta
 
     @property
     def recall(self):
-        if self.tp == 0 and self.fn == 0:
-            return 0
-        else:
-            return self.tp/(self.tp + self.fn)
+        return self.aggregate(self._recall)
 
     @property
     def precision(self):
-        if self.tp == 0 and self.fp == 0:
-            return 0
-        else:
-            return self.tp/(self.tp + self.fp)
+        return self.aggregate(self._precision)
 
     @property
     def specificity(self):
-        return self.tn/(self.tn + self.fp)
+        return self.aggregate(self._sensitivity)
+
+    @property
+    def npv(self):
+        return self.aggregate(self._npv)
 
     def f_beta(self, beta):
-        recall = self.recall
-        precision = self.precision
-        if precision == 0 and recall == 0:
-            return 0
-        else:
-            num = (1 + beta**2) * precision * recall
-            den = (beta ** 2) * precision + recall
-            return num / den
+        return self.aggregate(self._gen_fbeta(beta))
 
     def value(self):
         return (self.tp, self.tn, self.fp, self.fn)
 
     def __repr__(self):
-        return "{cls}(threshold={th}, with_logits={wl}, activation={act})".format(
+        return "{cls}(threshold={th}, with_logits={wl}, activation={act}, agg={agg})".format(
             cls=self.__class__.__name__,
             th=repr(self.threshold),
             wl=repr(self.with_logits),
-            act=repr(self.activation)
+            act=repr(self.activation),
+            agg=repr(self.agg),
         )
 
 
@@ -232,7 +265,7 @@ class NPV(TPMeter):
     DEFAULT_MODE = 'min'
 
     def value(self):
-        return self.tn/(self.tn + self.fn)
+        return self.npv
 
 
 class FBetaScore(TPMeter):
