@@ -15,6 +15,8 @@ class History(Callback):
         self.registry = HistoryManager()
 
     def on_log(self):
+        """ Append the new set of metrics of the current epoch
+        """
         self.registry.append(self.trainer.epochs_trained,
                              self.trainer.steps_trained,
                              self.trainer.metrics,

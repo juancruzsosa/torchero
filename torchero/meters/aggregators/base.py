@@ -22,9 +22,17 @@ class Aggregator(object, metaclass=ABCMeta):
 
     @abstractmethod
     def combine(self, old_result, value):
+        """ Combines the metrics of the lasts batch with the current one
+
+        Arguments:
+            old_result: Accumulated values of the previous batches
+            value: Values for this batch
+        """
         pass
 
     def final_value(self, result):
+        """ Returns the final metric value given the accumulated values
+        """
         if self._num_samples == 0:
             raise ZeroMeasurementsError()
         return result

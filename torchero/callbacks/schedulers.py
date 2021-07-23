@@ -7,7 +7,7 @@ from torchero.callbacks.base import Callback
 
 
 class OptimizerScheduler(Callback):
-    """ Interface of Optimizer schedulers
+    """ Abstract class for all optimizer schedulers
     """
     def __init__(self, start=1, on_event='epoch_end', end=None, optimizer=None):
         """ Constructor

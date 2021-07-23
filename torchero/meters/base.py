@@ -14,16 +14,28 @@ class BaseMeter(object, metaclass=ABCMeta):
 
     @abstractmethod
     def reset(self):
+        """ Resets the metric value
+        """
         pass
 
     @abstractmethod
     def value(self):
+        """ Returns the metric value
+        """
         pass
 
     def clone(self):
+        """ Create a new instance copied from this instance
+        """
         return copy.deepcopy(self)
 
     def eval_model_on_dl(self, model, dl):
+        """ Evaluates the model on a given DataLoader
+
+        Arguments:
+            model (nn.Module): Module to run the metric against
+            dl (DataLoader): Input DataLoader
+        """
         is_cuda = next(model.parameters()).is_cuda
         self.reset()
         with torch.no_grad():

@@ -6,7 +6,7 @@ from torchero.meters.batch import BatchMeter
 
 
 class BinaryAccuracy(BatchMeter):
-    """ Meter for accuracy on binary targets (assuming normalized inputs)
+    """ Meter for accuracy on binary targets (assuming inputs in range (0,1))
     """
     name = "acc"
     DEFAULT_MODE = 'max'
@@ -82,7 +82,6 @@ class BinaryWithLogitsAccuracy(BinaryAccuracy):
             agg=repr(self.aggregator),
             act=repr(self.activation)
         )
-
 
 class TPMeter(BaseMeter):
     """ Meter to calculate true positives, true negatives, false positives,

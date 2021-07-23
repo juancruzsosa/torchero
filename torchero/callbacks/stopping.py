@@ -3,7 +3,7 @@ from torchero.utils.defaults import get_default_mode
 
 
 class EarlyStopping(Callback):
-    """ Callback for stop training when monitored metric not improve in time
+    """ Callback to stop training when metric has stopped improving
     """
     UNRECOGNIZED_MODE_MESSAGE = (
         "Unrecognized mode {mode}. Options are: 'max', 'min', 'auto'"

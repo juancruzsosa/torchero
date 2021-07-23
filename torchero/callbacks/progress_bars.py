@@ -35,7 +35,8 @@ class ProgbarLogger(Callback):
 
             ascii (`bool`): if true display progress bar in ASCII mode.
             notebook (`bool`): Make outputs compatible for python notebooks
-            monitor (list of str): List of monitors to show after every status update
+            monitor (list of str, optional): List of monitors to show after
+                every status update. If not setted it will use all the monitors (default).
             hparams (list of str): List of hyperparameters names to show after every status update
         """
         self.ascii = ascii
@@ -76,6 +77,9 @@ class ProgbarLogger(Callback):
         self.step_bars.append(step_tqdm.__enter__())
 
     def on_log(self):
+        """ Update the status of the progress bar
+        with the level of epoch completion and the partial metrics
+        """
         monitors = self.monitors
         if self.monitors is None:
             monitors = self.trainer.metrics.keys()
@@ -103,6 +107,8 @@ class ProgbarLogger(Callback):
         self.epoch_bar.update()
 
     def on_train_end(self):
+        """ Close all epoch bars
+        """
         self.epoch_bar.close()
         self.epoch_tqdm.close()
 

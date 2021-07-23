@@ -12,7 +12,7 @@ class Logger(Callback):
 
     def __init__(self, separator=',\t', monitors=None, hparams=None, level='epoch'):
         """ Constructor
-        
+
         Arguments:
             separator (str): String to separate columns
             monitors (list of str): Set of metrics names to report. If None

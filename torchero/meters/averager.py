@@ -5,7 +5,7 @@ from torchero.meters.exceptions import ZeroMeasurementsError
 
 
 class Averager(BaseMeter):
-    """ Meter that returns the average over all measured values
+    """ Meter that returns the average over all module output values
     """
 
     def __init__(self):

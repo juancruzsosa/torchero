@@ -3,18 +3,14 @@ from torchero.utils.format import format_metric
 
 
 class TensorBoardLogger(Callback):
-    """ Callback to push metrics after epoch to Tensorboard
+    """ Callback to push metrics after every epoch to Tensorboard
     """
     def __init__(self, writer, monitors=None, test_writer=None):
         """ Constructor
 
-        writer (SummaryWriter):
-            Instance of `torch.utils.tensorboard.SummaryWriter
-        monitors (list):
-            List of metrics to log. If none is passed it will log all metrics
-        test_writer (SummaryWriter):
-            SummaryWriter for test metrics. None uses the same writer
-            for both
+        writer (SummaryWriter): Instance of `torch.utils.tensorboard.SummaryWriter`
+        monitors (list): List of metrics to log. If none is passed it will log all metrics
+        test_writer (SummaryWriter, optional): SummaryWriter for test metrics. If None is passed the same writer for both
         """
         self.writer = writer
         self.test_writer = test_writer

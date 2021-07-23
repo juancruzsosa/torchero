@@ -6,7 +6,9 @@ from torchero.meters.base import BaseMeter
 
 
 class BalancedAccuracy(BaseMeter):
-    """ Meter for accuracy categorical on categorical targets
+    """ Calculate the balanced categorical accuracy on categorical targets
+    to deal with imbalanced datasets. The metric is equivalent to the average
+    of recalls on each class
     """
     name = 'balanced_acc'
     DEFAULT_MODE = 'max'
