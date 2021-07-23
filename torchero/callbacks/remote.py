@@ -1,13 +1,9 @@
 import json
 import warnings
 
+import requests
+
 from torchero.callbacks.base import Callback
-
-try:
-    import requests
-except ImportError:
-    requests = None
-
 
 class RemoteMonitor(Callback):
     """ Callback to stream training events to a server with the same interface as Keras RemoteMonitor.
