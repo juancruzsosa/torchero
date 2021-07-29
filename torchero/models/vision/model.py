@@ -1,15 +1,19 @@
+import pickle
+
 import torch
 from torch import nn
 
+from PIL import Image
+
 from torchvision import transforms
+
 from torchero.models import (Model,
                              BinaryClassificationModel,
                              ClassificationModel,
                              RegressionModel)
 from torchero.models.vision.nn.torchvision import TorchvisionModel
 
-__all__ = ['arch_aliases',
-           'ImageModel',
+__all__ = ['ImageModel',
            'BinaryImageClassificationModel',
            'ImageClassificationModel',
            'ImageRegressionModel']
