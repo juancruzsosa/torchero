@@ -3,8 +3,11 @@ import os
 from itertools import product, chain
 from collections import defaultdict
 from operator import itemgetter
-from torchero.callbacks.base import Callback
 from collections import Iterable
+
+import pandas as pd
+
+from torchero.callbacks.base import Callback
 from torchero.utils.plots import smooth_curve
 
 class History(Callback):
@@ -29,34 +32,48 @@ class History(Callback):
 
 
 class HistoryManager(Callback):
+    """ Manages the training history
+    """
     UNRECOGNIZED_LEVEL_MESSAGE = (
         "Unrecognized level {level}. Level parameter should be either 'epoch' "
         "or 'step'"
     )
 
     def __init__(self):
+        """ Initializes the instance with a blank history
+        """
         self.records = []
 
     def __iter__(self):
+        """ Returns an iterator of all the records
+        """
         yield from self.records
 
     def __getitem__(self, idx):
+        """ Access to the metrics & hyper-parameters of a given time-step
+        """
         return self.records[idx]
 
     def __len__(self):
+        """ Returns the number of metrics & hyper-parameters recorded
+        """
         return len(self.records)
 
     def columns(self):
+        """ Return the names of all the metrics & hyper-parameters recorded
+        """
         return set(chain(*map(lambda x: set(x.keys()), self.records)))
 
     def append(self, epoch, step, metrics, hparams):
+        """ Add a new data point to the history
+        """
         self.records.append({'epoch': epoch,
                              'step': step,
                              **metrics,
                              **hparams})
 
     def to_dataframe(self, level='epoch'):
-        """ Returns the metrics history as a DataFrame format
+        """ Returns this object as a DataFrame object
 
         Parameters:
             level (str): It could either 'epoch' or 'step'. 
@@ -67,10 +84,6 @@ class HistoryManager(Callback):
             A pandas DataFrame with column epoch, step (only if level='step')
             and a column for each metric
         """
-        try:
-            import pandas as pd
-        except ImportError:
-            raise ImportError("Install pandas (pip install pandas) to export to history to dataframe")
 
         df = (pd.DataFrame.from_records(self.records)
                 .sort_values(['epoch', 'step']))
@@ -217,6 +230,9 @@ class HistoryManager(Callback):
         return fig, axs
 
     def get_default_layout(self):
+        """ Returns the configuration layout that compares the training and validation results
+            of each metric in the cell of the plot tile
+        """
         cols = self.columns()-{'epoch', 'step'}
         suffixes = set(x.split('_', maxsplit=1)[1] if '_' in x else x for x in cols)
         suffixes = [(s, sorted([c for c in cols if c.endswith(s)])) for s in suffixes]
@@ -233,6 +249,9 @@ class HistoryManager(Callback):
         return layout
 
     def get_column_layout(self):
+        """ Returns the configuration layout that distributes the metric j for the data-set k
+        at row k and column j
+        """
         cols = self.columns()-{'epoch', 'step'}
         prefixes = set(x.split('_', maxsplit=1)[0] for x in cols)
         prefixes = [(p, sorted([c for c in cols if c.startswith(p)])) for p in prefixes]

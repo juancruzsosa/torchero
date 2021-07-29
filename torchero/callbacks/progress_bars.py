@@ -27,7 +27,6 @@ class ProgbarLogger(Callback):
     """ Callback that displays progress bars to monitor
         training/validation metrics
     """
-
     def __init__(self, ascii=False, notebook=False, monitors=None, hparams=None):
         """ Constructor
 
@@ -59,6 +58,8 @@ class ProgbarLogger(Callback):
             self.trainer.logger.addHandler(TqdmLoggingHandler())
 
     def on_train_begin(self):
+        """ Set up the training bars
+        """
         self.epoch_tqdm = self.tqdm(total=self.trainer.total_epochs,
                                     unit='epoch',
                                     leave=True,
@@ -68,6 +69,8 @@ class ProgbarLogger(Callback):
         self.last_step = 0
 
     def on_epoch_begin(self):
+        """ Add a new training bar
+        """
         step_tqdm = self.tqdm(total=self.trainer.total_steps,
                               unit=' batchs',
                               leave=True,
@@ -104,6 +107,8 @@ class ProgbarLogger(Callback):
         self.last_step = self.trainer.steps_trained
 
     def on_epoch_end(self):
+        """ Close the current bar
+        """
         self.epoch_bar.update()
 
     def on_train_end(self):

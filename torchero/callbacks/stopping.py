@@ -32,6 +32,8 @@ class EarlyStopping(Callback):
         self.reset()
 
     def on_train_begin(self):
+        """ Selects the appropriate improvement criterion
+        """
         criterion_by_mode = {'max': self._max_improved_criterion,
                              'min': self._min_improved_criterion}
 
@@ -51,6 +53,8 @@ class EarlyStopping(Callback):
         return self._last_best_monitor_value - self._min_delta > value
 
     def step(self):
+        """ Stops the training if the model has not improved
+        """
         if self.monitor not in self.trainer.metrics:
             return
         monitor_value = self.trainer.metrics[self.monitor]
@@ -73,18 +77,29 @@ class EarlyStopping(Callback):
 
     @property
     def mode(self):
+        """ Early stopping mode.
+            'max' stops training when the model not maximizes a metric (accuracy, e.g f1_score)
+            'min' stops training when the model not minimizes a metric (error, e.g rmse)
+        """
         return self._mode
 
     @property
     def min_delta(self):
+        """ Minimum margin if not improvement
+        """
         return self._min_delta
 
     @property
     def patience(self):
+        """ Number of steps of not improvement after stop
+            training
+        """
         return self._patience
 
     @property
     def monitor(self):
+        """ Metric to pay attention to
+        """
         return self._monitor
 
     def __repr__(self):

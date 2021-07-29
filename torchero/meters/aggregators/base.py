@@ -14,10 +14,14 @@ class Aggregator(object, metaclass=ABCMeta):
 
     @property
     def num_samples(self):
+        """ Nunmber of samples
+        """
         return self._num_samples
 
     @abstractmethod
     def initial_value(self):
+        """ Neutral value
+        """
         pass
 
     @abstractmethod

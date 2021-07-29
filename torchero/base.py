@@ -15,26 +15,41 @@ from torchero.utils.collections import MetricsDict, ParamsDict
 
 
 class ValidationGranularity(Enum):
-    AT_LOG = 'log'
-    AT_EPOCH = 'epoch'
+    AT_LOG = 'log' #validate after log event (more granular display but less performant)
+    AT_EPOCH = 'epoch' #validate after each epoch (less granular display but more performant)
 
 
 class _OnLogValidScheduler(Callback):
+    """ Callback to validate responsible after each log event
+    This callback is not intended to be used explicitly
+    """
     def on_log(self):
         self.trainer._validate()
 
 
 class _OnEpochValidScheduler(Callback):
+    """ Callback responsible to validate after each epoch
+    """
     def on_log(self):
         if self.trainer.step == self.trainer.total_steps-1:
             self.trainer._validate()
 
 class BatchValidator(DeviceMixin, metaclass=ABCMeta):
     """ Abstract class for all validation classes that works with batched inputs.
-        All those validators should subclass this class
+        All those validators should subclass this class.
+        This class handles the computation of the metrics
+        for the validation data
     """
 
     def __init__(self, model, meters):
+        """ Constructor
+
+        Argument:
+            model (``torch.nn.Module``): Module to be trained
+            meters (list/dict of meters): List/Dict of metrics to evaluate on
+                the model. If a list is passed the metrics names will be auto
+                completed. If
+        """
         super(BatchValidator, self).__init__()
         self.model = model
         self._metrics = MetricsDict(parse_meters(meters))
@@ -47,7 +62,7 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
             *args (variable length arguments
                    of :class:`torch.autograd.Variable`
                    of Tensors or cuda Tensors):
-                Unamed batch parameters
+                Unnamed batch parameters
             **kwargs (variable length keyword arguments of
                       :class:`torch.autograd.Variable` of
                       Tensors or cuda Tensors):
@@ -56,17 +71,31 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         pass
 
     def meters_names(self):
+        """ Returns the metrics names
+        """
         return self.meters.keys()
 
     @property
     def meters(self):
+        """ Returns the meters associated to the given metrics
+        """
         return self._metrics.meters
 
     @property
     def metrics(self):
+        """ Returns the list of metrics of the last validation
+        """
         return self._metrics
 
     def validate(self, valid_dataloader):
+        """ Validate a model against a given validation dataloader
+
+        Arguments:
+            valid_dataloader: Input dataloader
+
+        Returns:
+            A dictionary of metrics for the given dataloader
+        """
         self._metrics.reset()
 
         if not valid_dataloader:
@@ -85,17 +114,31 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         return dict(self._metrics)
 
     def validate_all(self, dataloaders):
+        """ Validate the model against multiple dataloaders
+
+        Arguments:
+            validate_all (dict): Dataloaders (dict values) by name (dict keys)
+
+        Returns:
+            A dictionary of all the metrics (dict) for each dataloader name
+        """
         records = {split_name: self.validate(dl) for split_name, dl in dataloaders.items()}
         return records
 
     def add_named_meter(self, name, meter):
+        """ Add a meter with name
+        """
         self._metrics.add_metric(name, meter)
 
     def _save_to_zip(self, zip_fp, prefix):
+        """ Save the validator state from a zip handler
+        """
         with zip_fp.open(prefix + '/val_metrics.pkl', 'w') as metrics_fp:
             pickle.dump(self._metrics, metrics_fp)
 
     def _load_from_zip(self, zip_fp, prefix=''):
+        """ Load the validator state from a zip handler
+        """
         with zip_fp.open(prefix + '/val_metrics.pkl', 'r') as metrics_fp:
             self._metrics = pickle.load(metrics_fp)
 
@@ -128,18 +171,30 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @classmethod
     def create_default_logger_handler(cls):
-        if cls.logger is None:
-            logger = logging.getLogger("Trainer")
-            logger.setLevel(logging.INFO)
-            cls.logger = logger
+        """ Set up a logger to be shared across all instances
+        """
+        logger = logging.getLogger("Trainer")
+        logger.setLevel(logging.INFO)
+        cls.logger = logger
 
 
     @staticmethod
     def prepend_name_dict(prefix, d):
+        """ Add a prefix to each key of the given dictionary
+
+        Arguments:
+            prefix (str): Prefix to add to every key
+            d (dict): Input dictionary
+
+        Returns:
+            A dictionary with the keys prefixed
+        """
         return {prefix + name: value for name, value in d.items()}
 
     @abstractmethod
     def create_validator(self, metrics):
+        """ Returns the most appropriate ValidatorClass
+        """
         # return BatchValidator(self.model, self.val_meters)
         pass
 
@@ -156,23 +211,25 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         Args:
             model (:class:`torch.nn.Module`):
                 Module to train
-            callbacks (:class:`torchero.callbacks.Callback`):
-                Pluggable callbacks for epoch/batch events.
+            callbacks (list of :class:`torchero.callbacks.Callback`):
+                List of callbacks to use during training.
             train_meters (list or dict of :class: `torchero.meters.Meter'):
                 Training meters
-            val_meters (list dict of :class: `torchero.meters.Meter'):
+            val_meters (list or dict of :class: `torchero.meters.Meter'):
                 Validation meters
             hparams (dict of hyperparameters):
                 Dictionary <name,hparam> of hyperparameters. Each value
-                can be a fixed value, a lambda function with only parameter to pass the trainer,
+                can be a fixed value, a lambda function with only parameter to pass to the trainer,
                 or a instance of `torchero.hparams.OptimP`
             logging_frecuency (int):
-                Frecuency of log to monitor train/validation
+                Frecuency of log events in training steps units
             prefixes (tuple, list):
-                Prefixes of train and val metrics
+                Prefixes of train and val metrics to avoid metrics names collisions
             validation_granularity (ValidationGranularity):
-                Change validation criterion (after every log vs after every
-                epoch)
+                Set to ValidationGranularity.AT_LOG to validate after log event
+                    (more granular display but less performant),
+                Set to ValidationGranularity.AT_EPOCH to validate after each
+                    epoch (less granular display but more performant)
         """
         if logging_frecuency < 0:
             raise ValueError(self.INVALID_LOGGING_FRECUENCY_MESSAGE
@@ -192,10 +249,13 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self.create_default_logger_handler()
 
         self.model = model
+
+        # Initialize training stats
         self._epochs_trained = 0
         self._steps_trained = 0
         self._prefixes = prefixes
 
+        # Set up metrics
         train_meters = parse_meters(train_meters)
 
         if val_meters is None:
@@ -205,9 +265,15 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             val_meters = parse_meters(val_meters)
 
         self._train_metrics = MetricsDict(train_meters)
+
+        # Set up hyper-parameters
         self._hparams = self._create_hparams(dict(hparams))
+
+        # Set up validator
         self.validator = self.create_validator(val_meters)
 
+        # Flag to determine if the training has to be
+        # stopped (e.g. due to EarlyStopping)
         self._raised_stop_training = False
 
         self._history_callback = History()
@@ -215,24 +281,45 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self._callbacks = CallbackContainer()
         self._callbacks.accept(self)
 
+        # Predefined callbacks
+        # Validation callback to validate after the defined event
         self._callbacks.add(valid_sched)
+        # History callback to record every stat
         self._callbacks.add(self._history_callback)
 
+        # Add user defined callbacks
         for callback in callbacks:
             self._callbacks.add(callback)
 
     def _save_to_zip(self, zip_fp, prefix=''):
+        """ Dumps the full training state to a zip handler
+
+        Arguments:
+            zip_fp (``zipfile.ZipFile``): ZipFile object to dump the state
+            prefix (str): Trainer folder in the zip
+        """
         prefix = prefix.rstrip('/')
+        # Dump training state
         with zip_fp.open(prefix + '/config.json', 'w') as config_fp:
             config_fp.write(json.dumps(self.config, indent=4).encode())
+        # Dump validator (which saves the validation metrics)
         self.validator._save_to_zip(zip_fp, prefix=prefix)
+        # Dump training metrics results and trainers
         with zip_fp.open(prefix + '/train_metrics.pkl', 'w') as metrics_fp:
             pickle.dump(self._train_metrics, metrics_fp)
+        # Dump list of callbacks
         with zip_fp.open(prefix + '/callbacks.pkl', 'w') as callbacks_fp:
             pickle.dump(self._callbacks, callbacks_fp)
-    
+
     def _load_from_zip(self, zip_fp, prefix=''):
+        """ Loads the full training state from a zip handler
+
+        Arguments:
+            zip_fp (``zipfile.ZipFile``): ZipFile object to load the state
+            prefix (str): Trainer folder in the zip
+        """
         prefix = prefix.rstrip('/')
+        # Load training state from config
         with zip_fp.open(prefix + '/config.json', 'r') as config_fp:
             config = json.loads(config_fp.read().decode())
             self._epochs_trained = config['epochs_trained']
@@ -240,6 +327,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             self._logging_frequency = config['logging_frequency']
             self._prefixes = config['prefixes']
             self._raised_stop_training = config['raised_stop_training']
+        # Load validator
         self.validator._load_from_zip(zip_fp, prefix=prefix)
         with zip_fp.open(prefix + '/train_metrics.pkl', 'r') as metrics_fp:
             self._train_metrics = pickle.load(metrics_fp)
@@ -252,6 +340,8 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @property
     def config(self):
+        """ Training state counters
+        """
         return {'epochs_trained': self._epochs_trained,
                 'steps_trained': self._steps_trained,
                 'logging_frequency': self.logging_frecuency,
@@ -260,9 +350,16 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @property
     def history(self):
+        """ Historical training metrics
+        """
         return self._history_callback.registry
 
     def to(self, device):
+        """ Moves the trainer to a device
+
+        Arguments:
+            device (str or ``torch.device``)
+        """
         super(BatchTrainer, self).to(device)
         self.model.to(self._device)
         self.validator.to(self._device)
@@ -274,39 +371,40 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @property
     def meters(self):
+        """ Returns both training and validation meters
+        """
         return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics.meters),
                 **self.prepend_name_dict(self._prefixes[1], self.validator.meters)}
 
     @property
     def metrics(self):
-        """ Last statistic recopiled from meters
-
-        Returns
-            dict: Dictionary of metric name and value, one for each
-            `meters` that made at least one measure
+        """ Last calculated metrics for training & validation data
         """
         return {**self.prepend_name_dict(self._prefixes[0], self._train_metrics),
                 **self.prepend_name_dict(self._prefixes[1], self.validator.metrics)}
 
     @property
     def train_metrics(self):
+        """ Metrics results of only the training data
+        """
         return dict(self._train_metrics)
 
     @property
     def val_metrics(self):
+        """ Metrics results of only the training data
+        """
         return dict(self._val_metrics)
 
     @property
     def epochs_trained(self):
-        """ Total number of epochs epochs_trained
-
-        Returns:
-            int: number of epochs
+        """ Total number of epochs trained
         """
         return self._epochs_trained
 
     @property
     def steps_trained(self):
+        """ Total number of trained iterations
+        """
         return self._steps_trained
 
     @epochs_trained.setter
@@ -317,12 +415,12 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
 
     @abstractmethod
     def update_batch(self, *args, **kwargs):
-        """ Abstract method for update model parameters given a batch
+        """ Update model parameters based on a given loss with the current batch
 
         Args:
             *args (variable length arguments of
             :class:`torch.autograd.Variable` of Tensors or cuda Tensors):
-                Unamed batch parameters
+                Unnamed batch parameters
             **kwargs (variable length keyword arguments of
                       :class:`torch.autograd.Variable` of
                       Tensors or cuda Tensors):
@@ -331,13 +429,25 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         pass
 
     def log(self):
+        """ Broadcast a logging event to all the callbacks
+        """
         self._callbacks.on_log()
 
     def log_started(self):
+        """ Returns if it's time to log
+        """
         return (self.logging_frecuency > 0 and
                 self.step % self.logging_frecuency == 0)
 
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
+        """ Train the model & validate the model for one epoch
+
+        Arguments:
+            train_dataloader (:class:`torch.utils.DataLoader`):
+                Train data loader
+            valid_dataloader (:class:`torch.utils.DataLoader`):
+                Validation data loader
+        """
         self._train_metrics.reset()
         self.validator.metrics.reset()
 
@@ -357,7 +467,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self._epochs_trained += 1
 
     def train(self, dataloader, valid_dataloader=None, epochs=1):
-        """ Train the model
+        """ Train and validates the model
 
         Args:
             dataloader (:class:`torch.utils.DataLoader`):
@@ -396,6 +506,8 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self.model.train(mode=False)
 
     def _is_time_to_log(self):
+        """ Returns if it's time to log
+        """
         log_frec = self.logging_frecuency
         return (log_frec > 0 and
                 ((self.total_steps % log_frec != 0 and
@@ -403,10 +515,14 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
                  or self.step % log_frec == log_frec - 1))
 
     def _validate(self):
+        """ Validate the model against the validation dataloader
+        """
         self.validator.validate(self.valid_dataloader)
 
     @property
     def train_meters(self):
+        """ Meters for training data
+        """
         return self._train_metrics.meters
 
     @property

@@ -13,7 +13,7 @@ from torchero.models import (Model,
 
 
 class TextModel(Model):
-    """ Model class that wrap nn.Module models to add
+    """ Model class that wraps nn.Module models to add
     training, prediction, saving & loading capabilities
     for Natural Language Processing (NLP) tasks
     """
@@ -37,7 +37,7 @@ class TextModel(Model):
         super(TextModel, self)._save_to_zip(zip_fp)
         with zip_fp.open('transform.pkl', 'w') as fp:
             pickle.dump(self.transform, fp)
-        
+
     def _load_from_zip(self, zip_fp):
         super(TextModel, self)._load_from_zip(zip_fp)
         with zip_fp.open('transform.pkl', 'r') as fp:

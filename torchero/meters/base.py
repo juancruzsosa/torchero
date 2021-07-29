@@ -10,6 +10,8 @@ class BaseMeter(object, metaclass=ABCMeta):
     """
     @abstractmethod
     def measure(self, *batchs):
+        """ Partial calculation of the metric for the given batches
+        """
         pass
 
     @abstractmethod
@@ -20,7 +22,7 @@ class BaseMeter(object, metaclass=ABCMeta):
 
     @abstractmethod
     def value(self):
-        """ Returns the metric value
+        """ Returns the metric final value
         """
         pass
 

@@ -17,6 +17,8 @@ class TensorBoardLogger(Callback):
         self.monitors = monitors
 
     def on_epoch_end(self):
+        """ Add the metrics for the new epoch to the board
+        """
         monitors = self.monitors
         if monitors is None:
             monitors = self.trainer.metrics.keys()

@@ -41,12 +41,16 @@ class OptimizerScheduler(Callback, metaclass=ABCMeta):
         super(OptimizerScheduler, self).accept(trainer)
 
     def on_log(self):
+        """ Adjusts the learning rate at the end of the epoch if its configured per step
+        """
         if self._on_event == 'log' and \
            self.trainer.epochs_trained >= self._start and \
            (self._end is None or self.trainer.epochs_trained <= self._end):
             self.step()
 
     def on_epoch_end(self):
+        """ Adjusts the learning rate at the end of the epoch if its configured per epoch
+        """
         if self._on_event == 'epoch_end' and \
            self.trainer.epochs_trained >= self._start and \
            (self._end is None or self.trainer.epochs_trained <= self._end):
@@ -54,6 +58,8 @@ class OptimizerScheduler(Callback, metaclass=ABCMeta):
 
     @abstractmethod
     def step(self):
+        """ Adjust the learning rate
+        """
         pass
 
 
@@ -89,6 +95,8 @@ class _TorchScheduler(OptimizerScheduler):
         self._scheduler.step()
 
     def _get_scheduler(self):
+        """ Returns the respective torch scheduler
+        """
         return self.__class__.SCHEDULER_CLASS(optimizer=self._optimizer, **self._params)
 
     def step(self):

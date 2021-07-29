@@ -36,12 +36,18 @@ class ModelCheckpoint(Callback):
         self.outperform = False
 
     def criterion(self, mode):
+        """ Returns the appropriate method to check if the model has improved
+        """
         criterion_by_name = {'max': self._is_higher,
                              'min': self._is_lower}
         return criterion_by_name[mode.lower()]
 
     @property
     def mode(self):
+        """ Checkpoint mode.
+            'max' saves when the model maximizes a metric (accuracy, e.g f1_score)
+            'min' saves when the model minimizes a metric (error, e.g rmse)
+        """
         return self._mode
 
     def on_train_begin(self):
@@ -58,7 +64,7 @@ class ModelCheckpoint(Callback):
             raise MeterNotFound(self.monitor_name)
 
     def load(self):
-        """ Load checkpointed model
+        """ Load the checkpointed model
         """
         index_file = os.path.join(self.path, 'index.yaml')
         model_file = os.path.join(self.path, '0.pth')

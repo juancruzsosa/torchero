@@ -3,7 +3,7 @@ from torchero.utils.format import format_metric
 
 
 class Logger(Callback):
-    """ Callback to log metrics after each epoch
+    """ Callback to log metrics to a stdout after each epoch
     """
     UNRECOGNIZED_LEVEL = (
         "Unrecognized level {level}. Level parameter should be either 'epoch' "
@@ -31,6 +31,8 @@ class Logger(Callback):
             raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
 
     def log(self):
+        """ Add a new line in the file
+        """
         monitors = self.monitors
         if monitors is None:
             monitors = self.trainer.metrics.keys()
@@ -59,10 +61,14 @@ class Logger(Callback):
                                                 separator=self.separator))
 
     def on_log(self):
+        """ Add a new line in the file if its configured per step
+        """
         if self.level == 'step':
             self.log()
 
     def on_epoch_end(self):
+        """ Add a new line in the file if its configured per epoch
+        """
         if self.level == 'epoch':
             self.log()
 

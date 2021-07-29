@@ -10,8 +10,9 @@ class LogLevel(Enum):
 
 
 class CSVLogger(Callback):
-    """ Export training statistics to csv file
+    """ Export the training statistics to csv file
     """
+
     UNRECOGNIZED_LEVEL = (
         "Unrecognized level {level}. Level parameter should be either 'epoch' "
         "or 'step'"
@@ -34,6 +35,8 @@ class CSVLogger(Callback):
         self.level = LogLevel(level)
 
     def on_train_begin(self):
+        """ Creates & opens the file
+        """
         if self.columns is None:
             extra_cols = ['epoch']
             if self.level is LogLevel.STEP:
@@ -56,6 +59,8 @@ class CSVLogger(Callback):
             self.file_handle.write(','.join(self.columns + self.hparams_columns))
 
     def _write_line(self):
+        """ Write the metrics to a new line
+        """
         if len(self.trainer.metrics) == 0:
             return
 
@@ -72,14 +77,20 @@ class CSVLogger(Callback):
         self.file_handle.flush()
 
     def on_log(self):
+        """ Add a new line in the file if its configured per step
+        """
         if self.level is LogLevel.STEP:
             self._write_line()
 
     def on_epoch_end(self):
+        """ Add a new line in the file if its configured per epoch
+        """
         if self.level is LogLevel.EPOCH:
             self._write_line()
 
     def on_train_end(self):
+        """ Closes the files
+        """
         self.file_handle.close()
         del self.file_handle
 

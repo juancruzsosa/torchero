@@ -4,17 +4,21 @@ from torchero.callbacks.base import Callback
 
 
 class CallbackContainer(Callback):
-    """ Callback to group multiple callback
+    """ Callback to group multiple callbacks
     """
     def __init__(self):
         super(CallbackContainer, self).__init__()
         self.callbacks = deque()
 
     def add(self, callback):
+        """ Add a new callback to the list
+        """
         callback.accept(self.trainer)
         self.callbacks.append(callback)
 
     def signal(self, selector_name):
+        """ Signal an event to each callback
+        """
         for callback in self.callbacks:
             callback_method = getattr(callback, selector_name)
             callback_method()
@@ -48,7 +52,11 @@ class CallbackContainer(Callback):
         return repr(list(self.callbacks))
 
     def __iter__(self):
+        """ Iterates over the list of callbacks
+        """
         return iter(self.callbacks)
 
     def __len__(self):
+        """ Returns the number of callbacks
+        """
         return len(self.callbacks)

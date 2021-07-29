@@ -40,6 +40,8 @@ class RemoteMonitor(Callback):
         self.send_as_json = send_as_json
 
     def on_epoch_end(self):
+        """ Reports the metrics at the end of the epoch
+        """
         monitors = self.monitors
         if monitors is None:
             monitors = self.trainer.metrics.keys()
