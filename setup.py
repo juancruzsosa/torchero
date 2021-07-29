@@ -20,6 +20,7 @@ setup(name='torchero',
       packages=find_packages(),
       install_requires=[
           'torch',
+          'torchvision',
           'pyyaml',
           'tqdm',
           'requests',
@@ -33,7 +34,6 @@ setup(name='torchero',
           "Operating System :: OS Independent",
       ],
       extras_require = {
-          'export to dataframe':  ["pandas"],
           "RemoteMonitor": ["requests"],
           "extra tokenizers": ["spacy", "nltk"]
       },
