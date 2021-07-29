@@ -244,8 +244,11 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         with zip_fp.open(prefix + '/train_metrics.pkl', 'r') as metrics_fp:
             self._train_metrics = pickle.load(metrics_fp)
         with zip_fp.open(prefix + '/callbacks.pkl', 'r') as callbacks_fp:
-            self._callbacks = pickle.load(callbacks_fp)
-
+            callbacks = pickle.load(callbacks_fp)
+            self._callbacks = CallbackContainer()
+            self._callbacks.accept(self)
+            for callback in callbacks:
+                self._callbacks.add(callback)
 
     @property
     def config(self):
