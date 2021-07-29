@@ -145,6 +145,10 @@ class ProgbarLogger(Callback):
     def __setstate__(self, state):
         self.ascii = state["ascii"]
         self.notebook = state["notebook"]
+        if self.notebook:
+            self.tqdm = tqdm.tqdm_notebook
+        else:
+            self.tqdm = tqdm.tqdm
         self.monitors = state["monitors"]
         self.hparams = state["hparams"]
         self.step_tqdms = []
