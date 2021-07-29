@@ -150,7 +150,7 @@ class TPMeter(BaseMeter):
         return self.tp + self.fn
 
     def aggregate(self, f):
-        tp, tn, fp, fn = self.value()
+        tp, tn, fp, fn = self.tp, self.tn, self.fp, self.fn
         if self.agg == 'micro':
             return f(tp.sum(), tn.sum(), fp.sum(), fn.sum()).item()
         elif self.agg == 'macro':
