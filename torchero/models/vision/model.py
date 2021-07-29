@@ -42,29 +42,45 @@ class ImageModel(Model):
         with zip_fp.open('transform.pkl', 'w') as fp:
             pickle.dump(self.transform, fp)
 
+    def _load_from_zip(self, zip_fp):
+        super(ImageModel, self)._load_from_zip(zip_fp)
+        with zip_fp.open('transform.pkl', 'r') as fp:
+            self.transform = pickle.load(fp)
+
     def input_to_tensor(self, image):
         return self.transform(image)
+
+    def predict(self, ds, batch_size=None, to_tensor=True, has_targets=False):
+        if isinstance(ds, Image.Image):
+            return self.predict([ds])[0]
+        else:
+            return super(ImageModel, self).predict(ds,
+                                                   batch_size=batch_size,
+                                                   to_tensor=to_tensor,
+                                                   has_targets=has_targets)
 
 class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
     """ Model class for Image Binary Classification (single or multilabel) tasks.
     E.g: distinguish real vs fake images
     """
-    def __init__(self, model, transform=None, use_logits=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_logits=True, threshold=0.5, labels=None):
         super(BinaryImageClassificationModel, self).__init__(model=model,
                                                              transform=transform)
         super(ImageModel, self).__init__(model=model,
                                          use_logits=use_logits,
-                                         threshold=threshold)
+                                         threshold=threshold,
+                                         labels=labels)
 
 class ImageClassificationModel(ImageModel, ClassificationModel):
     """ Model Class for Image Classification (for categorical targets) tasks.
     E.g: Predict ImageNet classes of a given image
     """
-    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5, classes=None):
         super(ImageClassificationModel, self).__init__(model=model,
                                                        transform=transform)
         super(ImageModel, self).__init__(model=model,
-                                         use_softmax=use_softmax)
+                                         use_softmax=use_softmax,
+                                         classes=classes)
 
 class ImageRegressionModel(ImageModel, RegressionModel):
     """ Model Class for Image Regression tasks.

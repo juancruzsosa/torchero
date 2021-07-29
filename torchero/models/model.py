@@ -1,6 +1,9 @@
 import json
 import zipfile
 import importlib
+from functools import partial
+
+import numpy as np
 
 import torch
 from torch import nn
@@ -29,6 +32,42 @@ class InputDataset(Dataset):
 class ModelImportException(Exception):
     pass
 
+class PredictionItem(object):
+    def __init__(self, preds):
+        self._preds = preds
+
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__,
+                               repr(self._preds))
+
+    @property
+    def tensor(self):
+        return self._preds
+
+    def numpy(self):
+        return self._preds.cpu().numpy()
+
+class PredictionsResult(object):
+    def __init__(self, preds, pred_class=PredictionItem):
+        self._preds = [
+            pred_class(pred) for pred in preds
+        ]
+
+    @property
+    def tensor(self):
+        return torch.stack([pred.tensor for pred in self._preds])
+
+    def numpy(self):
+        return np.stack([pred.numpy() for pred in self._preds])
+
+    def __iter__(self):
+        return iter(self._preds)
+
+    def __len__(self):
+        return len(self._preds)
+
+    def __getitem__(self, idx):
+        return self._preds[idx]
 
 class Model(DeviceMixin):
     """ Model Class for Binary Classification (single or multilabel) tasks
@@ -76,6 +115,10 @@ class Model(DeviceMixin):
         super(Model, self).__init__()
         self.model = model
         self.trainer = None
+
+    def pred_class(self, preds):
+        return PredictionsResult(preds)
+
 
     def compile(self, optimizer, loss, metrics, hparams={}, callbacks=[], val_metrics=None):
         """ Compile this model with a optimizer a loss and set of given metrics
@@ -132,7 +175,8 @@ class Model(DeviceMixin):
     def _combine_preds(self, preds):
         """ Combines the list of predictions in a single tensor
         """
-        return torch.stack(preds).cpu()
+        preds = torch.stack(preds)
+        return self.pred_class(preds)
 
     def predict_on_dataloader(self, dl, has_targets=True):
         """ Generate output predictions on an dataloader
@@ -328,6 +372,9 @@ class Model(DeviceMixin):
             }})
         return config
 
+    def init_from_config(self, config):
+        pass
+
     def save(self, path_or_fp):
         self.model.eval()
         with zipfile.ZipFile(path_or_fp, mode='w') as zip_fp:
@@ -354,10 +401,87 @@ class Model(DeviceMixin):
             self.trainer = SupervisedTrainer(model=self.model,
                                              criterion=None,
                                              optimizer=None)
-            self.trainer._load_from_zip(zip_fp, prefix='trainer/')            
+            self.trainer._load_from_zip(zip_fp, prefix='trainer/')
+        self.init_from_config(config)
+
+class UnamedClassificationPredictionItem(PredictionItem):
+    """ Model Prediction with classes names
+    """
+    def __init__(self, preds):
+        super(UnamedClassificationPredictionItem, self).__init__(preds)
+
+    def as_dict(self):
+        return dict(enumerate(self._preds.tolist()))
+
+    def max(self):
+        return self._preds.max().item()
+
+    def argmax(self):
+        return self._preds.argmax().item()
+
+    def topk(self, k):
+        values, indices = self._preds.topk(k)
+        return list(zip(indices.tolist(), values.tolist()))
+
+    def as_tuple(self):
+        return tuple(pred.tolist())
+
+class NamedClassificationPredictionItem(PredictionItem):
+    """ Model Prediction with classes names
+    """
+    def __init__(self, preds, names=None):
+        super(NamedClassificationPredictionItem, self).__init__(preds)
+        self.names = names
+
+    def max(self):
+        return self._preds.max().item()
+
+    def argmax(self):
+        return self.names[self._preds.argmax().item()]
+
+    def topk(self, k):
+        values, indices = self._preds.topk(k)
+        names = map(self.names.__getitem__, indices.tolist())
+        return list(zip(names, values.tolist()))
+
+    def as_dict(self):
+        return dict(zip(self.names, self._preds.tolist()))
+
+    def as_tuple(self):
+        return tuple(pred.tolist())
+
+class ClassificationPredictionsResult(PredictionsResult):
+    """ List of model classification predictions
+    """
+    def __init__(self, preds, names=None):
+        self.names = names
+        if self.names is None:
+            pred_class = UnamedClassificationPredictionItem
+        else:
+            pred_class = partial(NamedClassificationPredictionItem, names=self.names)
+        super(ClassificationPredictionsResult, self).__init__(preds, pred_class=pred_class)
+
+    def as_dict(self):
+        return [pred.as_dict() for pred in self._preds]
+
+    def as_tuple(self):
+        return [pred.as_tuple() for pred in self._preds]
+
+    def max(self):
+        return [pred.max() for pred in self._preds]
+
+    def argmax(self):
+        return [pred.argmax() for pred in self._preds]
+
+    def topk(self, k):
+        return [pred.topk(k) for pred in self._preds]
+
+    def as_df(self):
+        import pandas as pd
+        return pd.DataFrame.from_records(self.as_dict())
 
 class BinaryClassificationModel(Model):
-    def __init__(self, model, use_logits=True, threshold=0.5):
+    def __init__(self, model, use_logits=True, threshold=0.5, labels=None):
         """ Constructor
 
         Arguments:
@@ -370,6 +494,17 @@ class BinaryClassificationModel(Model):
         super(BinaryClassificationModel, self).__init__(model)
         self.use_logits = use_logits
         self.threshold = threshold
+        self.labels = labels
+
+    @property
+    def config(self):
+        config = super(BinaryClassificationModel, self).config
+        config['labels'] = self.labels
+        return config
+
+    def init_from_config(self, config):
+        super(BinaryClassificationModel, self).init_from_config(config)
+        self.labels = config['labels']
 
     def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
         """ Compile this model with a optimizer a loss and set of given metrics
@@ -407,6 +542,9 @@ class BinaryClassificationModel(Model):
                                                               callbacks=callbacks,
                                                               val_metrics=val_metrics)
 
+    def pred_class(self, preds):
+        return ClassificationPredictionsResult(preds, names=self.labels)
+
     def _predict_batch(self, *X, output_probas=True):
         preds = super(BinaryClassificationModel, self)._predict_batch(*X)
         if self.use_logits:
@@ -418,7 +556,7 @@ class BinaryClassificationModel(Model):
 class ClassificationModel(Model):
     """ Model Class for Classification (for categorical targets) tasks
     """
-    def __init__(self, model, use_softmax=True):
+    def __init__(self, model, use_softmax=True, classes=None):
         """ Constructor
 
         Arguments:
@@ -429,6 +567,17 @@ class ClassificationModel(Model):
         """
         super(ClassificationModel, self).__init__(model)
         self.use_softmax = use_softmax
+        self.classes = classes
+
+    @property
+    def config(self):
+        config = super(ClassificationModel, self).config
+        config['classes'] = self.classes
+        return config
+
+    def init_from_config(self, config):
+        super(ClassificationModel, self).init_from_config(config)
+        self.classes = config['classes']
 
     def compile(self, optimizer, loss=None, metrics=None, hparams={}, callbacks=[], val_metrics=None):
         """ Compile this model with a optimizer a loss and set of given metrics
@@ -456,6 +605,9 @@ class ClassificationModel(Model):
                                                         hparams=hparams,
                                                         callbacks=callbacks,
                                                         val_metrics=val_metrics)
+    def pred_class(self, preds):
+        return ClassificationPredictionsResult(preds, names=self.classes)
+
     def _predict_batch(self, *X):
         preds = super(ClassificationModel, self)._predict_batch(*X)
         if self.use_softmax:

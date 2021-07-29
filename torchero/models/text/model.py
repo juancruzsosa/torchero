@@ -47,23 +47,25 @@ class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.
     E.g: sentiment analysis (without neutral class), Toxicity category of user comments
     """
-    def __init__(self, model, transform=None, use_logits=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_logits=True, threshold=0.5, labels=None):
         super(BinaryTextClassificationModel, self).__init__(model=model,
                                                             transform=transform)
         super(TextModel, self).__init__(model=model,
                                         use_logits=use_logits,
-                                        threshold=threshold)
+                                        threshold=threshold,
+                                        labels=labels)
 
 class TextClassificationModel(TextModel, ClassificationModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.
     E.g: Detect topic of an user comment
     """
-    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5):
+    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5, classes=None):
         super(TextClassificationModel, self).__init__(model=model,
                                                       transform=transform)
         super(TextModel, self).__init__(model=model,
                                         use_softmax=use_softmax,
-                                        threshold=threshold)
+                                        threshold=threshold,
+                                        classes=classes)
 
 class TextRegressionModel(TextModel, RegressionModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.
