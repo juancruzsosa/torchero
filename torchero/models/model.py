@@ -191,7 +191,7 @@ class Model(DeviceMixin):
         preds = []
         for X in dl:
             if has_targets:
-                X, y = X
+                X, _ = X
             if isinstance(X, tuple):
                 y = self._predict_batch(*X)
             else:

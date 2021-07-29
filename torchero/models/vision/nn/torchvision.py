@@ -84,7 +84,7 @@ class TorchvisionModel(nn.Module):
         self.num_outputs = num_outputs or 1000
         self.model = arch_aliases[arch](pretrained=pretrained)
         if num_outputs is not None:
-            self.patch_classifier_submodule(g
+            self.patch_classifier_submodule()
 
     @property
     def config(self):
