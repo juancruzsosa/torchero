@@ -50,21 +50,21 @@ class TorchvisionModel(nn.Module):
             assert(isinstance(model.classifier[-1], nn.Linear))
             model.classifier[-1] = nn.Linear(model.classifier[-1]
                                                   .in_features,
-                                             num_outputs)
+                                             self.num_outputs)
         elif isinstance(model, (models.ResNet, models.ShuffleNetV2)):
             assert(isinstance(model.fc, nn.Linear))
             model.fc = nn.Linear(model.fc.in_features,
-                                 num_outputs)
+                                 self.num_outputs)
         elif isinstance(model, models.SqueezeNet):
             assert(isinstance(model.classifier[1], nn.Conv2d))
             model.classifier[1] = nn.Conv2d(512,
-                                            num_outputs,
+                                            self.num_outputs,
                                             kernel_size=1)
         elif isinstance(model, models.DenseNet):
             assert(isinstance(model.classifier, nn.Linear))
             model.classifier = nn.Linear(model.classifier
                                               .in_features,
-                                         num_outputs)
+                                         self.num_outputs)
         else:
             raise NotImplemented("Architecture {} not supported.".format(arch.__class__.__name__))
 
@@ -78,6 +78,7 @@ class TorchvisionModel(nn.Module):
                 the number of outputs by changing the classifier layer
             pretrained (bool): Set to true to download the pretrained model for ILSVRC competition (ImageNet)
         """
+        super(TorchvisionModel, self).__init__()
         if arch not in arch_aliases:
             raise KeyError("wrong architecture. select from {}".format(',\n\t'.join(arch_aliases.keys())))
         self.arch = arch
@@ -91,4 +92,5 @@ class TorchvisionModel(nn.Module):
         return {'arch': self.arch}
 
     def forward(self, x):
-        return self.model(x)
+        y = self.model(x)
+        return y.squeeze(1)
