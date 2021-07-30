@@ -6,6 +6,8 @@ from urllib.request import urlopen
 import requests
 from tqdm import tqdm
 
+import torchero
+
 from zipfile import ZipFile
 
 def download_from_url(url, dst, pbar=True, chunk_size=16*1024):
@@ -17,7 +19,8 @@ def download_from_url(url, dst, pbar=True, chunk_size=16*1024):
     """
     file_size = int(urlopen(url).info().get('Content-Length', -1))
     first_byte = 0
-    header = {"Range": "bytes=%s-%s" % (first_byte, file_size)}
+    header = {"Range": "bytes=%s-%s" % (first_byte, file_size),
+              "User-Agent": "torchero/{}".format(torchero.__version__)}
     if pbar:
         progress = tqdm(
             total=file_size, initial=first_byte,
