@@ -393,7 +393,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
     def val_metrics(self):
         """ Metrics results of only the training data
         """
-        return dict(self._val_metrics)
+        return dict(self.validator.metrics)
 
     @property
     def epochs_trained(self):
