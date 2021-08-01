@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-class LSTMForSequenceClassification(nn.Module):
+class LSTMForTextClassification(nn.Module):
     @classmethod
     def from_config(cls, config):
         return cls(config['vocab_size'],
@@ -38,7 +38,7 @@ class LSTMForSequenceClassification(nn.Module):
                  mode='max',
                  dropout_clf=0.5,
                  padding_idx=0):
-        super(LSTMForSequenceClassification, self).__init__()
+        super(LSTMForTextClassification, self).__init__()
         self.embeddings = nn.Embedding(vocab_size,
                                        embedding_dim=embedding_dim,
                                        padding_idx=padding_idx)
