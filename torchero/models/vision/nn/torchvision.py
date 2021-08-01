@@ -37,34 +37,63 @@ arch_aliases = {
     'shufflenet_v2_x2_0': models.shufflenet_v2_x2_0,
 }
 
+def is_model_type_a(model):
+    return isinstance(model, (models.AlexNet, models.VGG, models.MobileNetV2, models.MNASNet))
+
+def is_model_type_b(model):
+    return isinstance(model, (models.ResNet, models.ShuffleNetV2))
+
+def is_model_type_c(model):
+    return isinstance(model, models.SqueezeNet)
+
+def is_model_type_d(model):
+    return isinstance(model, models.DenseNet)
+
+def replace_model_type_a(model, layer, check=True):
+    if check:
+        assert(isinstance(model.classifier[-1], nn.Linear))
+    old_layer = model.classifier[-1]
+    model.classifer[-1] = layer
+    return old_layer
+
+def replace_model_type_b(model, layer, check=True):
+    if check:
+        assert(isinstance(model.fc, nn.Linear))
+    old_layer = model.fc
+    model.fc = layer
+    return old_layer
+
+def replace_model_type_c(model, layer, check=True):
+    if check:
+        assert(isinstance(model.classifier[1], nn.Conv2d))
+    old_layer = model.classifier[1]
+    model.classifier[-1] = layer
+    return old_layer
+
+def replace_model_type_d(model, layout, check=True):
+    if check:
+        assert(isinstance(model.classifier, nn.Linear))
+    old_layer = model.classifier
+    model.classifier = layer
+    return old_layer
+
 class TorchvisionModel(nn.Module):
     @classmethod
     def from_config(cls, config):
         return cls(config['arch'],
                    config['num_outputs'],
-                   pretrained=True)
+                   pretrained=False)
 
     def patch_classifier_submodule(self):
         model = self.model
-        if isinstance(model, (models.AlexNet, models.VGG, models.MobileNetV2, models.MNASNet)):
-            assert(isinstance(model.classifier[-1], nn.Linear))
-            model.classifier[-1] = nn.Linear(model.classifier[-1]
-                                                  .in_features,
-                                             self.num_outputs)
-        elif isinstance(model, (models.ResNet, models.ShuffleNetV2)):
-            assert(isinstance(model.fc, nn.Linear))
-            model.fc = nn.Linear(model.fc.in_features,
-                                 self.num_outputs)
-        elif isinstance(model, models.SqueezeNet):
-            assert(isinstance(model.classifier[1], nn.Conv2d))
-            model.classifier[1] = nn.Conv2d(512,
-                                            self.num_outputs,
-                                            kernel_size=1)
-        elif isinstance(model, models.DenseNet):
-            assert(isinstance(model.classifier, nn.Linear))
-            model.classifier = nn.Linear(model.classifier
-                                              .in_features,
-                                         self.num_outputs)
+        if is_model_type_a(model):
+            replace_model_type_a(model, nn.Linear(model.classifier[-1].in_features, self.num_outputs))
+        elif is_model_type_b(model):
+            replace_model_type_b(model, nn.Linear(model.fc.in_features, self.num_outputs))
+        elif is_model_type_c(model):
+            replace_model_type_c(model, nn.Conv2d(512, self.num_outputs, kernel_size=1))
+        elif is_model_type_d(model):
+            replace_model_type_d(model, nn.Linear(model.classifier.in_features, self.num_outputs))
         else:
             raise NotImplemented("Architecture {} not supported.".format(arch.__class__.__name__))
 
@@ -90,6 +119,33 @@ class TorchvisionModel(nn.Module):
     @property
     def config(self):
         return {'arch': self.arch}
+
+    def embed(self, x):
+        model = self.model
+        if is_model_type_a(model):
+            old_layer = replace_model_type_a(model, nn.Identity())
+            x = model(x)
+            output = old_layer(x)
+            replace_model_type_a(model, old_layer, check=False)
+        elif is_model_type_b(model):
+            old_layer = replace_model_type_b(model, nn.Identity())
+            x = model(x)
+            output = old_layer(x)
+            replace_model_type_b(model, old_layer, check=False)
+        elif is_model_type_c(model):
+            old_layer = replace_model_type_c(model, nn.Flatten())
+            x = model(x)
+            output = old_layer(x)
+            replace_model_type_b(model, old_layer, check=False)
+        elif is_model_type_d(model):
+            old_layer = replace_model_type_d(model, nn.Identity())
+            x = model(x)
+            output = old_layer(x)
+            replace_model_type_d(model, old_layer, check=False)
+        else:
+            raise NotImplemented("Architecture {} not supported.".format(arch.__class__.__name__))
+        return x, output
+
 
     def forward(self, x):
         y = self.model(x)
