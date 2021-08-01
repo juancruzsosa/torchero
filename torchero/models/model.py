@@ -409,6 +409,8 @@ class UnamedClassificationPredictionItem(PredictionItem):
     """
     def __init__(self, preds):
         super(UnamedClassificationPredictionItem, self).__init__(preds)
+        if self._preds.ndim == 0:
+            self._preds = self._preds.unsqueeze(-1)
 
     def as_dict(self):
         return dict(enumerate(self._preds.tolist()))
@@ -432,6 +434,8 @@ class NamedClassificationPredictionItem(PredictionItem):
     def __init__(self, preds, names=None):
         super(NamedClassificationPredictionItem, self).__init__(preds)
         self.names = names
+        if self._preds.ndim == 0:
+            self._preds = self._preds.unsqueeze(-1)
 
     def max(self):
         return self._preds.max().item()
