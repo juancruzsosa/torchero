@@ -134,12 +134,16 @@ def show_imagegrid_dataset(dataset,
                                                  num=num,
                                                  shuffle=shuffle,
                                                  classes=classes)
+        num = min(num, max(map(len, images_per_class.values())))
         classes = list(images_per_class.keys())
 
         if figsize is None:
             figsize = (2 * num, 2 * len(classes))
         fig, axs = plt.subplots(figsize=figsize, nrows=len(classes), ncols=num)
-
+        if len(classes) == 1:
+            axs = np.expand_dims(axs, 0)
+        if num == 1:
+            axs = np.expand_dims(axs, -1)
         for i, (class_name, class_images) in enumerate(images_per_class.items()):
             for j, img in enumerate(class_images):
                 show_image(img, axs[i][j], image_attr)
