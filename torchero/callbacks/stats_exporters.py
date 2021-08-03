@@ -32,7 +32,10 @@ class CSVLogger(Callback):
         self.append = append
         self.columns = columns
         self.hparams_columns = hparams_columns
-        self.level = LogLevel(level)
+        try:
+            self.level = LogLevel(level)
+        except ValueError:
+            raise ValueError(self.UNRECOGNIZED_LEVEL.format(level=repr(level)))
 
     def on_train_begin(self):
         """ Creates & opens the file
