@@ -1,11 +1,20 @@
 from collections import Counter, OrderedDict
 from itertools import chain
+from functools import partial
 
 class OrderedCounter(Counter, OrderedDict):
     pass
 
 class OutOfVocabularyError(LookupError):
     pass
+
+def _add_special_tokens(tokens, bos=None, eos=None):
+    tokens = list(tokens)
+    if bos is not None:
+        tokens.insert(0, bos)
+    if eos is not None:
+        tokens.append(eos)
+    return tokens
 
 class Vocab(object):
     """ Represents a Vocabulary to map objects to ids
@@ -30,7 +39,7 @@ class Vocab(object):
                                          "Got: {value}")
 
     @classmethod
-    def build_from_texts(cls, texts, eos=None, pad=None, unk=None, max_size=None, min_count=1):
+    def build_from_texts(cls, texts, bos=None, eos=None, pad=None, unk=None, max_size=None, min_count=1):
         """ Builds a Vocabulary from a list of sentences
 
         Arguments:
@@ -42,14 +51,11 @@ class Vocab(object):
                 elements. The discarded elements are selected from the list of less frequent terms.
                 If None is passed the size of the vocabulary will have no growth limit.
         """
-        if eos is None:
-            examples = chain.from_iterable(texts)
-        else:
-            examples = chain.from_iterable(map(lambda x: x + [eos]), texts)
-        vocab = cls(examples, eos=eos, pad=pad, unk=unk, max_size=max_size, min_count=min_count)
+        examples = chain.from_iterable(map(partial(_add_special_tokens, eos=eos, bos=bos), texts))
+        vocab = cls(examples, eos=eos, bos=bos, pad=pad, unk=unk, max_size=max_size, min_count=min_count)
         return vocab
 
-    def __init__(self, vocab={}, eos=None, pad=None, unk=None, max_size=None, order_by='frequency', min_count=1):
+    def __init__(self, vocab={}, bos=None, eos=None, pad=None, unk=None, max_size=None, order_by='frequency', min_count=1):
         """ Constructor
 
         Arguments:
@@ -66,6 +72,7 @@ class Vocab(object):
         """
         self.pad = pad
         self.eos = eos
+        self.bos = bos
         self.unk = unk
         self.max_size = max_size
         self.min_count = min_count
@@ -84,6 +91,8 @@ class Vocab(object):
             self.start_index = 1
         if unk is not None:
             self.add([self.unk])
+        if bos is not None:
+            self.add([self.bos])
         if eos is not None:
             self.add([self.eos])
         self.add(vocab, order_by=order_by, min_count=self.min_count)
@@ -180,21 +189,24 @@ class Vocab(object):
     def __call__(self, tokens):
         """ Converts list of tokens to list of indexes
         """
+        ids_seq = []
+        if self.bos is not None:
+            ids_seq.append(self[self.bos])
         if self.unk is None:
-            ids_seq = [self[token] for token in tokens
-                        if token in self.word2idx]
+            ids_seq.extend([self[token] for token in tokens if token in self.word2idx])
         else:
-            ids_seq = [self[token] for token in tokens]
-
+            ids_seq.extend([self[token] for token in tokens])
         if self.eos is not None:
             ids_seq.append(self[self.eos])
         return ids_seq
+
 
     def __getstate__(self):
         return {'words': self.idx2word,
                 'freqs': [self.freq[word] for word in self.idx2word],
                 'pad': self.pad,
                 'eos': self.eos,
+                'bos': self.bos,
                 'unk': self.unk,
                 'max_size': self.max_size,
                 'start_index': self.start_index,
@@ -208,6 +220,7 @@ class Vocab(object):
         self.freq = Counter(d['freqs'])
         self.pad = d['pad']
         self.eos = d['eos']
+        self.bos = d['bos']
         self.unk = d['unk']
         self.max_size = d['max_size']
         self.min_count = d['min_count']
@@ -218,8 +231,5 @@ class Vocab(object):
         Arguments:
             texts (list[list[str]]): Corpus (already tokenized) used to build the vocabulary
         """
-        if self.eos is None:
-            examples = chain.from_iterable(texts)
-        else:
-            examples = chain.from_iterable(map(lambda x: x + [self.eos]), texts)
+        examples = chain.from_iterable(map(partial(_add_special_tokens, eos=self.eos, bos=self.bos), texts))
         self.add(examples)

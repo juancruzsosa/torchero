@@ -10,6 +10,7 @@ class TextTransform(object):
                  vocab=None,
                  vocab_max_size=None,
                  vocab_min_count=1,
+                 bos=None,
                  eos=None,
                  pad="<pad>",
                  unk=None,
@@ -19,7 +20,8 @@ class TextTransform(object):
             tokenizer = tokenizers[tokenizer]()
         self.tokenizer = tokenizer
         if vocab is None:
-            vocab = Vocab(eos=eos,
+            vocab = Vocab(bos=bos,
+                  eos=eos,
                   pad=pad,
                   unk=unk,
                   max_size=vocab_max_size,
