@@ -217,6 +217,8 @@ class TPMeter(BaseMeter):
         )
 
 class BinaryClassificationReport(TPMeter):
+    """ Classification report meter for multi-label classification
+    """
     def __init__(self, threshold=0.5, with_logits=False, activation=None, names=None):
         super(BinaryClassificationReport, self).__init__(threshold=threshold,
                                                          with_logits=with_logits,
@@ -226,8 +228,15 @@ class BinaryClassificationReport(TPMeter):
     def value(self):
         result = {}
         original_agg = self.agg
+        single_label = self.tp.ndim == 0
+        if single_label:
+            self.tp = self.tp.unsqueeze(0)
+            self.tn = self.tn.unsqueeze(0)
+            self.fp = self.fp.unsqueeze(0)
+            self.fn = self.fn.unsqueeze(0)
         if self.names is not None:
-            assert(len(self.names) == len(self.tp), 'Names and number of labels length mismatch!')
+            if len(self.names) == len(self.tp):
+                raise ValueError('Names and number of labels length mismatch!')
             names = self.names
         else:
             names = range(len(self.tp))
@@ -239,13 +248,14 @@ class BinaryClassificationReport(TPMeter):
                 'support':  (self.tp[i] + self.fn[i]).item()
             }
             result[name] = metrics
-        for agg in ['micro', 'macro', 'weighted']:
-            self.agg = agg
-            metrics = {'precision': self.precision,
-                       'recall': self.recall,
-                       'f1-score': self.f_beta(1),
-                       'support': self.support().sum().item()}
-            result[agg] = metrics
+        if not single_label:
+            for agg in ['micro', 'macro', 'weighted']:
+                self.agg = agg
+                metrics = {'precision': self.precision,
+                           'recall': self.recall,
+                           'f1-score': self.f_beta(1),
+                           'support': self.support().sum().item()}
+                result[agg] = metrics
         return result
 
 
