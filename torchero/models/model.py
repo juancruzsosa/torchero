@@ -246,6 +246,9 @@ class Model(DeviceMixin):
                            epochs=epochs)
         return self.trainer.history
 
+    def load_checkpoint(self, checkpoint=None):
+        self.trainer.load_checkpoint(checkpoint=None)
+
     def evaluate_on_dataloader(self,
                                dataloader,
                                metrics=None):

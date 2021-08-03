@@ -8,7 +8,7 @@ from enum import Enum
 import torch
 
 import torchero.hparams
-from torchero.callbacks import Callback, CallbackContainer, History
+from torchero.callbacks import Callback, CallbackContainer, History, ModelCheckpoint
 from torchero.utils.defaults import parse_meters
 from torchero.utils.mixins import DeviceMixin
 from torchero.utils.collections import MetricsDict, ParamsDict
@@ -583,3 +583,18 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
             result[param_name].accept(self)
         result = ParamsDict(result)
         return result
+
+    def load_checkpoint(self, checkpoint=None):
+        if checkpoint is None:
+            checkpoints = []
+            for callback in self._callbacks:
+                if isinstance(callback, ModelCheckpoint):
+                    checkpoints.append(callback)
+            if len(checkpoints) == 0:
+                raise Exception("No ModelCheckpoint callback found")
+            elif len(checkpoints) > 1:
+                raise Exception("Multiple checkpoints found. Pass the checkpoint to load")
+            else: # len(checkpoints) == 1
+                checkpoint = checkpoints[0]
+
+        checkpoint.load()
