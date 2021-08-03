@@ -32,6 +32,9 @@ class InputDataset(Dataset):
 class ModelImportException(Exception):
     pass
 
+class ModelNotCompiled(Exception):
+    pass
+
 class PredictionItem(object):
     def __init__(self, preds):
         self._preds = preds
@@ -114,11 +117,16 @@ class Model(DeviceMixin):
         """
         super(Model, self).__init__()
         self.model = model
-        self.trainer = None
+        self._trainer = None
 
     def pred_class(self, preds):
         return PredictionsResult(preds)
 
+    @property
+    def trainer(self):
+        if self._trainer is None:
+            raise ModelNotCompiled("Model hasn't been compiled with any trainer. Use model.compile first")
+        return self._trainer
 
     def compile(self, optimizer, loss, metrics, hparams={}, callbacks=[], val_metrics=None):
         """ Compile this model with a optimizer a loss and set of given metrics
@@ -134,14 +142,14 @@ class Model(DeviceMixin):
                 for only used for validation set. If None it uses the same metrics as `metrics` argument.
             callbacks (list of `torchero.callbacks.Callback`): List of callbacks to use in trainings
         """
-        self.trainer = SupervisedTrainer(model=self.model,
+        self._trainer = SupervisedTrainer(model=self.model,
                                          criterion=loss,
                                          optimizer=optimizer,
                                          callbacks=callbacks,
                                          acc_meters=metrics,
                                          val_acc_meters=val_metrics,
                                          hparams=hparams)
-        self.trainer.to(self.device)
+        self._trainer.to(self.device)
         return self
 
     def input_to_tensor(self, *X):
@@ -169,8 +177,10 @@ class Model(DeviceMixin):
             device (str or torch.device)
         """
         super(Model, self).to(device)
-        if self.trainer is not None:
+        try:
             self.trainer.to(device)
+        except ModelNotCompiled:
+            pass
 
     def _combine_preds(self, preds):
         """ Combines the list of predictions in a single tensor
@@ -231,9 +241,6 @@ class Model(DeviceMixin):
             val_ds (`torch.utils.data.Dataset`): Test dataloader
             epochs (int): Number of epochs to train the model
         """
-        if self.trainer is None:
-            raise Exception("Model hasn't been compiled with any trainer. Use model.compile first")
-
         self.trainer.train(dataloader=train_dl,
                            valid_dataloader=val_dl,
                            epochs=epochs)
@@ -362,7 +369,7 @@ class Model(DeviceMixin):
             'torchero_version': torchero.__version__,
             'torchero_model_type': {'module': self.__class__.__module__,
                                     'type': self.__class__.__name__},
-            'compiled': self.trainer is not None,
+            'compiled': self._trainer is not None,
         }
         if hasattr(self.model, 'config'):
             config.update({'net': {
@@ -385,8 +392,10 @@ class Model(DeviceMixin):
             torch.save(self.model.state_dict(), fp)
         with zip_fp.open('config.json', 'w') as fp:
             fp.write(json.dumps(self.config, indent=4).encode())
-        if self.trainer is not None:
+        try:
             self.trainer._save_to_zip(zip_fp, prefix='trainer/')
+        except ModelNotCompiled:
+            pass
 
     def load(self, path_or_fp):
         with zipfile.ZipFile(path_or_fp, mode='r') as zip_fp:
@@ -398,10 +407,10 @@ class Model(DeviceMixin):
         with zip_fp.open('config.json', 'r') as config_fp:
             config = json.loads(config_fp.read().decode())
         if config['compiled'] is True:
-            self.trainer = SupervisedTrainer(model=self.model,
+            self._trainer = SupervisedTrainer(model=self.model,
                                              criterion=None,
                                              optimizer=None)
-            self.trainer._load_from_zip(zip_fp, prefix='trainer/')
+            self._trainer._load_from_zip(zip_fp, prefix='trainer/')
         self.init_from_config(config)
 
 class UnamedClassificationPredictionItem(PredictionItem):
