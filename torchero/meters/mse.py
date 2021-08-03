@@ -20,7 +20,7 @@ class RegressionMetric(BatchMeter):
     def __init__(self, transform=None):
         """ Constructor
         """
-        super(MSE, self).__init__(transform=transform, aggregator=self.agg_func)
+        super(RegressionMetric, self).__init__(transform=transform, aggregator=self.agg_func())
 
     def measure(self, a, b):
         if not torch.is_tensor(a) or not torch.is_tensor(b):
@@ -28,7 +28,7 @@ class RegressionMetric(BatchMeter):
 
         if len(a.size()) != 2 or b.shape != a.shape:
             raise ValueError(self.INVALID_BATCH_DIMENSION_MESSAGE)
-        super(MSE, self).measure(a, b)
+        super(RegressionMetric, self).measure(a, b)
 
 class MAE(RegressionMetric):
     """ Meter for mean absolute error metric
