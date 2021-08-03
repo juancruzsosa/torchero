@@ -545,9 +545,9 @@ class BinaryScores(BaseMetricsTests):
 
 class SpeedMetersTests(BaseMetricsTests):
     def test_default_mode(self):
-        meters = parse_meters({'bps': 'batches/s',
+        meters = parse_meters({'bps': 'batches/sec',
                                'spb': 'sec/batch',
-                               'ips': 'it/s',
+                               'ips': 'it/sec',
                                'spi': 'sec/it',
 
                                'bpm': 'batches/min',
@@ -561,9 +561,9 @@ class SpeedMetersTests(BaseMetricsTests):
             self.assertEqual(meters[meter].DEFAULT_MODE, 'min')
 
     def test_batch_speed_is_less_than_sleep_time(self):
-        meters = parse_meters({'bps': 'batches/s',
+        meters = parse_meters({'bps': 'batches/sec',
                                'spb': 'sec/batch',
-                               'ips': 'it/s',
+                               'ips': 'it/sec',
                                'spi': 'sec/it',
 
                                'bpm': 'batches/min',

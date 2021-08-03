@@ -108,7 +108,7 @@ for name, speed_metric, pace_metric in (('batches', meters.BatchSpeed, meters.Ba
     for unit_abbr, unit in (('sec', 'second'),
                             ('min', 'minute')):
         meters_by_name.update({name + '/' + unit_abbr: partial(speed_metric, time_unit=unit),
-                               unit_abbr + '/' + name: partial(pace_metric, time_unit=unit)})
+                               unit_abbr + '/' + name.replace('batches', 'batch'): partial(pace_metric, time_unit=unit)})
 
 
 def get_meters_by_name(name):
