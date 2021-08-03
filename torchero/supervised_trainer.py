@@ -4,6 +4,7 @@ from torch import nn
 from torchero.base import BatchTrainer, BatchValidator, ValidationGranularity
 from torchero.meters import LossMeter
 from torchero.utils.defaults import get_loss_by_name, get_optimizer_by_name
+from torchero.utils.optimizer import optimizer_to
 
 
 class SupervisedValidator(BatchValidator):
@@ -127,6 +128,7 @@ class SupervisedTrainer(BatchTrainer):
     def to(self, device):
         super(SupervisedTrainer, self).to(device)
         self.criterion.to(self._device)
+        optimizer_to(self.optimizer, self._device)
 
     def _save_to_zip(self, zip_fp, prefix=''):
         prefix = prefix.rstrip('/')
