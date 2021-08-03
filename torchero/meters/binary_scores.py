@@ -41,7 +41,7 @@ class BinaryAccuracy(BatchMeter):
             target = target.type(torch.cuda.LongTensor)
         else:
             target = target.type(torch.LongTensor)
-        return (predictions == target).float()
+        return (predictions == target).float().cpu()
 
     def check_tensors(self, a, b):
         if not torch.is_tensor(a) or not torch.is_tensor(b):
@@ -141,39 +141,40 @@ class TPMeter(BaseMeter):
         if self.activation is not None:
             output = self.activation(output)
         predictions = (output >= self.threshold).long()
-        self.tp += (predictions & target).sum(dim=0)
-        self.fp += (predictions & (target ^ 1)).sum(dim=0)
-        self.fn += ((predictions ^ 1) & target).sum(dim=0)
-        self.tn += ((predictions ^ 1) & (target ^ 1)).sum(dim=0)
+        self.tp += (predictions & target).sum(dim=0).cpu()
+        self.fp += (predictions & (target ^ 1)).sum(dim=0).cpu()
+        self.fn += ((predictions ^ 1) & target).sum(dim=0).cpu()
+        self.tn += ((predictions ^ 1) & (target ^ 1)).sum(dim=0).cpu()
 
     def support(self):
         return self.tp + self.fn
 
-    def aggregate(self, f):
+    def aggregate(self, f, agg=None):
+        agg = agg or self.agg
         tp, tn, fp, fn = self.tp, self.tn, self.fp, self.fn
-        if self.agg == 'micro':
+        if agg == 'micro':
             return f(tp.sum(), tn.sum(), fp.sum(), fn.sum()).item()
-        elif self.agg == 'macro':
+        elif agg == 'macro':
             return f(tp, tn, fp, fn).mean().item()
-        else: # self.agg == 'weighted'
+        else: # agg == 'weighted'
             support = self.support()
             return ((f(tp, tn, fp, fn) * support).sum()/support.sum()).item()
 
     @staticmethod
     def _recall(tp, tn, fp, fn):
-        return tp/(tp + fn)
+        return torch.where(tp+fn==0, torch.zeros_like(tp, dtype=torch.float), tp/(tp + fn))
 
     @staticmethod
     def _precision(tp, tn, fp, fn):
-        return tp/(tp + fp)
+        return torch.where(tp+fp==0, torch.zeros_like(tp, dtype=torch.float), tp/(tp + fp))
 
     @staticmethod
     def _specificity(tp, tn, fp, fn):
-        return tn/(tn + fp)
+        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), tn/(tn + fp))
 
     @staticmethod
     def _npv(tp, tn, fp, fn):
-        return tn/(tn + fn)
+        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), tn/(tn + fn))
 
     def _gen_fbeta(self, beta=1):
         def fbeta(tp, tn, fp, fn):
@@ -181,7 +182,7 @@ class TPMeter(BaseMeter):
             p = self._precision(tp, tn, fp, fn)
             num = (1 + beta**2) * p * r
             den = (beta ** 2) * p + r
-            return num / den
+            return torch.where(den == 0, torch.zeros_like(r, dtype=torch.float), num / den)
         return fbeta
 
     @property
@@ -194,7 +195,7 @@ class TPMeter(BaseMeter):
 
     @property
     def specificity(self):
-        return self.aggregate(self._sensitivity)
+        return self.aggregate(self._specificity)
 
     @property
     def npv(self):
