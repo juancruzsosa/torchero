@@ -549,6 +549,21 @@ class BinaryClassificationModel(Model):
     def pred_class(self, preds):
         return ClassificationPredictionsResult(preds, names=self.labels)
 
+    def classification_report(self,
+                              ds,
+                              batch_size=None,
+                              collate_fn=None,
+                              sampler=None):
+        clf_report = meters.binary_scores.BinaryClassificationReport(threshold=self.threshold,
+                                                                     with_logits=self.use_logits,
+                                                                     names=self.labels)
+        metrics = self.evaluate(ds,
+                                metrics={'clf': clf_report},
+                                batch_size=batch_size,
+                                collate_fn=collate_fn,
+                                sampler=sampler)
+        return metrics['clf']
+
     def _predict_batch(self, *X, output_probas=True):
         preds = super(BinaryClassificationModel, self)._predict_batch(*X)
         if self.use_logits:

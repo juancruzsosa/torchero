@@ -216,6 +216,38 @@ class TPMeter(BaseMeter):
             agg=repr(self.agg),
         )
 
+class BinaryClassificationReport(TPMeter):
+    def __init__(self, threshold=0.5, with_logits=False, activation=None, names=None):
+        super(BinaryClassificationReport, self).__init__(threshold=threshold,
+                                                         with_logits=with_logits,
+                                                         activation=activation)
+        self.names = names
+
+    def value(self):
+        result = {}
+        original_agg = self.agg
+        if self.names is not None:
+            assert(len(self.names) == len(self.tp), 'Names and number of labels length mismatch!')
+            names = self.names
+        else:
+            names = range(len(self.tp))
+        for i, name in enumerate(names):
+            metrics = {
+                'precision': self._precision(self.tp[i], self.tn[i], self.fp[i], self.fn[i]).item(),
+                'recall':    self._recall(self.tp[i], self.tn[i], self.fp[i], self.fn[i]).item(),
+                'f1-score':  self._gen_fbeta(1)(self.tp[i], self.tn[i], self.fp[i], self.fn[i]).item(),
+                'support':  (self.tp[i] + self.fn[i]).item()
+            }
+            result[name] = metrics
+        for agg in ['micro', 'macro', 'weighted']:
+            self.agg = agg
+            metrics = {'precision': self.precision,
+                       'recall': self.recall,
+                       'f1-score': self.f_beta(1),
+                       'support': self.support().sum().item()}
+            result[agg] = metrics
+        return result
+
 
 class Recall(TPMeter):
     """ Meter to calculate the recall score where
