@@ -1,9 +1,5 @@
 from abc import abstractmethod, ABCMeta
 
-tokenizers = {
-    'split': lambda: str.split
-}
-
 class SpacyTokenizer(object):
     """ Spacy tokenizer
     """
@@ -29,6 +25,9 @@ class SpacyTokenizer(object):
             raise ImportError("spacy not found. Install it using pip install spacy")
         self.model = spacy.blank(self.lang)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.lang)
+
 
 class EnglishSpacyTokenizer(SpacyTokenizer):
     pass
@@ -45,14 +44,6 @@ class GermanSpacyTokenizer(SpacyTokenizer):
     def __init__(self):
         return super(GermanSpacyTokenizer, self).__init__('de')
 
-tokenizers.update({
-    'spacy': SpacyTokenizer,
-    'spacy:en': EnglishSpacyTokenizer,
-    'spacy:es': SpanishSpacyTokenizer,
-    'spacy:fr': FrenchSpacyTokenizer,
-    'spacy:de': GermanSpacyTokenizer,
-})
-
 class NLTKTokenizer(object, metaclass=ABCMeta):
     """ NLTK Tokenizer
     """
@@ -68,6 +59,9 @@ class NLTKTokenizer(object, metaclass=ABCMeta):
     def __call__(self, text):
         pass
 
+    def __repr__(self):
+        return '{}()'.format(self.__class__.__name__)
+
 class NLTKWordTokenizer(NLTKTokenizer):
     def __call__(self, text):
         return self.nltk.tokenize.word_tokenize(text)
@@ -79,7 +73,3 @@ class NLTKTweetTokenizer(NLTKTokenizer):
 
     def __call__(self, text):
         return self.tokenizer.tokenize(text)
-
-tokenizers.update({'nltk': NLTKWordTokenizer,
-                   'nltk:word': NLTKWordTokenizer,
-                   'nltk:tweet': NLTKTweetTokenizer})

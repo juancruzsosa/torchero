@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import DataLoader
 
 from torchero.utils.collate import PadSequenceCollate
-from torchero.utils.text import TextTransform
 from torchero.models import (Model,
                              BinaryClassificationModel,
                              ClassificationModel,

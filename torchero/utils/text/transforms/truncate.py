@@ -19,6 +19,9 @@ class Truncator(object, metaclass=ABCMeta):
         else:
             return self.truncate(tokens)
 
+    def __repr__(self):
+        return '{}({})'.format(self.__class__.__name__, self.max_len)
+
 class LeftTruncator(Truncator):
     """ Truncates right part of the input token sequence
     """

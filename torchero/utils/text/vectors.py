@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from torchero.utils.io import download_from_url
-from torchero.utils.text.vocab import Vocab
+from torchero.utils.text.transforms.vocab import Vocab
 
 class KeyedVectors(object):
     """ Class to represent list of word vectors. Each word could be any

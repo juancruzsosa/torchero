@@ -184,7 +184,20 @@ class Vocab(object):
             return index + self.start_index
 
     def __repr__(self):
-        return repr(dict(self.items()))
+        opt_params = {'bos': self.bos,
+                      'eos': self.eos,
+                      'pad': self.pad,
+                      'unk': self.unk,
+                      'max_size': self.max_size,
+                      'order_by': self.default_order,
+                      'min_count': self.min_count}
+        format_params = ',\n\t'.join(
+            '{}={}'.format(name, repr(param))
+            for name, param in opt_params.items()
+            if param is not None
+        )
+        return '{}({})'.format(self.__class__.__name__,
+                               format_params)
 
     def __call__(self, tokens):
         """ Converts list of tokens to list of indexes
@@ -210,7 +223,8 @@ class Vocab(object):
                 'unk': self.unk,
                 'max_size': self.max_size,
                 'start_index': self.start_index,
-                'min_count': self.min_count
+                'min_count': self.min_count,
+                'default_order': self.default_order
                 }
 
     def __setstate__(self, d):
@@ -224,8 +238,9 @@ class Vocab(object):
         self.unk = d['unk']
         self.max_size = d['max_size']
         self.min_count = d['min_count']
+        self.default_order = d['default_order']
 
-    def add_from_tokenized_texts(self, texts):
+    def fit(self, texts):
         """ Updates the Vocabulary from a list of tokenized sentences
 
         Arguments:
