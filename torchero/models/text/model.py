@@ -42,6 +42,16 @@ class TextModel(Model):
         with zip_fp.open('transform.pkl', 'r') as fp:
             self.transform = pickle.load(fp)
 
+    def predict(self, ds, batch_size=None, to_tensor=True, has_targets=False):
+        if isinstance(ds, str):
+            return self.predict([ds])[0]
+        else:
+            return super(TextModel, self).predict(ds,
+                                                  batch_size=batch_size,
+                                                  to_tensor=to_tensor,
+                                                  has_targets=has_targets)
+
+
 class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.
     E.g: sentiment analysis (without neutral class), Toxicity category of user comments
