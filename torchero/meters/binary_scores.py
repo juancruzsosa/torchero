@@ -235,7 +235,7 @@ class BinaryClassificationReport(TPMeter):
             self.fp = self.fp.unsqueeze(0)
             self.fn = self.fn.unsqueeze(0)
         if self.names is not None:
-            if len(self.names) == len(self.tp):
+            if len(self.names) != len(self.tp):
                 raise ValueError('Names and number of labels length mismatch!')
             names = self.names
         else:
