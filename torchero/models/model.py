@@ -72,6 +72,16 @@ class PredictionsResult(object):
     def __getitem__(self, idx):
         return self._preds[idx]
 
+    def __repr__(self):
+        list_format = []
+        for pred in self._preds[:10]:
+            list_format.append(repr(pred))
+        if len(self._preds) > 10:
+            list_format.append('...')
+        format_string = '{}([{}])'.format(self.__class__.__name__,
+                                          '\n,'.join(list_format))
+        return format_string
+
 class Model(DeviceMixin):
     """ Model Class for Binary Classification (single or multilabel) tasks
     """
@@ -440,6 +450,9 @@ class UnamedClassificationPredictionItem(PredictionItem):
     def as_tuple(self):
         return tuple(pred.tolist())
 
+    def __repr__(self):
+        return repr(self.as_tuple())
+
 class NamedClassificationPredictionItem(PredictionItem):
     """ Model Prediction with classes names
     """
@@ -465,6 +478,9 @@ class NamedClassificationPredictionItem(PredictionItem):
 
     def as_tuple(self):
         return tuple(pred.tolist())
+
+    def __repr__(self):
+        return repr(self.as_dict())
 
 class ClassificationPredictionsResult(PredictionsResult):
     """ List of model classification predictions
