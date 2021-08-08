@@ -66,7 +66,7 @@ class OptimizerScheduler(Callback, metaclass=ABCMeta):
 class _TorchScheduler(OptimizerScheduler):
     """ Callback Wrapper for torch.optim.lr_scheduler modules
     """
-    def __init__(self, params, start=0, end=None, on_event='epoch_end', optimizer=None, verbose=False):
+    def __init__(self, params, start=1, end=None, on_event='epoch_end', optimizer=None, verbose=False):
         """ Constructor
 
         Arguments:
@@ -195,7 +195,7 @@ class MultiStepLR(_TorchScheduler):
     def __init__(self,
                  milestones,
                  gamma=0.1,
-                 start=0,
+                 start=1,
                  end=None,
                  on_event='epoch_end',
                  optimizer=None,
@@ -219,6 +219,8 @@ class MultiStepLR(_TorchScheduler):
         """
         super(MultiStepLR, self).__init__({'milestones': milestones,
                                            'gamma': gamma},
+                                          start=start,
+                                          end=end,
                                           on_event=on_event,
                                           optimizer=optimizer,
                                           verbose=verbose)
@@ -229,8 +231,10 @@ class ExponentialLR(_TorchScheduler):
     """
     SCHEDULER_CLASS = lr_scheduler.ExponentialLR
 
-    def __init__(self, gamma=0.1, on_event='epoch_end', optimizer=None, verbose=False):
+    def __init__(self, gamma=0.1, start=1, end=None, on_event='epoch_end', optimizer=None, verbose=False):
         super(ExponentialLR, self).__init__({'gamma': gamma},
+                                            start=start,
+                                            end=end,
                                             on_event=on_event,
                                             optimizer=optimizer,
                                             verbose=verbose)
