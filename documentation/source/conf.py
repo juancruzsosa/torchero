@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'torchero'
-copyright = '2020, Juan Cruz Sosa'
+copyright = '2021, Juan Cruz Sosa'
 author = 'Juan Cruz Sosa'
 
 # The full version, including alpha/beta/rc tags
