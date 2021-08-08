@@ -217,7 +217,31 @@ class GLoVeVectors(KeyedVectors):
             200: "glove.6B.200d.txt",
             300: "glove.6B.300d.txt"
           }
-        }
+        },
+        "twitter": {
+            "name": "glove.twitter.27B.zip",
+            "url": "https://nlp.stanford.edu/data/glove.twitter.27B.zip",
+            "files": {
+                25: "glove.twitter.27B.25d.txt",
+                50: "glove.twitter.27B.50d.txt",
+                100: "glove.twitter.27B.100d.txt",
+                200: "glove.twitter.27B.200d.txt",
+            }
+        },
+        "common-crawl": {
+            "name": "glove.42B.300d.zip",
+            "url": "https://nlp.stanford.edu/data/glove.42B.300d.zip",
+            "files": {
+                300: "glove.42B.300d.txt",
+            }
+        },
+        "common-crawl-large": {
+            "name": "glove.840B.300d.zip",
+            "url": "https://nlp.stanford.edu/data/glove.840B.300d.zip",
+            "files": {
+                300: "glove.840B.300d.txt",
+            }
+        },
     }
 
     @classmethod
