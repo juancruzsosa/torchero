@@ -142,7 +142,7 @@ class KeyedVectors(object):
         vec = (positive - negative).unsqueeze(dim=0)
         similarities_idxs = torch.cosine_similarity(vec, self.matrix)
         results = torch.topk(similarities_idxs, k=topn)
-        return [(self.vocab.idx2word[i], v) for i, v in zip(results.indices, results.values)]
+        return [(self.vocab.idx2word[i], v.item()) for i, v in zip(results.indices, results.values)]
 
     def __getstate__(self):
         return {'vocab': self.vocab,
@@ -191,6 +191,15 @@ class KeyedVectors(object):
 
         with fp:
             dump_fn(fp)
+
+    def replace_embeddings(self, vocab, embeddings, freeze=False):
+        index = [self.vocab.word2idx.get(word, None) for word in vocab.idx2word]
+        index_a = torch.tensor([j for j, i in enumerate(index) if i is not None])
+        index_b = torch.tensor([i for i in index if i is not None])
+        new_matrix = torch.index_select(self.matrix, 0, index=index_b)
+        embeddings.weight.data[index_a] = new_matrix
+        if freeze:
+            embeddings.weight.requires_grad = False
 
 
 class GLoVeVectors(KeyedVectors):
