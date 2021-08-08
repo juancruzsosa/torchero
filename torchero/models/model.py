@@ -595,7 +595,7 @@ class BinaryClassificationModel(Model):
     def _predict_batch(self, *X, output_probas=True):
         preds = super(BinaryClassificationModel, self)._predict_batch(*X)
         if self.use_logits:
-            preds = nn.functional.sigmoid(preds)
+            preds = torch.sigmoid(preds)
         if not output_probas:
             preds = preds > self.threshold
         return preds
@@ -658,7 +658,7 @@ class ClassificationModel(Model):
     def _predict_batch(self, *X):
         preds = super(ClassificationModel, self)._predict_batch(*X)
         if self.use_softmax:
-            preds = nn.functional.softmax(preds)
+            preds = torch.softmax(preds, dim=-1)
         return preds
 
 class RegressionModel(Model):
