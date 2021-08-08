@@ -59,3 +59,6 @@ class Compose(object):
         pipeline_class = namedtuple('pipeline', step_names)
         self.step_names = step_names
         self.transforms = pipeline_class(**dict(zip(step_names, transforms)))
+
+    def __len__(self):
+        return len(self.transforms)
