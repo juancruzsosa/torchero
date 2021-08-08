@@ -98,6 +98,7 @@ class TransformerForTextClassification(nn.Module):
                                                    batch_first=True)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         self.clf = nn.Linear(in_features=dim_model, out_features=num_outputs)
+        self.init_weights()
 
     def forward(self, x, lens):
         max_len = max(lens)
@@ -110,8 +111,12 @@ class TransformerForTextClassification(nn.Module):
         # x (float) := B x L x D, padding_mask (bool) := B x L
         x = self.encoder(x, src_key_padding_mask=padding_mask)
         # x (float) := B x L x D
-        x = torch.stack([b[l-1] for b, l in zip(x, lens)])
+        x = x[:,0,:]
         # x (float) := B x D
         x = self.clf(x)
         # X (float) := B x O
         return x
+
+    def init_weights(self):
+        initrange = 0.1
+        self.embedding.weight.data.uniform_(-initrange, initrange)
