@@ -68,12 +68,11 @@ class TextClassificationModel(TextModel, ClassificationModel):
     """ Model class for NLP Binary Classification (single or multilabel) tasks.
     E.g: Detect topic of an user comment
     """
-    def __init__(self, model, transform=None, use_softmax=True, threshold=0.5, classes=None):
+    def __init__(self, model, transform=None, use_softmax=True, classes=None):
         super(TextClassificationModel, self).__init__(model=model,
                                                       transform=transform)
         super(TextModel, self).__init__(model=model,
                                         use_softmax=use_softmax,
-                                        threshold=threshold,
                                         classes=classes)
 
 class TextRegressionModel(TextModel, RegressionModel):
