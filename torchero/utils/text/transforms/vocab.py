@@ -79,16 +79,13 @@ class Vocab(object):
         self.freq = Counter()
         self.idx2word = list()
         self.word2idx = {}
+        self.start_index = 0
         if order_by is None:
             raise ValueError(self.INVALID_ORDER_BY_ARGUMENT_MESSAGE.format(
                              options=self.ORDER_BY_OPTIONS, value=order_by))
         self.default_order = order_by
         if self.pad is not None: # Padding always go to index 
-            self.start_index = 0
             self.add([self.pad])
-        else:
-            # index 0 always reserved for padding
-            self.start_index = 1
         if unk is not None:
             self.add([self.unk])
         if bos is not None:

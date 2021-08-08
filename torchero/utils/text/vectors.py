@@ -72,7 +72,7 @@ class KeyedVectors(object):
             vectors (iterable of arrays): Vector of each words. It must have the
                 same length than the word list
         """
-        self.vocab = Vocab(words, eos=None, unk=None, pad='<pad>', order_by='insertion')
+        self.vocab = Vocab(words, eos=None, unk=None, pad=None, order_by='insertion')
         self.matrix = torch.stack([torch.Tensor(v) for v in vectors])
 
     @property
@@ -99,9 +99,9 @@ class KeyedVectors(object):
             Output: (D,) where D is the vector size
         """
         if isinstance(item, (list, tuple)):
-            return self.matrix[[self.vocab[word]-1 for word in item]]
+            return self.matrix[[self.vocab[word] for word in item]]
         elif isinstance(item, str):
-            return self.matrix[self.vocab[item]-1]
+            return self.matrix[self.vocab[item]]
         else:
             raise ValueError("Indexing not supported to {}".format(repr(type(x))))
 
