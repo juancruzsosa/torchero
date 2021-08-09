@@ -702,8 +702,8 @@ class EarlyStoppingTests(unittest.TestCase):
 
         trainer_min.train(self.train_dl, epochs=5)
         trainer_max.train(self.train_dl, epochs=5)
-        self.assertEqual(trainer_min.epochs_trained, 4)
-        self.assertEqual(trainer_max.epochs_trained, 4)
+        self.assertEqual(trainer_min.epochs_trained, 2)
+        self.assertEqual(trainer_max.epochs_trained, 2)
 
     def test_max_min_mode_are_the_only_modes_available(self):
         mode = 'maximum'
