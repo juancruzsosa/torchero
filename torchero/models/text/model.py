@@ -42,14 +42,16 @@ class TextModel(Model):
         with zip_fp.open('transform.pkl', 'r') as fp:
             self.transform = pickle.load(fp)
 
-    def predict(self, ds, batch_size=None, to_tensor=True, has_targets=False):
+    def predict(self, ds, batch_size=None, to_tensor=True, has_targets=False, num_workers=0, prefetch_factor=2):
         if isinstance(ds, str):
             return self.predict([ds])[0]
         else:
             return super(TextModel, self).predict(ds,
                                                   batch_size=batch_size,
                                                   to_tensor=to_tensor,
-                                                  has_targets=has_targets)
+                                                  has_targets=has_targets,
+                                                  num_workers=num_workers,
+                                                  prefetch_factor=prefetch_factor)
 
 
 class BinaryTextClassificationModel(TextModel, BinaryClassificationModel):

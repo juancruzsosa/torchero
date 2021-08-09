@@ -224,7 +224,10 @@ class Model(DeviceMixin):
                 ds,
                 batch_size=None,
                 to_tensor=True,
-                has_targets=False):
+                has_targets=False,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=2):
         """ Generate output predictions
 
         Arguments:
@@ -236,11 +239,24 @@ class Model(DeviceMixin):
             passed it will default to 32.
             to_tensor (bool): Set this to True to convert inputs to tensors first (default behaviour)
             has_targets (bool): Whether to omit samples that already contains targets
+            num_workers (int, optional): Number of subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process.
+            pin_memory (bool): If True, the data loader will copy Tensors into
+                CUDA pinned memory before returning them. If your data elements are
+                a custom type, or your collate_fn returns a batch that is a custom
+                type, see the example below.
+            prefetch_factor (int, optional):
+                Number of samples loaded in advance by each worker. 2 means
+                there will be a total of 2 * num_workers samples prefetched
+                across all workers.
         """
         dl = self._get_dataloader(ds,
                                   shuffle=False,
                                   batch_size=batch_size,
-                                  shallow_dl=to_tensor)
+                                  shallow_dl=to_tensor,
+                                  num_workers=num_workers,
+                                  pin_memory=pin_memory,
+                                  prefetch_factor=prefetch_factor)
         return self.predict_on_dataloader(dl, has_targets=has_targets)
 
     def train_on_dataloader(self, train_dl, val_dl=None, epochs=1):
@@ -279,16 +295,12 @@ class Model(DeviceMixin):
     def _get_dataloader(self,
                         ds,
                         batch_size=None,
-                        shuffle=True,
-                        collate_fn=None,
-                        sampler=None,
-                        shallow_dl=False):
+                        shallow_dl=False,
+                        **dl_kwargs):
         if isinstance(ds, (Dataset, list)):
             dl = self._create_dataloader(InputDataset(ds, self.input_to_tensor) if shallow_dl else ds,
                                          batch_size=batch_size or 32,
-                                         shuffle=shuffle,
-                                         collate_fn=collate_fn,
-                                         sampler=sampler)
+                                         **dl_kwargs)
         elif isinstance(ds, DataLoader):
             dl = ds
         else:
@@ -300,7 +312,10 @@ class Model(DeviceMixin):
                  metrics=None,
                  batch_size=None,
                  collate_fn=None,
-                 sampler=None):
+                 sampler=None,
+                 num_workers=0,
+                 pin_memory=False,
+                 prefetch_factor=2):
         """ Evaluate metrics
 
         Arguments:
@@ -319,12 +334,25 @@ class Model(DeviceMixin):
                 samples from the dataset. Can be any ``Iterable`` with ``__len__``
                 implemented. If specified, :attr:`shuffle` must not be specified.
                 See ``torch.utisl.data.DataLoader``
+            num_workers (int, optional): Number of subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process.
+            pin_memory (bool): If True, the data loader will copy Tensors into
+                CUDA pinned memory before returning them. If your data elements are
+                a custom type, or your collate_fn returns a batch that is a custom
+                type, see the example below.
+            prefetch_factor (int, optional): 
+                Number of samples loaded in advance by each worker. 2 means
+                there will be a total of 2 * num_workers samples prefetched
+                across all workers.
         """
         dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
                                   shuffle=False,
                                   collate_fn=collate_fn,
-                                  sampler=sampler)
+                                  sampler=sampler,
+                                  num_workers=num_workers,
+                                  pin_memory=pin_memory,
+                                  prefetch_factor=prefetch_factor)
         return self.evaluate_on_dataloader(dl, metrics=metrics)
 
     def fit(self,
@@ -334,7 +362,13 @@ class Model(DeviceMixin):
             batch_size=None,
             shuffle=True,
             collate_fn=None,
-            sampler=None):
+            sampler=None,
+            num_workers=0,
+            val_num_workers=None,
+            pin_memory=False,
+            val_pin_memory=False,
+            prefetch_factor=2,
+            val_prefetch_factor=None):
         """ Trains the model for a fixed number of epochs
 
         Arguments:
@@ -358,12 +392,31 @@ class Model(DeviceMixin):
                 samples from the dataset. Can be any ``Iterable`` with ``__len__``
                 implemented. If specified, :attr:`shuffle` must not be specified.
                 See ``torch.utisl.data.DataLoader``
+            num_workers (int, optional): Number of subprocesses to use for data
+                loading. 0 means that the data will be loaded in the main process.
+            val_num_workers (int, optional): Same as num_workers but for the validation dataset.
+                If not passed num_workers argument will be used
+            pin_memory (bool): If True, the data loader will copy Tensors into
+                CUDA pinned memory before returning them. If your data elements are
+                a custom type, or your collate_fn returns a batch that is a custom
+                type, see the example below.
+            val_pin_memory (bool): Same as pin_memory but for the validation dataset.
+                If not passed pin_memory argument will be used
+            prefetch_factor (int, optional): 
+                Number of samples loaded in advance by each worker. 2 means
+                there will be a total of 2 * num_workers samples prefetched
+                across all workers.
+            val_prefetch_factor (int, optional): Same as prefetch_factor but for the validation dataset.
+                If not passed prefetch_factor argument will be used
         """
         train_dl = self._get_dataloader(train_ds,
                                        batch_size=batch_size,
                                        shuffle=shuffle,
                                        collate_fn=collate_fn,
-                                       sampler=sampler)
+                                       sampler=sampler,
+                                       num_workers=num_workers,
+                                       pin_memory=pin_memory,
+                                       prefetch_factor=prefetch_factor)
         if val_ds is None:
             val_dl = None
         else:
@@ -371,7 +424,10 @@ class Model(DeviceMixin):
                                           batch_size=batch_size,
                                           shuffle=False,
                                           collate_fn=collate_fn,
-                                          sampler=sampler)
+                                          sampler=sampler,
+                                          num_workers=val_num_workers or num_workers,
+                                          pin_memory=val_pin_memory or pin_memory,
+                                          prefetch_factor=val_prefetch_factor or prefetch_factor)
         return self.train_on_dataloader(train_dl,
                                         val_dl,
                                         epochs)

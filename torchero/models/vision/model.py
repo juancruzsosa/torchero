@@ -54,14 +54,24 @@ class ImageModel(Model):
     def input_to_tensor(self, image):
         return self.transform(image)
 
-    def predict(self, ds, batch_size=None, to_tensor=True, has_targets=False):
+    def predict(self,
+                ds,
+                batch_size=None,
+                to_tensor=True,
+                has_targets=False,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=2):
         if isinstance(ds, Image.Image):
             return self.predict([ds])[0]
         else:
             return super(ImageModel, self).predict(ds,
                                                    batch_size=batch_size,
                                                    to_tensor=to_tensor,
-                                                   has_targets=has_targets)
+                                                   has_targets=has_targets,
+                                                   num_workers=num_workers,
+                                                   pin_memory=pin_memory,
+                                                   prefetch_factor=prefetch_factor)
 
 class BinaryImageClassificationModel(ImageModel, BinaryClassificationModel):
     """ Model class for Image Binary Classification (single or multilabel) tasks.
