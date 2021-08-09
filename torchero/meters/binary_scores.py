@@ -162,19 +162,19 @@ class TPMeter(BaseMeter):
 
     @staticmethod
     def _recall(tp, tn, fp, fn):
-        return torch.where(tp+fn==0, torch.zeros_like(tp, dtype=torch.float), tp/(tp + fn))
+        return torch.where(tp+fn==0, torch.zeros_like(tp, dtype=torch.float), (tp/(tp + fn)).float())
 
     @staticmethod
     def _precision(tp, tn, fp, fn):
-        return torch.where(tp+fp==0, torch.zeros_like(tp, dtype=torch.float), tp/(tp + fp))
+        return torch.where(tp+fp==0, torch.zeros_like(tp, dtype=torch.float), (tp/(tp + fp)).float())
 
     @staticmethod
     def _specificity(tp, tn, fp, fn):
-        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), tn/(tn + fp))
+        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), (tn/(tn + fp)).float())
 
     @staticmethod
     def _npv(tp, tn, fp, fn):
-        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), tn/(tn + fn))
+        return torch.where(tn+fn==0, torch.zeros_like(tp, dtype=torch.float), (tn/(tn + fn)).float())
 
     def _gen_fbeta(self, beta=1):
         def fbeta(tp, tn, fp, fn):
