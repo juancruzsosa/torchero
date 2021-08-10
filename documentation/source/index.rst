@@ -91,53 +91,39 @@ Quickstart
 Loading the Data
 ----------------
 
-First, we need to import ``torchvision`` libraries to load the dataset
-
 .. code-block:: python
 
-    from torchvision.datasets import MNIST # The MNIST dataset
-    from torchvision import transforms # To convert to Images to Tensors
+    import torch
+    from torch import nn
 
-
-Now we can import the train and the test datasets.
-
-.. code-block:: python
-
-    train_ds = MNIST(root='/tmp/data/mnist', download=True, train=True, transform=transforms.ToTensor())
-    test_ds = MNIST(root='/tmp/data/mnist', download=False, train=False, transform=transforms.ToTensor())
-
-.. image:: /img/quickstart/install_mnist.png
-
-| To visualize the training dataset we can use show_imagegrid_dataset from utils
-| subpackage. We can do the same for the testing set. This could be helpful to compare in no time
-| the training dataset with the testing one.
-
-.. code-block:: python
+    import torchero
+    from torchero.models.vision import ImageClassificationModel
+    from torchero.callbacks import ProgbarLogger, ModelCheckpoint, CSVLogger
+    from torchero.utils.data import train_test_split
+    from torchero.utils.vision import show_imagegrid_dataset, transforms, datasets, download_image
+    from torchero.meters import ConfusionMatrix
 
     from matplotlib import pyplot as plt
-    from torchero.utils import show_imagegrid_dataset
 
+
+|   First we load the MNIST train and test datasets and visualize it using ``show_imagegrid_dataset``.
+|   The Data Augmentation for this case will be a RandomInvert to flip the grayscale levels.
+
+.. code-block:: python
+
+    train_ds = datasets.MNIST(root='/tmp/data/mnist', download=True, train=True, transform=transforms.Compose([transforms.RandomInvert(),
+    test_ds = datasets.MNIST(root='/tmp/data/mnist', download=False, train=False, transform=transforms.ToTensor())
     show_imagegrid_dataset(train_ds)
     plt.show()
 
+.. image:: /img/quickstart/install_mnist.png
 .. image:: /img/quickstart/mnist_train_data.png
 
-| Then we need to set up one DataLoader for the training dataset and another one for
-| the testing one. This component is responsible for fetching the training and testing
-| data in the form of batches. For the batch size parameter we can use 32.
+Defining the Network
+--------------------
 
-.. code-block:: python
-
-    train_dl = DataLoader(train_ds, batch_size=32)
-    test_dl = DataLoader(test_ds, batch_size=32)
-
-
-Model definition
-----------------
-
-| Then we need to define the architecture of the model. For this case we can
-| define a simple Sequential network with 2 Convolutional Layers and 2 dense ones
-| as follows:
+| Let's define a Convolutional network of two layers followed by a Linear Module
+| as the classification layer.
 
 .. code-block:: python
 
@@ -152,52 +138,41 @@ Model definition
                           nn.ReLU(inplace=True),
                           nn.Linear(500, 10))
 
-Training
---------
+Training the Model
+------------------
 
-The SupervisedTrainer is responsible for the training of our network. We need to construct it with at least 3 things
-
-- The Model instance (we have already done that)
-- The Optimizer. Here we can choose ``'adam'`` (there are other multiple choices like ``'sdg'``, ``'asgd'``, ``'adagrad'``, ``'adamax'``, ``'lbfgfs'``, etc.)
-- The Criterion (or loss). Given the fact that this is a classification problem we can use ``'cross_entropy'``
-
-Some additional things that can be pass to the trainer
-are:
-
-- A list or dictionary of metrics. For this example we are going to choose ``'categorical_accuracy_percentage'``
-- A list of callbacks. For this list, we will choose
-
-  - ``ProgbarLogger``: To report a Progress Bar to see the status while Training. Here, it's important to notice that if you are running the code over a Jupyter notebook you may want to set the `notebook` parameter to `true` in order to display the progress bar in HTML format.
-  - ``ModelCheckpoint``: To save our model if this one improves in `categorical_accuracy_percentage`
-  - ``CSVLogger``: To save the table of metrics for it to be later shared or load it from another program if we want.
+|  The ImageClassificationModel is the module responsible to train the model,
+|  evaluate a metric against a dataset, and predict from and input for multi-class classification tasks.
+|
+|  To train the model we need to compile it first with a:
+|
+|  - an optimizer: 'adam'
+|  - a loss which will be defaulted to ``cross_entropy``
+|  - a list of metrics which will be defaulted to ``categorical_accuracy``, ``balanced_accuracy``)
+|  - a list of callbacks:
+|      - ProgbarLogger to show training progress bar
+|      - ModelCheckpoint to make checkpoints if the model improves
+|      - CSVLogger to dump the metrics to a csv file after each epoch
 
 .. code-block:: python
 
-  from torchero import SupervisedTrainer
-  from torchero.callbacks import ProgbarLogger, ModelCheckpoint, CSVLogger
+    model = ImageClassificationModel(model=network, 
+                                     transform=transforms.Compose([transforms.Grayscale(),
+                                                                   transforms.Resize((28,28)),
+                                                                   transforms.ToTensor()]),
+                                     classes=[str(i) for i in range(10)])
+    model.compile(optimizer='adam',
+                  callbacks=[ProgbarLogger(notebook=True),
+                             ModelCheckpoint('saved_model', mode='max', monitor='val_acc'),
+                             CSVLogger('training_results.xml')])
 
-  trainer = SupervisedTrainer(model=model,
-                              optimizer='sgd',
-                              criterion='cross_entropy',
-                              acc_meters=['categorical_accuracy_percentage'],
-                              callbacks=[ProgbarLogger(notebook=True),
-                                         ModelCheckpoint('saved_model', mode='max', monitor='val_acc'),
-                                         CSVLogger('training_results.xml')])
+    if torch.cuda.is_available():
+        model.cuda()
 
-If we want to train using GPU. We can just execute
-
-.. code-block:: python
-
-  trainer.cuda()
-
-This will automatically convert the model and the data from which the model will feed to cuda as well.
-
-Finally we need to train our network. We can
-do it we this simple line.
-
-.. code-block:: python
-
-  trainer.train(dataloader=train_dl, valid_dataloader=test_dl, epochs=5)
+    history = model.fit(train_ds,
+                        test_ds,
+                        batch_size=1024,
+                        epochs=5)
 
 .. image:: /img/quickstart/training_status.gif
 
@@ -209,15 +184,12 @@ can execute:
 
 .. code-block:: python
 
-  fig, axs = plt.subplots(figsize=(14,3), ncols=2, nrows=1)
-  trainer.history.epoch_plot(['train_acc', 'val_acc'], ax=axs[0], title="Accuracy")
-  trainer.history.epoch_plot(['train_loss', 'val_loss'], ax=axs[1], title="Loss")
-  plt.show()
+    history.plot(figsize=(20, 20), smooth=0.2)
+    plt.show()
 
 .. image:: /img/quickstart/metrics.png
 
-Also, if we want to see how well the model
-performed on each label we can show a confusion matrix as following.
+The ``.evaluate`` returns the metrics for a new dataset.
 
 .. code-block:: python
 

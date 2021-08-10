@@ -87,10 +87,10 @@ network = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5)
 					  nn.Linear(500, 10))
 ```
 
+### Training the Model
+
 The ImageClassificationModel is the module responsible to train the model,
 evaluate a metric against a dataset, and predict from and input for multi-class classification tasks.
-
-### Training the Model
 
 To train the model we need to compile it first with a:
 
@@ -126,7 +126,8 @@ history = model.fit(train_ds,
 
 ### Displaying the training results
 
-To see the training metrics
+To visualize our loss and accuracy in each epoch we
+can execute:
 
 ```python
 history.plot(figsize=(20, 20), smooth=0.2)
