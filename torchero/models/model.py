@@ -180,6 +180,34 @@ class Model(DeviceMixin):
             X = list(map(self._convert_tensor, X))
             return self.model(*X)
 
+    @property
+    def callbacks(self):
+        return self.trainer.callbacks
+
+    @property
+    def optimizer(self):
+        return self.trainer.optimizer
+
+    @optimizer.setter
+    def optimizer(Self, optimizer):
+        self.trainer.optimizer = optimizer
+
+    @property
+    def hparams(self):
+        return dict(self.trainer.hparams)
+
+    @property
+    def history(self):
+        return self.trainer.history
+
+    @property
+    def loss(self):
+        return self.trainer.criterion
+
+    @loss.setter
+    def loss(self, loss):
+        self.trainer.criterion = loss
+
     def to(self, device):
         """ Moves the model to the given device
 

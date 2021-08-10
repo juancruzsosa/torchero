@@ -598,3 +598,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
                 checkpoint = checkpoints[0]
 
         checkpoint.load()
+
+    @property
+    def callbacks(self):
+        return list(self._callbacks)
