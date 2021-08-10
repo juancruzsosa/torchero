@@ -134,10 +134,10 @@ class TabularDataset(Dataset):
             squeeze_targets (bool): When set to True if the target is a single column every item of the
                 dataset returns the value instead of a tuple.
         """
-        self.data = pd.DataFrame(data)
+        self.data = pd.DataFrame(data).reset_index(drop=True)
         self.target_data = None
         if target_data is not None:
-            self.target_data = pd.DataFrame(target_data)
+            self.target_data = pd.DataFrame(target_data).reset_index(drop=True)
             if len(self.target_data) != len(self.data):
                 raise ValueError("Target data should contain the same number of rows as data")
         self.transform = transform
@@ -173,3 +173,10 @@ class TabularDataset(Dataset):
             return X, y
         else:
             return X
+
+    def show_samples(self, k=10):
+        sample = self.data.sample(k)
+        if self.target_data is not None:
+            sample = pd.concat([sample, self.target_data.loc[sample.index]], axis=1)
+        return sample
+
