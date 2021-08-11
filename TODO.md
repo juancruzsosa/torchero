@@ -1,19 +1,33 @@
-### BaseTrainer ###
+### Tensorboard ###
+- [ ] Add support for hyperparameters
 
-- [ ] Refactor `logging_frec` in a more generalized solution (maybe state pattern?)
+### Modules ###
+- [ ] FeedForward class
 
-### Trainers ###
+### NLP ###
+- [ ] GRU & Elman RNN model for text classification & regression
+- [ ] Torchtext dataset's integration
+- [ ] Example of finetunning hugging face models with torchero
+- [ ] Add Model class for Sequence to Sequence tasks
 
-- [ ] GAN and Conditional GAN trainer
-- [ ] Multi-threaded trainer
-- [ ] Distributed trainers
+### Computer Vision ###
+- [ ] Add Model class for Object Detection tasks
+- [ ] Add Model class for Image Segmentation tasks
 
-## Meters ##
+### Meters ###
+- [ ] Refactor BinaryAccuracy and CategoricalAccuracy meters in a single Accuracy meter
+- [ ] Recall, Precision, F1-score for multiclass output
+- [ ] AUC metric
+- [ ] Rouge Metric
+- [ ] IOU Metric
 
-- [ ] Model weights meter
-- [ ] Model weights gradient meter
+### Training ###
+- [ ] Multiprecision training
+- [ ] MultiGPU and MultiNode trainers
+- [ ] Command Line utils training
 
-## Hooks ##
-
-- [x] EarlyStopping
-- [x] torch.nn.optim schedulers integration
+### Testing ###
+- [ ] Add tests for NLP preprocessing utils
+- [ ] Add tests for ImageModel
+- [ ] Add tests for TextModel
+- [ ] Add tests for macro and weighted binary scores metrics
