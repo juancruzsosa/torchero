@@ -33,12 +33,42 @@ class TensorBoardLogger(Callback):
             test_writer = self.test_writer
 
         for name, value in self.trainer.train_metrics.items():
-            train_writer.add_scalar(tag_fmt.format(metric=name, mode='Train'),
+            train_writer.add_scalar(tag_fmt.format(metric=name, mode='train'),
                                     value, global_step=self.trainer.epochs_trained)
 
         for name, value in self.trainer.val_metrics.items():
-            test_writer.add_scalar(tag_fmt.format(metric=name, mode='Test'),
+            test_writer.add_scalar(tag_fmt.format(metric=name, mode='test'),
                                    value, global_step=self.trainer.epochs_trained)
 
         self.writer.flush()
-        self.test_writer.flush()
+        if self.test_writer is not None:
+            self.test_writer.flush()
+
+    def on_train_end(self):
+        hparams = self.trainer.hparams
+        monitors = self.monitors
+
+        if len(hparams)==0:
+            self.writer.flush()
+            if self.test_writer is not None:
+                self.test_writer.flush()
+            return
+
+        if monitors is None:
+            monitors = self.trainer.metrics.keys()
+
+        if self.test_writer is None:
+            tag_fmt = 'hparam/{metric}/{mode}'
+            train_metrics = {tag_fmt.format(metric=name, mode='train'): value for name, value in self.trainer.train_metrics.items()}
+            test_metrics = {tag_fmt.format(metric=name, mode='test'): value for name, value in self.trainer.val_metrics.items()}
+            self.writer.add_hparams(hparam_dict=dict(hparams), metric_dict={**train_metrics, **test_metrics})
+        else:
+            tag_fmt = 'hparam/{metric}'
+            train_metrics = {tag_fmt.format(metric=name): value for name, value in self.trainer.train_metrics.items()}
+            test_metrics = {tag_fmt.format(metric=name): value for name, value in self.trainer.val_metrics.items()}
+            self.writer.add_hparams(hparam_dict=dict(hparams), metric_dict=train_metrics)
+            self.test_writer.add_hparams(hparam_dict=dict(hparams), metric_dict=test_metrics)
+
+        self.writer.flush()
+        if self.test_writer is not None:
+            self.test_writer.flush()
