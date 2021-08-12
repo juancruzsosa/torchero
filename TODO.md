@@ -1,5 +1,5 @@
 ### Tensorboard ###
-- [ ] Add support for hyperparameters
+- [x] Add support for hyperparameters
 
 ### Modules ###
 - [ ] FeedForward class
