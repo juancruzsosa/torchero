@@ -53,7 +53,7 @@ def replace_model_type_a(model, layer, check=True):
     if check:
         assert(isinstance(model.classifier[-1], nn.Linear))
     old_layer = model.classifier[-1]
-    model.classifer[-1] = layer
+    model.classifier[-1] = layer
     return old_layer
 
 def replace_model_type_b(model, layer, check=True):
