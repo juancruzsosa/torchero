@@ -8,3 +8,4 @@ from tests.tests_hparams import *
 from tests.tests_vision_models import *
 from tests.tests_vocab import *
 from tests.tests_truncators import *
+from tests.tests_tokenizers import *
