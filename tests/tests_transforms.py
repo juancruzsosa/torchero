@@ -1,7 +1,60 @@
+import spacy
+import unittest
 from collections import OrderedDict
 from torchero.utils.text.transforms import Vocab, OutOfVocabularyError
+from torchero.utils.text.transforms import tokenizers
+from torchero.utils.text.transforms import LeftTruncator, RightTruncator, CenterTruncator
 
 from .common import *
+
+class TokenizerTests(unittest.TestCase):
+    def test_english_tokenizer(self):
+        tokenizer = tokenizers.EnglishSpacyTokenizer()
+        self.assertEqual(tokenizer(''), [])
+        self.assertEqual(tokenizer('This is a simple text to tokenize'), ['This', 'is', 'a', 'simple', 'text', 'to', 'tokenize'])
+        self.assertEqual(tokenizer('She was upset when it didn\'t boil!, #water'), ['She', 'was', 'upset', 'when', 'it', 'did', 'n\'t', 'boil', '!', ',', '#', 'water'])
+
+    def test_spanish_tokenizer(self):
+        tokenizer = tokenizers.SpanishSpacyTokenizer()
+        self.assertEqual(tokenizer(''), [])
+        self.assertEqual(tokenizer('Ella es un buena doctora.He\'s not'), ['Ella', 'es', 'un', 'buena', 'doctora', '.', 'He\'s', 'not'])
+
+    def test_german_tokenizer(self):
+        tokenizer = tokenizers.GermanSpacyTokenizer()
+        self.assertEqual(tokenizer(''), [])
+        self.assertEqual(tokenizer('Drück mir die Daumen'), ['Drück', 'mir', 'die', 'Daumen'])
+
+    def test_nltk_word_tokenizer(self):
+        tokenizer = tokenizers.NLTKWordTokenizer()
+        self.assertEqual(tokenizer(''), [])
+        self.assertEqual(tokenizer('This is a simple text to tokenize'), ['This', 'is', 'a', 'simple', 'text', 'to', 'tokenize'])
+        self.assertEqual(tokenizer('She was upset when it didn\'t boil!, #water'), ['She', 'was', 'upset', 'when', 'it', 'did', 'n\'t', 'boil', '!', ',', '#', 'water'])
+
+    def test_nltk_tweet_tokenizer(self):
+        tokenizer = tokenizers.NLTKTweetTokenizer()
+        self.assertEqual(tokenizer(''), [])
+        self.assertEqual(tokenizer('This is a simple text to tokenize'), ['This', 'is', 'a', 'simple', 'text', 'to', 'tokenize'])
+        self.assertEqual(tokenizer('She was upset when it didn\'t boil!, #water'), ['She', 'was', 'upset', 'when', 'it', 'didn\'t', 'boil', '!', ',', '#water'])
+
+class TruncatorTests(unittest.TestCase):
+    def setUp(self):
+        self.short_text = ['Very', 'short', 'text']
+        self.long_text = ['This', 'is', 'a', 'very', 'long', 'text', 'to', 'test']
+
+    def tests_left_truncate(self):
+        truncator = LeftTruncator(4)
+        self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
+        self.assertEqual(truncator(self.long_text), ['This', 'is', 'a', 'very'])
+
+    def tests_right_truncate(self):
+        truncator = RightTruncator(4)
+        self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
+        self.assertEqual(truncator(self.long_text), ['long', 'text', 'to', 'test'])
+
+    def tests_center_truncate(self):
+        truncator = CenterTruncator(4)
+        self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
+        self.assertEqual(truncator(self.long_text), ['a', 'very', 'long', 'text'])
 
 class VocabTests(unittest.TestCase):
     def test_empty_vocab(self):
@@ -147,6 +200,3 @@ class VocabTests(unittest.TestCase):
         self.assertEqual(v.eos, '!')
         self.assertListEqual(v(['a']), [1, 0])
 
-
-if __name__ == '__main__':
-    unittest.main()
