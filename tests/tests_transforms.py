@@ -1,11 +1,78 @@
-import spacy
+import tempfile
+import pickle
 import unittest
+
+import spacy
+
 from collections import OrderedDict
 from torchero.utils.text.transforms import Vocab, OutOfVocabularyError
 from torchero.utils.text.transforms import tokenizers
+from torchero.utils.text.transforms import Compose
 from torchero.utils.text.transforms import LeftTruncator, RightTruncator, CenterTruncator
+from torchero.utils.text.transforms import basic_text_transform
 
 from .common import *
+
+class BasicComposeTransformsTests(unittest.TestCase):
+    def assertTensorsEqual(self, a, b):
+        return self.assertEqual(a.tolist(), b.tolist())
+
+    def setUp(self):
+        self.vocab = Vocab()
+        self.transform = Compose(
+            pre=str.lower,
+            tok=str.split,
+            vocab=self.vocab,
+        )
+        self.transform.fit(['a b c'])
+
+
+    def test_basic_text_transform(self):
+        transform = basic_text_transform(pre_process=str.lower,
+                                         tokenizer='spacy',
+                                         vocab_max_size=10,
+                                         vocab_min_count=1,
+                                         max_len=5,
+                                         truncate_mode='center')
+        transform.fit(["This is the first text", "I arrive Second"])
+        self.assertTensorsEqual(transform("This is the second text"), torch.tensor([1,2,3,8,5]))
+
+    def test_compose_has_all_the_members(self):
+        self.assertEqual(len(self.transform), 3)
+        self.assertTrue(hasattr(self.transform, 'pre'))
+        self.assertIs(self.transform.pre, str.lower)
+        self.assertIs(self.transform[0], str.lower)
+        self.assertTrue(hasattr(self.transform, 'tok'))
+        self.assertIs(self.transform.tok, str.split)
+        self.assertIs(self.transform[1], str.split)
+        self.assertTrue(hasattr(self.transform, 'vocab'))
+        self.assertIs(self.transform.vocab, self.vocab)
+        self.assertIs(self.transform[2], self.vocab)
+
+    def test_compose_call_process(self):
+        self.assertEqual(self.transform('c b a'), [3, 2, 1])
+
+    def test_creation_from_dict(self):
+        transform = Compose.from_dict({'pre': str.lower,
+                                       'tok': str.split,
+                                       'vocab': self.vocab})
+        self.assertIs(self.transform.pre, str.lower)
+        self.assertIs(self.transform.tok, str.split)
+        self.assertIs(self.transform.vocab, self.vocab)
+
+    def test_compose_can_be_pickled(self):
+        with tempfile.NamedTemporaryFile() as tmp_file:
+            with open(tmp_file.name, 'w+b') as fp:
+                pickle.dump(self.transform, fp)
+            with open(tmp_file.name, 'rb') as fp:
+                transform_2 = pickle.load(fp)
+                self.assertIs(transform_2.pre, str.lower)
+                self.assertIs(transform_2.tok, str.split)
+                self.assertIsInstance(transform_2.vocab, Vocab)
+                self.assertEqual(self.transform.vocab['a'], 1)
+                self.assertEqual(self.transform.vocab['b'], 2)
+                self.assertEqual(self.transform.vocab['c'], 3)
+                self.assertEqual(self.transform('b c a'), [2, 3, 1])
 
 class TokenizerTests(unittest.TestCase):
     def test_english_tokenizer(self):
