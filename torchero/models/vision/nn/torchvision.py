@@ -67,10 +67,10 @@ def replace_model_type_c(model, layer, check=True):
     if check:
         assert(isinstance(model.classifier[1], nn.Conv2d))
     old_layer = model.classifier[1]
-    model.classifier[-1] = layer
+    model.classifier[1] = layer
     return old_layer
 
-def replace_model_type_d(model, layout, check=True):
+def replace_model_type_d(model, layer, check=True):
     if check:
         assert(isinstance(model.classifier, nn.Linear))
     old_layer = model.classifier
@@ -78,6 +78,9 @@ def replace_model_type_d(model, layout, check=True):
     return old_layer
 
 class TorchvisionModel(nn.Module):
+    """ Module wrapper for all torchvision classification models to adapt them for pretraining
+    with a different number of classes
+    """
     @classmethod
     def from_config(cls, config):
         return cls(config['arch'],
@@ -91,7 +94,7 @@ class TorchvisionModel(nn.Module):
         elif is_model_type_b(model):
             replace_model_type_b(model, nn.Linear(model.fc.in_features, self.num_outputs))
         elif is_model_type_c(model):
-            replace_model_type_c(model, nn.Conv2d(512, self.num_outputs, kernel_size=1))
+            replace_model_type_c(model, nn.Conv2d(model.classifier[1].in_channels, self.num_outputs, kernel_size=1))
         elif is_model_type_d(model):
             replace_model_type_d(model, nn.Linear(model.classifier.in_features, self.num_outputs))
         else:
@@ -118,9 +121,11 @@ class TorchvisionModel(nn.Module):
 
     @property
     def config(self):
-        return {'arch': self.arch}
+        return {'arch': self.arch,
+                'num_outputs': self.num_outputs}
 
     def embed(self, x):
+        batch_size = x.shape[0]
         model = self.model
         if is_model_type_a(model):
             old_layer = replace_model_type_a(model, nn.Identity())
@@ -133,10 +138,9 @@ class TorchvisionModel(nn.Module):
             output = old_layer(x)
             replace_model_type_b(model, old_layer, check=False)
         elif is_model_type_c(model):
-            old_layer = replace_model_type_c(model, nn.Flatten())
-            x = model(x)
-            output = old_layer(x)
-            replace_model_type_b(model, old_layer, check=False)
+            x2 = model.features(x)
+            x = nn.AdaptiveAvgPool2d((1,1))(x2).flatten(1)
+            output = model.classifier(x2).flatten(1)
         elif is_model_type_d(model):
             old_layer = replace_model_type_d(model, nn.Identity())
             x = model(x)
