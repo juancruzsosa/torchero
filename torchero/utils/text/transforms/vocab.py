@@ -39,7 +39,7 @@ class Vocab(object):
                                          "Got: {value}")
 
     @classmethod
-    def build_from_texts(cls, texts, bos=None, eos=None, pad=None, unk=None, max_size=None, min_count=1):
+    def build_from_texts(cls, texts, bos=None, eos=None, pad='<pad>', unk=None, max_size=None, min_count=1):
         """ Builds a Vocabulary from a list of sentences
 
         Arguments:
@@ -55,7 +55,7 @@ class Vocab(object):
         vocab = cls(examples, eos=eos, bos=bos, pad=pad, unk=unk, max_size=max_size, min_count=min_count)
         return vocab
 
-    def __init__(self, vocab={}, bos=None, eos=None, pad=None, unk=None, max_size=None, order_by='frequency', min_count=1):
+    def __init__(self, vocab={}, bos=None, eos=None, pad='<pad>', unk=None, max_size=None, order_by='frequency', min_count=1):
         """ Constructor
 
         Arguments:
@@ -164,7 +164,7 @@ class Vocab(object):
         return iter(self)
 
     def indexes(self):
-        yield from range(self.start_index, len(self)+1)
+        yield from range(self.start_index, len(self)+self.start_index)
 
     def items(self):
         """ Returns an iterator to
