@@ -5,3 +5,4 @@ from tests.tests_trainers import *
 from tests.tests_base_trainer import *
 from tests.test_utils import *
 from tests.tests_hparams import *
+from tests.tests_vision_models import *
