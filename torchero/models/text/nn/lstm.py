@@ -36,12 +36,11 @@ class LSTMForTextClassification(nn.Module):
                  num_layers=1,
                  bidirectional=False,
                  mode='max',
-                 dropout_clf=0.5,
-                 padding_idx=0):
+                 dropout_clf=0.5):
         super(LSTMForTextClassification, self).__init__()
         self.embeddings = nn.Embedding(vocab_size,
                                        embedding_dim=embedding_dim,
-                                       padding_idx=padding_idx)
+                                       padding_idx=0)
         self.lstm = nn.LSTM(embedding_dim,
                             hidden_size,
                             num_layers,
