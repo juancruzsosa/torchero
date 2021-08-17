@@ -1,7 +1,13 @@
 import shutil
+from pathlib import Path
+
 from .common import *
 from torchero.utils.format import format_metric
 from torchero.utils.collate import PadSequenceCollate, BoWCollate
+from torchero.utils import download_from_url
+from torchero.utils.vision import download_image, download_images
+
+from PIL import Image
 
 class FormatMetricTest(unittest.TestCase):
     def test_medium_numbers_get_truncated(self):
@@ -40,6 +46,35 @@ class FormatMetricTest(unittest.TestCase):
     def test_format_dict(self):
         self.assertIn(format_metric({'a': 1, 'b': 2}), ["{'a': 1, 'b': 2}", "{'b': 2, 'a': 1}"])
         self.assertIn(format_metric({'a': torch.tensor(1), 'b': torch.tensor(2)}), ["{'a': 1, 'b': 2}", "{'b': 2, 'a': 1}"])
+
+
+class IOTests(unittest.TestCase):
+    def test_download_from_url(self):
+        url = 'https://raw.githubusercontent.com/juancruzsosa/torchero/master/tests/__init__.py'
+        dst = '/tmp/download.py'
+        download_from_url(url, dst, pbar=True)
+        with open(dst, 'rb') as fp:
+            remote_content = fp.read()
+        with open(Path(__file__).parent/'__init__.py', 'rb') as fp:
+            local_content = fp.read()
+        self.assertEqual(remote_content, local_content)
+
+    def test_download_image_from_url(self):
+        url = 'https://raw.githubusercontent.com/juancruzsosa/torchero/master/documentation/source/img/quickstart/confusion_matrix.png'
+        src = Path(__file__).parent.parent/'documentation'/'source'/'img'/'quickstart'/'confusion_matrix.png'
+        remote_im = download_image(url)
+        local_im = Image.open(src)
+        self.assertEqual(remote_im, local_im)
+
+    def test_download_multiple_images(self):
+        urls = ['https://raw.githubusercontent.com/juancruzsosa/torchero/master/documentation/source/img/quickstart/confusion_matrix.png',
+                'https://raw.githubusercontent.com/juancruzsosa/torchero/master/documentation/source/img/quickstart/metrics.png']
+        root = Path(__file__).parent.parent/'documentation'/'source'/'img'/'quickstart'
+        srcs = [root/'confusion_matrix.png',
+                root/'metrics.png']
+        for remote_im, src in zip(download_images(urls, pbar=True, num_workers=2), srcs):
+            local_im = Image.open(src)
+            self.assertEqual(remote_im, local_im)
 
 class CollateTests(unittest.TestCase):
     def setUp(self):

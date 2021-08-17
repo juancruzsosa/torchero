@@ -532,7 +532,9 @@ class CheckpointTests(unittest.TestCase):
                               logging_frecuency=1,
                               train_meters={'t': Averager()},
                               update_batch_fn=self.meter_from_list([2, 3, 1], 't'))
-
+        callbacks = list(trainer.callbacks)
+        self.assertEqual(len(callbacks), 3)
+        self.assertEqual(callbacks[-1], checkpoint)
         trainer.train(self.train_dl, epochs=3)
         data_best = checkpoint.load()
 

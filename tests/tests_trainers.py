@@ -105,6 +105,7 @@ class BinaryClassificationTrainerTest(unittest.TestCase):
                                     criterion='binary_cross_entropy_wl',
                                     optimizer='adam',
                                     acc_meters=['binary_accuracy_wl', 'precision_wl', 'recall_wl', 'f1_wl'])
+        trainer.to('cpu')
         trainer.train(self.train_dl, valid_dataloader=self.val_dl, epochs=1)
         self.assertEqual(trainer.epochs_trained, 1)
         self.assertIn('train_acc', trainer.metrics.keys())
