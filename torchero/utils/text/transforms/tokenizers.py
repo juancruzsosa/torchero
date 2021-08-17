@@ -51,7 +51,7 @@ class NLTKTokenizer(object, metaclass=ABCMeta):
         try:
             import nltk
         except ImportError:
-            raise ImportError("spacy not found. Install it using pip install spacy")
+            raise ImportError("nltk not found. Install it using pip install nltk")
         else:
             self.nltk = nltk
 
@@ -61,6 +61,17 @@ class NLTKTokenizer(object, metaclass=ABCMeta):
 
     def __repr__(self):
         return '{}()'.format(self.__class__.__name__)
+
+    def __getstate__(self):
+        return {}
+
+    def __setstate__(self, d):
+        try:
+            import nltk
+        except ImportError:
+            raise ImportError("nltk not found. Install it using pip install nltk")
+        else:
+            self.nltk = nltk
 
 class NLTKWordTokenizer(NLTKTokenizer):
     def __call__(self, text):
@@ -73,3 +84,10 @@ class NLTKTweetTokenizer(NLTKTokenizer):
 
     def __call__(self, text):
         return self.tokenizer.tokenize(text)
+
+    def __getstate__(self):
+        return {'tokenizer': self.tokenizer}
+
+    def __setstate__(self, d):
+        super(NLTKTweetTokenizer, self).__setstate__(d)
+        self.tokenizer = d['tokenizer']
