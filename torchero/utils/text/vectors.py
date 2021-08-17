@@ -72,6 +72,10 @@ class KeyedVectors(object):
             vectors (iterable of arrays): Vector of each words. It must have the
                 same length than the word list
         """
+        if len(words) == 0:
+            raise ValueError("Can not create a KeyedVectors instance with 0 vectors")
+        if len(words) != len(vectors):
+            raise ValueError("The same number of vectors and words was expected")
         self.vocab = Vocab(words, eos=None, unk=None, pad=None, order_by='insertion')
         self.matrix = torch.stack([torch.Tensor(v) for v in vectors])
 
@@ -126,6 +130,7 @@ class KeyedVectors(object):
     def most_similar(self, positive, negative=None, topn=10):
         """ Returns the number of words in the vocabulary
         """
+        topn = min(len(self), topn)
         if positive:
             positive = self[positive]
             if positive.ndim > 1:
@@ -149,7 +154,7 @@ class KeyedVectors(object):
                 'matrix': self.matrix.tolist()}
 
     def __setstate__(self, d):
-        self.vocab = d['words']
+        self.vocab = d['vocab']
         self.matrix = torch.Tensor(d['matrix'])
 
     def _dump_as_word2vec_plain(self, fp, delimiter=' '):
@@ -164,7 +169,7 @@ class KeyedVectors(object):
         fp.write("{} {}\n".format(len(self), self.vector_size).encode('utf-8'))
         for word, vector in zip(self.vocab, self.matrix):
             fp.write(word.encode('utf-8'))
-            fp.write(b"")
+            fp.write(b" ")
             s = struct.pack('f'*self.vector_size, *vector.tolist())
             fp.write(s)
 
