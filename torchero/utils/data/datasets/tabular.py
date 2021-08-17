@@ -12,7 +12,8 @@ class TabularDataset(Dataset):
         field_names,
         target_field_names=None,
         transform=None,
-        target_transform=None
+        target_transform=None,
+        orient='records'
     ):
         """ Creates an instance from a json file (with list of dict fields scheme).
 
@@ -35,22 +36,23 @@ class TabularDataset(Dataset):
                 target_field_names = [target_field_names]
         else:
             target_field_names = []
-        records = pd.read_json(jsonfile)
+        records = pd.read_json(path, orient=orient)
         data = records[field_names]
         if squeeze:
-            data = data[0]
+            data = data[data.columns[0]]
         if target_field_names is not None:
             target_data = records[target_field_names]
             if squeeze_targets:
-                target_data = target_data[0]
+                target_data = target_data[target_data.columns[0]]
         else:
             target_data = None
         return cls(
-            data=data,
-            target_data=target_data,
+            data,
+            target_data,
             transform=transform,
-            target_transform=target_transform
-        )
+            target_transform=target_transform,
+            squeeze_data=squeeze,
+            squeeze_targets=squeeze_targets)
 
     @classmethod
     def from_csv(
@@ -108,8 +110,8 @@ class TabularDataset(Dataset):
             target_data = None
         return cls(data,
                    target_data,
-                   transform,
-                   target_transform,
+                   transform=transform,
+                   target_transform=target_transform,
                    squeeze_data=squeeze,
                    squeeze_targets=squeeze_targets)
 
