@@ -8,3 +8,4 @@ from tests.tests_hparams import *
 from tests.tests_vision_models import *
 from tests.tests_transforms import *
 from tests.tests_nlp_models import *
+from tests.tests_vectors import *
