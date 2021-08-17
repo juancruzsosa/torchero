@@ -101,7 +101,7 @@ class TransformerForTextClassification(nn.Module):
         self.init_weights()
 
     def forward(self, x, lens):
-        max_len = max(lens)
+        max_len = x.shape[1]
         # x (long) := B X L
         token_embedding = self.embedding(x) * math.sqrt(self.embedding.embedding_dim)
         pos_embedding = self.pos_embedding(torch.arange(0, max_len, device=token_embedding.device))
