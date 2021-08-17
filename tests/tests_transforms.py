@@ -26,6 +26,13 @@ class BasicComposeTransformsTests(unittest.TestCase):
         )
         self.transform.fit(['a b c'])
 
+    def test_invalid_assert_pipeline_invalid_stepname_raises_error(self):
+        try:
+            compose = Compose(fit=str.lower)
+            self.fail()
+        except Exception as e:
+            self.assertIsInstance(e, ValueError)
+            self.assertEqual(str(e), "Invalid step_name 'fit'. Choose another name")
 
     def test_basic_text_transform(self):
         transform = basic_text_transform(pre_process=str.lower,
