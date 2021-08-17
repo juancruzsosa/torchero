@@ -103,6 +103,21 @@ class TokenizerTests(unittest.TestCase):
         self.assertEqual(tokenizer('This is a simple text to tokenize'), ['This', 'is', 'a', 'simple', 'text', 'to', 'tokenize'])
         self.assertEqual(tokenizer('She was upset when it didn\'t boil!, #water'), ['She', 'was', 'upset', 'when', 'it', 'didn\'t', 'boil', '!', ',', '#water'])
 
+    def test_tokenizers_can_be_pickled(self):
+        for tokenizer_class in (tokenizers.EnglishSpacyTokenizer,
+                                tokenizers.SpanishSpacyTokenizer,
+                                tokenizers.GermanSpacyTokenizer,
+                                tokenizers.NLTKWordTokenizer,
+                                tokenizers.NLTKTweetTokenizer):
+            tokenizer = tokenizer_class()
+            with self.subTest(tokenizer=tokenizer.__class__.__name__):
+                with tempfile.NamedTemporaryFile() as tmp_file:
+                    with open(tmp_file.name, 'w+b') as fp:
+                        pickle.dump(tokenizer, fp)
+                    with open(tmp_file.name, 'rb') as fp:
+                        tokenizer = pickle.load(fp)
+                    self.assertEqual(tokenizer('a b'), ['a', 'b'])
+
 class TruncatorTests(unittest.TestCase):
     def setUp(self):
         self.short_text = ['Very', 'short', 'text']
@@ -110,18 +125,33 @@ class TruncatorTests(unittest.TestCase):
 
     def tests_left_truncate(self):
         truncator = LeftTruncator(4)
+        self.assertEqual(truncator.max_len, 4)
         self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
         self.assertEqual(truncator(self.long_text), ['This', 'is', 'a', 'very'])
 
     def tests_right_truncate(self):
         truncator = RightTruncator(4)
+        self.assertEqual(truncator.max_len, 4)
         self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
         self.assertEqual(truncator(self.long_text), ['long', 'text', 'to', 'test'])
 
     def tests_center_truncate(self):
         truncator = CenterTruncator(4)
+        self.assertEqual(truncator.max_len, 4)
         self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
         self.assertEqual(truncator(self.long_text), ['a', 'very', 'long', 'text'])
+
+    def test_truncators_can_be_pickled(self):
+        for truncator_class  in (LeftTruncator, RightTruncator, CenterTruncator):
+            truncator = truncator_class(4)
+            with self.subTest(truncator=truncator_class.__name__):
+                with tempfile.NamedTemporaryFile() as tmp_file:
+                    with open(tmp_file.name, 'w+b') as fp:
+                        pickle.dump(truncator, fp)
+                    with open(tmp_file.name, 'rb') as fp:
+                        truncator = pickle.load(fp)
+                self.assertEqual(truncator.max_len, 4)
+                self.assertEqual(truncator(self.short_text), ['Very', 'short', 'text'])
 
 class VocabTests(unittest.TestCase):
     def test_empty_vocab(self):
