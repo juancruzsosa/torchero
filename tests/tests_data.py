@@ -1,9 +1,15 @@
+import tempfile
+import json
+
+import pandas as pd
+
 import torch
 import torchero
 from .common import *
 from torchero.utils.data import CrossFoldValidation, train_test_split
 from torchero.utils.data.datasets import UnsuperviseDataset, \
                                              ShrinkDataset
+from torchero.utils.text.datasets import TextClassificationDataset
 
 class TestsDataUtils(unittest.TestCase):
     def assertDatasetEquals(self, a, b):
@@ -224,3 +230,112 @@ class TestsDataUtils(unittest.TestCase):
             self.fail()
         except ValueError as e:
             self.assertEqual(str(e), ShrinkDataset.INVALID_P_MESSAGE)
+
+class TextClassificationBaseTest(object):
+    def test_multilabel_dataset(self):
+        ds = self.multilabel_ds
+        self.assertEqual(len(ds), 2)
+        x, y = ds[0]
+        self.assertEqual(x, 'text b')
+        self.assertIsInstance(y, torch.Tensor)
+        self.assertEqual(y.ndim, 1)
+        self.assertEqual(y.tolist(), [0, 1])
+        x, y = ds[1]
+        self.assertEqual(x, 'text a')
+        self.assertEqual(y.tolist(), [1, 0])
+
+    def test_names(self):
+        self.assertEqual(self.multilabel_ds.names, ['text'])
+        ds = self.multiclass_ds
+        self.assertEqual(self.multiclass_ds.names, ['text'])
+
+    def test_show_samples(self):
+        df_samples = self.multilabel_ds.show_samples(2)
+        self.assertIsInstance(df_samples, pd.DataFrame)
+        self.assertEqual(set(df_samples.itertuples(index=False, name=None)),
+                         {('text a', 1, 0),
+                          ('text b', 0, 1)})
+
+    def test_multiclass_dataset(self):
+        ds = self.multiclass_ds
+        self.assertEqual(len(ds), 3)
+        x, y = ds[0]
+        self.assertEqual(x, 'text b')
+        self.assertIsInstance(y, torch.Tensor)
+        self.assertEqual(y.ndim, 0)
+        self.assertEqual(y.item(), 1)
+        x, y = ds[1]
+        self.assertEqual(x, 'text c')
+        self.assertEqual(y.item(), 2)
+        x, y = ds[2]
+        self.assertEqual(x, 'text a')
+        self.assertEqual(y.item(), 0)
+
+
+class TextClassificationJSONDatasetTest(unittest.TestCase, TextClassificationBaseTest):
+    def setUp(self):
+        json_multilabel_dataset = [
+            {'text': 'text b', 'class_a': 0, 'class_b': 1},
+            {'text': 'text a', 'class_a': 1, 'class_b': 0}
+        ]
+        with tempfile.NamedTemporaryFile() as file:
+            with open(file.name, 'w') as fp:
+                json.dump(json_multilabel_dataset, fp)
+            self.multilabel_ds = TextClassificationDataset.from_json(path=file.name,
+                                                                     field_names='text',
+                                                                     target_field_names=['class_a', 'class_b'])
+
+        json_multiclass_dataset = [
+            {'text': 'text b', 'class': 'b'},
+            {'text': 'text c', 'class': 'c'},
+            {'text': 'text a', 'class': 'a'},
+        ]
+        with tempfile.NamedTemporaryFile() as file:
+            with open(file.name, 'w') as fp:
+                json.dump(json_multiclass_dataset, fp)
+            self.multiclass_ds = TextClassificationDataset.from_json(path=file.name,
+                                                                     field_names='text',
+                                                                     target_field_names='class')
+
+
+class TextClassificationCSVDatasetTest(unittest.TestCase, TextClassificationBaseTest):
+    def setUp(self):
+        multilabel_dataset = ('text,class_a,class_b',
+                              '\ntext b,0,1',
+                              '\ntext a,1,0')
+        with tempfile.NamedTemporaryFile() as file:
+            with open(file.name, 'w') as fp:
+                fp.writelines(multilabel_dataset)
+            self.multilabel_ds = TextClassificationDataset.from_csv(path=file.name,
+                                                     columns='text',
+                                                     target_columns=['class_a', 'class_b'])
+
+        multiclass_dataset = (
+            'text,class',
+            '\ntext b,b',
+            '\ntext c,c',
+            '\ntext a,a',
+        )
+        with tempfile.NamedTemporaryFile() as file:
+            with open(file.name, 'w') as fp:
+                fp.writelines(multiclass_dataset)
+            self.multiclass_ds = TextClassificationDataset.from_csv(path=file.name,
+                                                                     columns='text',
+                                                                     target_columns='class')
+
+class TextClassificationDFDatasetTest(unittest.TestCase, TextClassificationBaseTest):
+    def setUp(self):
+        df_multilabel = pd.DataFrame({
+            'text': ['text b', 'text a'],
+            'class_a': [0, 1],
+            'class_b': [1, 0]
+        })
+        self.multilabel_ds = TextClassificationDataset(df_multilabel['text'],
+                                                       df_multilabel[['class_a', 'class_b']])
+
+        df_multiclass = pd.DataFrame({
+            'text': ['text b', 'text c', 'text a'],
+            'class': ['b', 'c', 'a'],
+        })
+        self.multiclass_ds = TextClassificationDataset(df_multiclass[['text']],
+                                                       df_multiclass[['class']])

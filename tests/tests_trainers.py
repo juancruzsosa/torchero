@@ -37,7 +37,8 @@ class TrainerTests(unittest.TestCase):
         train_meters = trainer.train_meters
         val_meters = trainer.val_meters
         meters = trainer.meters
-
+        trainer.to('cpu')
+        self.assertEqual(trainer.device, torch.device('cpu'))
         self.assertListEqual(sorted(meters.keys()), ['train_acc', 'train_loss', 'val_acc', 'val_loss'])
         self.assertListEqual(sorted(train_meters.keys()), ['acc', 'loss'])
         self.assertListEqual(sorted(val_meters.keys()), ['acc', 'loss'])
@@ -105,7 +106,7 @@ class BinaryClassificationTrainerTest(unittest.TestCase):
                                     criterion='binary_cross_entropy_wl',
                                     optimizer='adam',
                                     acc_meters=['binary_accuracy_wl', 'precision_wl', 'recall_wl', 'f1_wl'])
-        trainer.to('cpu')
+        trainer.cpu()
         trainer.train(self.train_dl, valid_dataloader=self.val_dl, epochs=1)
         self.assertEqual(trainer.epochs_trained, 1)
         self.assertIn('train_acc', trainer.metrics.keys())
