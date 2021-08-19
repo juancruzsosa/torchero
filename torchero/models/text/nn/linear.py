@@ -26,4 +26,4 @@ class LinearModel(nn.Module):
                              lens[:-1]]).cumsum(dim=0)
         x = self.embeddings(x, offsets)
         x = self.linear(x)
-        return x
+        return x.squeeze(-1)

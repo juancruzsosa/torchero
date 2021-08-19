@@ -545,7 +545,7 @@ class UnamedClassificationPredictionItem(PredictionItem):
         return list(zip(indices.tolist(), values.tolist()))
 
     def as_tuple(self):
-        return tuple(pred.tolist())
+        return tuple(self._preds.tolist())
 
     def __repr__(self):
         return repr(self.as_tuple())
