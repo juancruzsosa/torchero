@@ -208,6 +208,21 @@ class Model(DeviceMixin):
     def loss(self, loss):
         self.trainer.criterion = loss
 
+    def total_parameters(self):
+        """ Returns the total number of parameters
+        """
+        parameters = self.model.parameters()
+        parameters = map(lambda p: p.numel(), parameters)
+        return sum(parameters)
+
+    def total_trainable_parameters(self):
+        """ Returns the total number of trainable parameters
+        """
+        parameters = self.model.parameters()
+        parameters = filter(lambda p: p.requires_grad, parameters)
+        parameters = map(lambda p: p.numel(), parameters)
+        return sum(parameters)
+
     def to(self, device):
         """ Moves the model to the given device
 
