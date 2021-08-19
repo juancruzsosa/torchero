@@ -103,14 +103,12 @@ class Model(DeviceMixin):
         model_type = config['torchero_model_type']
         module = importlib.import_module(model_type['module'])
         model_type = getattr(module, model_type['type'])
-        print(model_type)
         if net is None:
             if 'net' not in config:
                 raise ModelImportException("Invalid network configuration json (Expected 'net' key)")
             net_type = config['net']['type']
             net_module = importlib.import_module(net_type['module'])
             net_type = getattr(net_module, net_type['type'])
-            print(net_type)
             if 'config' not in config['net']:
                 raise ModelImportException("Network configuration not found in config.json ('net.config'). Create function passing an already initialized network")
             if hasattr(net_type, 'from_config') and 'config' in config['net']:
