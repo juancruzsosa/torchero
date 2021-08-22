@@ -6,7 +6,7 @@ from torchero.utils.text.transforms.truncate import *
 from torchero.utils.text.transforms.vocab import Vocab
 
 tokenizers = {
-    'split': lambda: str.split,
+    'split': WhitespaceTokenizer,
     'spacy': SpacyTokenizer,
     'spacy:en': EnglishSpacyTokenizer,
     'spacy:es': SpanishSpacyTokenizer,

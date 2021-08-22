@@ -1,5 +1,16 @@
 from abc import abstractmethod, ABCMeta
 
+class WhitespaceTokenizer(object):
+    """ Breaks text into words on spaces
+    """
+
+    def __call__(self, text):
+        text = text.strip()
+        if not text:
+            return []
+        tokens = text.split()
+        return tokens
+
 class SpacyTokenizer(object):
     """ Spacy tokenizer
     """
