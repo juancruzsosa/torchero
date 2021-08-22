@@ -22,7 +22,7 @@ class TextModel(Model):
 
     def _create_dataloader(self, *args, **kwargs):
         if self.transform is not None:
-            collate_fn = PadSequenceCollate(pad_value=self.transform.vocab[self.transform.vocab.pad])
+            collate_fn = PadSequenceCollate(pad_value=0)
             kwargs['collate_fn'] = kwargs.get("collate_fn") or collate_fn
         return DataLoader(*args, **kwargs)
 
