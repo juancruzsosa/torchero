@@ -6,6 +6,7 @@ from torchero.utils.text.transforms.truncate import *
 from torchero.utils.text.transforms.vocab import Vocab
 
 tokenizers = {
+    'basic': BasicTokenizer,
     'split': WhitespaceTokenizer,
     'spacy': SpacyTokenizer,
     'spacy:en': EnglishSpacyTokenizer,
@@ -24,7 +25,7 @@ truncators = {
 }
 
 def basic_text_transform(pre_process=str.lower,
-                         tokenizer=str.split,
+                         tokenizer='basic',
                          vocab=None,
                          vocab_max_size=None,
                          vocab_min_count=1,
