@@ -10,6 +10,10 @@ from torchero.utils.text.transforms import tokenizers
 from torchero.utils.text.transforms import Compose
 from torchero.utils.text.transforms import LeftTruncator, RightTruncator, CenterTruncator
 from torchero.utils.text.transforms import basic_text_transform
+from torchero.utils.text.transforms import (convert_to_unicode,
+                                            strip_accents,
+                                            strip_tags,
+                                            strip_numeric)
 
 from .common import *
 
@@ -304,3 +308,20 @@ class VocabTests(unittest.TestCase):
         self.assertEqual(v.eos, '!')
         self.assertListEqual(v(['a']), [1, 0])
 
+class PreprocessingTests(unittest.TestCase):
+    def test_convert_to_unicode(self):
+        self.assertEqual(convert_to_unicode('áÉ'.encode('utf-8')), 'áÉ')
+
+    def test_strip_accents(self):
+        self.assertEqual(strip_accents('abcdefghijklmnñopqrstuvwxyz '
+                                       'ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜ '
+                                       'àáâãäåèéêëìíîïðòñóôõöùúûü'),
+                        'abcdefghijklmnnopqrstuvwxyz '
+                        'AAAAAACEEEEIIIIOOOOOUUUU '
+                        'aaaaaaeeeeiiiiðonoooouuuu')
+
+    def test_strip_tags(self):
+        self.assertEqual(strip_tags('text <b>bold text</b>'), 'text bold text')
+
+    def test_strip_numeric(self):
+        self.assertEqual(strip_numeric('abc 123 def -45 ghi 67.8 9a'), 'abc  def - ghi  a')
