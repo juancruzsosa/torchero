@@ -1,6 +1,8 @@
 import unicodedata
 from abc import abstractmethod, ABCMeta
 
+from torchero.utils.text.transforms.preprocessing import convert_to_unicode
+
 __all__ = ['WhitespaceTokenizer',
            'SpacyTokenizer',
            'EnglishSpacyTokenizer',
@@ -155,15 +157,6 @@ def _is_punctuation(char):
         return True
     return False
 
-
-def convert_to_unicode(text):
-    if isinstance(text, str):
-        return text
-    elif isinstance(text, bytes):
-        return text.decode("utf-8", "ignore")
-    else:
-        raise ValueError("Unsupported string type: %s" % (type(text)))
-
 class BasicTokenizer(object):
     """Runs basic tokenization (punctuation splitting, lower casing, etc.)."""
 
@@ -191,16 +184,6 @@ class BasicTokenizer(object):
         output_tokens = self.whitespace_tokenize(" ".join(split_tokens))
         return output_tokens
 
-    def _run_strip_accents(self, text):
-        """Strips accents from a piece of text."""
-        text = unicodedata.normalize("NFD", text)
-        output = []
-        for char in text:
-            cat = unicodedata.category(char)
-            if cat == "Mn":
-                continue
-            output.append(char)
-        return "".join(output)
 
     def _run_split_on_punc(self, text):
         """Splits punctuation on a piece of text."""
