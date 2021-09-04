@@ -43,7 +43,7 @@ class TorchtextClassificationDataset(Dataset, metaclass=ABCMeta):
         return text, target
 
     def texts(self):
-        return (self.ds[i] for i in range(len(self.ds)))
+        return (self.ds[i][1] for i in range(len(self.ds)))
 
     def __len__(self):
         return len(self.ds)
