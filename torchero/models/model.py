@@ -401,6 +401,7 @@ class Model(DeviceMixin):
             val_ds=None,
             epochs=1,
             batch_size=None,
+            val_batch_size=None,
             shuffle=True,
             collate_fn=None,
             sampler=None,
@@ -423,6 +424,8 @@ class Model(DeviceMixin):
                 * `np.array`): Validation data
             batch_size (int or None): Number of samples per batch. If None is
                 passed it will default to 32. Only relevant for non dataloader data
+            val_batch_size (int or None): Number of samples per batch for the validation dataset. If None is
+                passed it will use batch_size argument. Only relevant for non dataloader data
             epochs (int): Number of epochs to train the model
             shuffle (bool): Set to ``True``to shuffle train dataset before every epoch. Only for
                 non dataloader train data.
@@ -462,7 +465,7 @@ class Model(DeviceMixin):
             val_dl = None
         else:
             val_dl = self._get_dataloader(val_ds,
-                                          batch_size=batch_size,
+                                          batch_size=val_batch_size or batch_size,
                                           shuffle=False,
                                           collate_fn=collate_fn,
                                           sampler=sampler,
