@@ -87,6 +87,12 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         """
         return self._metrics
 
+    def _process_batch(self, batch):
+        if isinstance(batch, torch.Tensor):
+            batch = (batch, )
+        batch = map(self._prepare_tensor, batch)
+        self.validate_batch(*batch)
+
     def validate(self, valid_dataloader):
         """ Validate a model against a given validation dataloader
 
@@ -104,10 +110,7 @@ class BatchValidator(DeviceMixin, metaclass=ABCMeta):
         self.model.train(mode=False)
         with torch.no_grad():
             for batch in valid_dataloader:
-                if isinstance(batch, torch.Tensor):
-                    batch = (batch, )
-                batch = map(self._prepare_tensor, batch)
-                self.validate_batch(*batch)
+                self._process_batch(batch)
         self.model.train(mode=True)
 
         self._metrics.compile()
@@ -311,6 +314,13 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         with zip_fp.open(prefix + '/callbacks.pkl', 'w') as callbacks_fp:
             pickle.dump(self._callbacks, callbacks_fp)
 
+    def _init_from_config(self, config):
+        self._epochs_trained = config['epochs_trained']
+        self._steps_trained = config['steps_trained']
+        self._logging_frequency = config['logging_frequency']
+        self._prefixes = config['prefixes']
+        self._raised_stop_training = config['raised_stop_training']
+
     def _load_from_zip(self, zip_fp, prefix=''):
         """ Loads the full training state from a zip handler
 
@@ -322,11 +332,7 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         # Load training state from config
         with zip_fp.open(prefix + '/config.json', 'r') as config_fp:
             config = json.loads(config_fp.read().decode())
-            self._epochs_trained = config['epochs_trained']
-            self._steps_trained = config['steps_trained']
-            self._logging_frequency = config['logging_frequency']
-            self._prefixes = config['prefixes']
-            self._raised_stop_training = config['raised_stop_training']
+            self._init_from_config(config)
         # Load validator
         self.validator._load_from_zip(zip_fp, prefix=prefix)
         with zip_fp.open(prefix + '/train_metrics.pkl', 'r') as metrics_fp:
@@ -439,6 +445,13 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         return (self.logging_frecuency > 0 and
                 self.step % self.logging_frecuency == 0)
 
+    def _train_batch(self, batch):
+        # convert to 1-d tuple if batch was a tensor instead of a tuple
+        if torch.is_tensor(batch):
+            batch = (batch, )
+        batch = map(self._prepare_tensor, batch)
+        self.update_batch(*batch)
+
     def _train_epoch(self, train_dataloader, valid_dataloader=None):
         """ Train the model & validate the model for one epoch
 
@@ -452,14 +465,8 @@ class BatchTrainer(DeviceMixin, metaclass=ABCMeta):
         self.validator.metrics.reset()
 
         for self.step, batch in enumerate(train_dataloader):
-            # convert to 1-d tuple if batch was a tensor instead of a tuple
-            if torch.is_tensor(batch):
-                batch = (batch, )
-            batch = map(self._prepare_tensor, batch)
-            self.update_batch(*batch)
-
+            self._train_batch(batch)
             self._steps_trained += 1
-
             if self._is_time_to_log():
                 self._train_metrics.compile()
                 self.log()

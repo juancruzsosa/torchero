@@ -187,7 +187,7 @@ class Model(DeviceMixin):
         return self.trainer.optimizer
 
     @optimizer.setter
-    def optimizer(Self, optimizer):
+    def optimizer(self, optimizer):
         self.trainer.optimizer = optimizer
 
     @property
@@ -480,7 +480,11 @@ class Model(DeviceMixin):
             'torchero_model_type': {'module': self.__class__.__module__,
                                     'type': self.__class__.__name__},
             'compiled': self._trainer is not None,
+            'device': None
         }
+        if self._device is not None:
+            config['device'] = {'type': self._device.type,
+                                'index': self._device.index}
         if hasattr(self.model, 'config'):
             config.update({'net': {
                 'type': {'module': self.model.__class__.__module__,
@@ -516,11 +520,14 @@ class Model(DeviceMixin):
             self.model.load_state_dict(torch.load(fp))
         with zip_fp.open('config.json', 'r') as config_fp:
             config = json.loads(config_fp.read().decode())
+        device = config['device']
         if config['compiled'] is True:
             self._trainer = SupervisedTrainer(model=self.model,
                                              criterion=None,
                                              optimizer=None)
             self._trainer._load_from_zip(zip_fp, prefix='trainer/')
+        if device is not None:
+            self.to(torch.device(config['device']['type'], config['device']['index']))
         self.init_from_config(config)
 
 class UnamedClassificationPredictionItem(PredictionItem):

@@ -1,3 +1,5 @@
+import importlib
+
 import torch
 from torch import nn
 
@@ -130,13 +132,31 @@ class SupervisedTrainer(BatchTrainer):
         self.criterion.to(self._device)
         optimizer_to(self.optimizer, self._device)
 
+    @property
+    def config(self):
+        config = super(SupervisedTrainer, self).config
+        config['optimizer'] = {
+            'type': {
+                'module': self.optimizer.__class__.__module__,
+                'type': self.optimizer.__class__.__name__
+            }
+        }
+        return config
+
+    def _init_from_config(self, config):
+        super(SupervisedTrainer, self)._init_from_config(config)
+        optim_type = config['optimizer']['type']
+        optim_module = importlib.import_module(optim_type['module'])
+        optim_type = getattr(optim_module, optim_type['type'])
+        self.optimizer = optim_type(self.model.parameters())
+
     def _save_to_zip(self, zip_fp, prefix=''):
         prefix = prefix.rstrip('/')
         super(SupervisedTrainer, self)._save_to_zip(zip_fp, prefix=prefix)
         with zip_fp.open(prefix + '/loss.pkl', 'w') as loss_fp:
             torch.save(self.criterion, loss_fp)
         with zip_fp.open(prefix + '/optimizer.pkl', 'w') as optim_fp:
-            torch.save(self.optimizer, optim_fp)
+            torch.save(self.optimizer.state_dict(), optim_fp)
 
     def _load_from_zip(self, zip_fp, prefix=''):
         prefix = prefix.rstrip('/')
@@ -144,4 +164,5 @@ class SupervisedTrainer(BatchTrainer):
         with zip_fp.open(prefix + '/loss.pkl', 'r') as loss_fp:
             self.criterion = torch.load(loss_fp)
         with zip_fp.open(prefix + '/optimizer.pkl', 'r') as optim_fp:
-            self.optimizer = torch.load(optim_fp)
+            optimizer_state_dict = torch.load(optim_fp)
+            self.optimizer.load_state_dict(optimizer_state_dict)
