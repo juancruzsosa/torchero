@@ -15,6 +15,10 @@ from torchero import meters
 from torchero import SupervisedTrainer
 from torchero.utils import AutoBatchSize
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class InputDataset(Dataset):
     """ Simple Dataset wrapper
     to transform input before giving it
@@ -389,11 +393,10 @@ class Model(DeviceMixin):
                 across all workers.
         """
         if batch_size == 'auto':
+            logger.info("Finding inference batch size...")
             batch_size = self._batch_size_finder.find_for_inference(ds,
-                                                              collate_fn=collate_fn,
-                                                              num_workers=num_workers,
-                                                              pin_memory=pin_memory,
-                                                              prefetch_factor=prefetch_factor)
+                                                              collate_fn=collate_fn)
+            logger.info("Inference batch_size: {}".format(batch_size))
         dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
                                   shuffle=False,
@@ -463,11 +466,10 @@ class Model(DeviceMixin):
         """
         val_batch_size = val_batch_size or batch_size
         if batch_size == 'auto':
+            logger.info("Finding training batch size...")
             batch_size = self._batch_size_finder.find_for_train(train_ds,
-                                                          collate_fn=collate_fn,
-                                                          num_workers=num_workers,
-                                                          pin_memory=pin_memory,
-                                                          prefetch_factor=prefetch_factor)
+                                                          collate_fn=collate_fn)
+            logger.info("Training batch_size: {}".format(batch_size))
         train_dl = self._get_dataloader(train_ds,
                                        batch_size=batch_size,
                                        shuffle=shuffle,
@@ -480,11 +482,10 @@ class Model(DeviceMixin):
             val_dl = None
         else:
             if val_batch_size == 'auto':
+                logger.info("Finding inference batch size...")
                 val_batch_size = self._batch_size_finder.find_for_inference(val_ds,
-                                                                      collate_fn=collate_fn,
-                                                                      num_workers=num_workers,
-                                                                      pin_memory=pin_memory,
-                                                                      prefetch_factor=prefetch_factor)
+                                                                      collate_fn=collate_fn)
+                logger.info("Inference batch_size: {}".format(val_batch_size))
             val_dl = self._get_dataloader(val_ds,
                                           batch_size=val_batch_size or batch_size,
                                           shuffle=False,
