@@ -13,6 +13,7 @@ import torchero
 from torchero.utils.mixins import DeviceMixin
 from torchero import meters
 from torchero import SupervisedTrainer
+from torchero.utils import AutoBatchSize
 
 class InputDataset(Dataset):
     """ Simple Dataset wrapper
@@ -126,6 +127,7 @@ class Model(DeviceMixin):
         super(Model, self).__init__()
         self.model = model
         self._trainer = None
+        self._batch_size_finder = AutoBatchSize(self)
 
     def pred_class(self, preds):
         return PredictionsResult(preds)
@@ -327,7 +329,7 @@ class Model(DeviceMixin):
             it will used the same defined at compile step
         """
         return self.trainer.evaluate(dataloader=dataloader,
-                              metrics=metrics)
+                                     metrics=metrics)
 
 
     def _create_dataloader(self, *args, **kwargs):
@@ -386,6 +388,12 @@ class Model(DeviceMixin):
                 there will be a total of 2 * num_workers samples prefetched
                 across all workers.
         """
+        if batch_size == 'auto':
+            batch_size = self._batch_size_finder.find_for_inference(ds,
+                                                              collate_fn=collate_fn,
+                                                              num_workers=num_workers,
+                                                              pin_memory=pin_memory,
+                                                              prefetch_factor=prefetch_factor)
         dl = self._get_dataloader(ds,
                                   batch_size=batch_size,
                                   shuffle=False,
@@ -453,6 +461,13 @@ class Model(DeviceMixin):
             val_prefetch_factor (int, optional): Same as prefetch_factor but for the validation dataset.
                 If not passed prefetch_factor argument will be used
         """
+        val_batch_size = val_batch_size or batch_size
+        if batch_size == 'auto':
+            batch_size = self._batch_size_finder.find_for_train(train_ds,
+                                                          collate_fn=collate_fn,
+                                                          num_workers=num_workers,
+                                                          pin_memory=pin_memory,
+                                                          prefetch_factor=prefetch_factor)
         train_dl = self._get_dataloader(train_ds,
                                        batch_size=batch_size,
                                        shuffle=shuffle,
@@ -464,6 +479,12 @@ class Model(DeviceMixin):
         if val_ds is None:
             val_dl = None
         else:
+            if val_batch_size == 'auto':
+                val_batch_size = self._batch_size_finder.find_for_inference(val_ds,
+                                                                      collate_fn=collate_fn,
+                                                                      num_workers=num_workers,
+                                                                      pin_memory=pin_memory,
+                                                                      prefetch_factor=prefetch_factor)
             val_dl = self._get_dataloader(val_ds,
                                           batch_size=val_batch_size or batch_size,
                                           shuffle=False,
